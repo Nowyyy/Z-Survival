@@ -303,6 +303,7 @@
         "tests/unit/maps-regles.test.js",
         "tests/unit/persos-sang.test.js",
         "tests/unit/persos-variantes.test.js",
+        "tests/unit/persos-epoque.test.js",
         "tests/unit/collision-identite.test.js",
         "tests/unit/oracle-texte.test.js",
         "tests/unit/sauvegarde-schema.test.js",
@@ -659,6 +660,8 @@
         "data/game/characters-v2.json",
         "data/game/poses-v2.json",
         "data/game/persos-choix.json",
+        "data/game/persos-epoque.json",
+        "data/game/persos-epoque-choix.json",
         "data/game/zombie-variants.json",
         "data/game/blood.json",
         "scripts/personnages/**"
@@ -676,7 +679,8 @@
         "tests/unit/persos-sang.test.js",
         "tests/unit/poses-identite.test.js",
         "tests/unit/oracle-texte.test.js",
-        "tests/unit/persos-variantes.test.js"
+        "tests/unit/persos-variantes.test.js",
+        "tests/unit/persos-epoque.test.js"
       ],
       "e2e": ["tests/e2e/persos-integres.spec.js"],
       "complet": ["tests/e2e/jeu-personnages.spec.js", "tests/e2e/persos-atelier.spec.js", "tests/e2e/persos-jeu.spec.js", "tests/e2e/persos-sang.spec.js"]

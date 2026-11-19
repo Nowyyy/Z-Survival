@@ -1,0 +1,5 @@
+{
+  "_provisoire": "Lot 9g : variante d'époque retenue par personnage du menu (survivant, personnage-2 : emplacement joueur) et par type de zombie (marcheur, petit, voute, grand), comme data/armes/armes-choix.json. Valeurs : ids de data/game/persos-epoque.json (survivant : epoque-A, epoque-B, epoque-C ; personnage-2 : para-A, para-B, para-C ; zombies : epoque-A, epoque-B, epoque-C). Absente, inconnue ou fichier illisible : la première variante (A). À remplir par le propriétaire depuis l'atelier des personnages (section Époque) ; le jeu ne lit ce fichier qu'après « GO 9g ».",
+  "version": 1,
+  "choix": { "survivant": "epoque-A", "personnage-2": "para-A", "marcheur": "epoque-A", "petit": "epoque-A", "voute": "epoque-A", "grand": "epoque-A" }
+}
