@@ -1852,7 +1852,8 @@ export function createGame(ctx) {
       const cam = rig.camera.position;
       const meshStats = world.windowMeshes?.stats(rig.camera) ?? [];
       return {
-        player: { x: sim.player.x, y: sim.player.y, facing: anim.facing, pas: { ...pasVu }, health: sim.player.health, maxHp: sim.player.maxHealth, spread: halfAngle(), speedRatio: sim.spread, down: { state: sim.down.state, chutes: sim.down.chutes, chutesMax: sim.down.chutesMax, timeLeft: sim.down.timeLeft, grace: sim.down.grace, invulnerable: isInvulnerable(sim.down) } },
+        anim: { facing: anim.facing, pas: { ...pasVu } }, // dessin du joueur (pas chassé, partie J) : hors des champs logiques
+        player: { x: sim.player.x, y: sim.player.y, health: sim.player.health, maxHp: sim.player.maxHealth, spread: halfAngle(), speedRatio: sim.spread, down: { state: sim.down.state, chutes: sim.down.chutes, chutesMax: sim.down.chutesMax, timeLeft: sim.down.timeLeft, grace: sim.down.grace, invulnerable: isInvulnerable(sim.down) } },
         save: bankState.save,
         economy: bankState.economy,
         stats: {

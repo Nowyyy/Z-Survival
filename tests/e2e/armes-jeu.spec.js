@@ -537,7 +537,7 @@ test('pas chassé : visée en haut, marche à gauche : le joueur reste tourné v
         zs.setInput({ move: { x: mx, y: my }, aim: { angle: aim } });
         zs.step(0.05);
       }
-      const p = zs.getState().player;
+      const p = zs.getState().anim;
       out.push({ ecart: Math.abs(Math.atan2(Math.sin(p.facing - aim), Math.cos(p.facing - aim))), avant: p.pas.avant, lateral: p.pas.lateral });
     }
     zs.setInput({ move: { x: 0, y: 0 } });

@@ -140,3 +140,4 @@ Rayon du grand aligné sur son dessin (×1,11) ; recharge cartouche par cartouch
 - **Chargeurs au sol** grossis (`echellePieces` 1,8).
 - **Rampants** : la reptation garde le corps d'avant (épaules 11,5, bras ×1) : les bras s'écartent et tirent à tour de rôle comme avant le lot ; debout, le corps long.
 - **Pas chassé** : entre 50° et 130° d'écart entre la marche et la visée, le joueur reste tourné vers la visée (0,3 rad vers la marche) et les hanches passent leur foulée sur le côté (les jambes s'écartent au lieu d'avancer) ; en deçà il marche, au-delà il recule.
+- **Trace de référence** (`corps=avant&munitions=illimitees`) : toute la logique est identique à `origin/dev` (6 scénarios × 600 pas, tous les champs sauf `pose`) ; seul `pose` (phase de l'animation de marche du joueur) change, par le pas chassé : les six empreintes de `origin/dev` ne sont plus retrouvées pour cette seule raison. État de test : `getState().anim` ({ facing, pas }) hors des champs logiques.
