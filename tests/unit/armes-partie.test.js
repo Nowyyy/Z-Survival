@@ -594,13 +594,16 @@ describe('délai après le rechargement et tintement des cartouches (partie M)',
     expect(peutTirer(fin.st)).toBe(false);
     expect(changerArme(fin.st, table).state.attente).toBe(0);
   });
-  it('cartouches remises une à une (Kar98k, Winchester) : petit tintement métallique (partiels aigus, bref)', () => {
+  it('cartouches remises une à une (Kar98k, Winchester) : petit son métallique et froid (partiels aigus amortis tout de suite, bref)', () => {
     const sons = load('data/game/sons-armes.json');
     const c = sons.recettes.find((r) => r.id === 'arme-cartouche');
     expect(c.duration).toBeLessThanOrEqual(0.25);
     const partiels = c.layers.filter((l) => l.type === 'ring').flatMap((l) => l.partials.map((x) => x.freq));
     expect(Math.min(...partiels.filter((f) => f > 4000))).toBeGreaterThan(4000);
     expect(c.layers.some((l) => l.type === 'osc')).toBe(false); // pas de coup sourd : un tintement
+    // Partie N : métallique et froid, pas de clochette : aucun partiel qui tient (amortis en 10 ms au plus), son très bref.
+    expect(Math.max(...c.layers.filter((l) => l.type === 'ring').flatMap((l) => l.partials.map((x) => x.decay)))).toBeLessThanOrEqual(0.01);
+    expect(c.duration).toBeLessThanOrEqual(0.12);
     for (const id of ['kar98k', 'winchester1897']) expect(table.armes[id].recharge.sons.balle).toBe('arme-cartouche');
   });
 });
