@@ -54,6 +54,40 @@ test.describe('atelier des personnages', () => {
     expect(small).toEqual([]);
   });
 
+  // Lot 9g (partie B) : section « Époque » (variantes d'époque à comparer avant « GO 9g »), même page.
+  test('époque : se charge sans erreur, budgets ≤ +10 % et 3 appels, vues aux tailles du jeu, texte du fichier de choix', async ({ page }) => {
+    const errors = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+    await open(page);
+    const E = (fn, a) => page.evaluate(fn, a);
+    const st = await E(() => window.__zsPersos.epoque.getState());
+    expect(st.ready).toBe(true);
+    expect(st.budgets).toHaveLength(12);
+    for (const row of st.budgets) for (const l of ['A', 'B', 'C']) {
+      expect(row.variantes[l].ecart, `${row.perso} ${row.niveau} ${l}`).toBeLessThanOrEqual(10);
+      expect(row.variantes[l].appels).toBe(3);
+    }
+    expect(st.groupes.jeu.map((g) => g.id)).toEqual(['riche', 'epoque-A', 'epoque-B', 'epoque-C']);
+    expect(st.groupes.horde).toHaveLength(21);
+    expect(new Set(st.groupes.horde.slice(0, 20).map((g) => g.slot))).toEqual(new Set(['marcheur', 'petit', 'voute', 'grand']));
+    expect(new Set(st.groupes.horde.slice(0, 20).map((g) => `${g.slot}:${g.outfit}`)).size).toBeGreaterThanOrEqual(12);
+    expect(JSON.parse(st.texte).choix).toEqual(st.choix);
+    for (const [id, v] of [['ep-perso', 'personnage-2'], ['ep-lettre', 'B'], ['ep-arme', 'garand'], ['ep-niveau', 'simple'], ['ep-lumiere', 'lune'], ['ep-perso', 'petit'], ['ep-anim', 'rampe']]) await E(([i, x]) => window.__zsPersos.epoque.set(i, x), [id, v]);
+    await E(() => window.__zsPersos.epoque.step(0.5));
+    const s2 = await E(() => window.__zsPersos.epoque.getState());
+    expect(s2.groupes.tenues).toHaveLength(6);
+    expect(s2.groupes.jeu.map((g) => g.id)).toEqual(['A', 'epoque-A-simple', 'epoque-B-simple', 'epoque-C-simple']);
+    if (s2.webgl) {
+      expect(s2.vues.jeu).toMatchObject({ width: 667, height: 375 });
+      expect(s2.vues.hd).toMatchObject({ width: 1920, height: 1080 });
+      expect(s2.vues.gros.calls).toBeLessThanOrEqual(4);
+    }
+    await E(() => window.__zsPersos.epoque.set('ep-choix-grand', 'epoque-C'));
+    expect(JSON.parse((await E(() => window.__zsPersos.epoque.getState())).texte).choix.grand).toBe('epoque-C');
+    expect(await E(() => [localStorage.length, sessionStorage.length])).toEqual([0, 0]);
+    expect(errors).toEqual([]);
+  });
+
   for (const width of [360, 768, 1440]) {
     test(`CLS au plus 0,1 à ${width} px`, async ({ page }) => {
       await page.setViewportSize({ width, height: 800 });

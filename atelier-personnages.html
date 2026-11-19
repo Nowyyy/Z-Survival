@@ -29,6 +29,7 @@
       <nav class="persos-nav" aria-labelledby="nav-title">
         <h2 id="nav-title" class="persos-nav-title" data-i18n="dev.persos.nav"></h2>
         <ul class="persos-nav-list">
+          <li><a class="persos-link" href="#section-epoque" data-i18n="dev.epoque.nav"></a></li>
           <li><a class="persos-link" href="#section-choix" data-i18n="dev.persos.choose"></a></li>
           <li><a class="persos-link" href="#section-comparaison" data-i18n="dev.persos.compare"></a></li>
           <li><a class="persos-link" href="#section-mesures" data-i18n="dev.persos.measures"></a></li>
@@ -39,6 +40,65 @@
         </ul>
       </nav>
     </header>
+
+    <section id="section-epoque" class="persos-section" aria-labelledby="epoque-title">
+      <h2 id="epoque-title" class="persos-heading" data-i18n="dev.epoque.title"></h2>
+      <p class="persos-note" data-i18n="dev.epoque.intro"></p>
+      <p class="persos-warning" data-i18n="dev.epoque.warning"></p>
+      <p id="ep-webgl" class="persos-error" data-i18n="dev.epoque.webgl" hidden></p>
+      <div class="persos-controls">
+        <div class="persos-field"><label for="ep-perso" data-i18n="dev.epoque.perso"></label><select id="ep-perso" class="persos-select"></select></div>
+        <div class="persos-field"><label for="ep-lettre" data-i18n="dev.epoque.lettre"></label><select id="ep-lettre" class="persos-select"></select></div>
+        <div class="persos-field"><label for="ep-tenue" data-i18n="dev.epoque.tenue"></label><select id="ep-tenue" class="persos-select"></select></div>
+        <div class="persos-field"><label for="ep-niveau" data-i18n="dev.epoque.niveau"></label><select id="ep-niveau" class="persos-select"></select></div>
+        <div class="persos-field"><label for="ep-anim" data-i18n="dev.epoque.anim"></label><select id="ep-anim" class="persos-select"></select></div>
+        <div class="persos-field"><label for="ep-arme" data-i18n="dev.epoque.arme"></label><select id="ep-arme" class="persos-select"></select></div>
+        <div class="persos-field"><label for="ep-sol" data-i18n="dev.epoque.sol"></label><select id="ep-sol" class="persos-select"></select></div>
+        <div class="persos-field"><label for="ep-lumiere" data-i18n="dev.epoque.lumiere"></label><select id="ep-lumiere" class="persos-select"></select></div>
+        <div class="persos-field"><label for="ep-usure" data-i18n="dev.epoque.usure"></label><select id="ep-usure" class="persos-select"></select></div>
+        <button id="ep-play" class="button persos-button" type="button" aria-pressed="false"></button>
+      </div>
+      <p id="ep-intent" class="persos-note"></p>
+      <h3 class="persos-subheading" data-i18n="dev.epoque.gros"></h3>
+      <div class="persos-stage ep-stage-gros"><canvas id="ep-canvas-gros" class="persos-canvas ep-canvas" width="480" height="480" aria-hidden="true"></canvas></div>
+      <h3 id="ep-h-jeu" class="persos-subheading" data-i18n="dev.epoque.jeu"></h3>
+      <div class="ep-reel" tabindex="0" role="region" aria-labelledby="ep-h-jeu"><canvas id="ep-canvas-jeu" class="ep-canvas-reel" width="667" height="375" aria-hidden="true"></canvas></div>
+      <p id="ep-jeu-legende" class="persos-legend"></p>
+      <h3 id="ep-h-zoom3" class="persos-subheading" data-i18n="dev.epoque.zoom3"></h3>
+      <div class="ep-reel" tabindex="0" role="region" aria-labelledby="ep-h-zoom3"><canvas id="ep-canvas-zoom3" class="ep-canvas-reel" width="667" height="375" aria-hidden="true"></canvas></div>
+      <h3 id="ep-h-tenues" class="persos-subheading" data-i18n="dev.epoque.tenues"></h3>
+      <div class="ep-reel" tabindex="0" role="region" aria-labelledby="ep-h-tenues"><canvas id="ep-canvas-tenues" class="ep-canvas-reel" width="667" height="375" aria-hidden="true"></canvas></div>
+      <h3 id="ep-h-horde" class="persos-subheading" data-i18n="dev.epoque.horde"></h3>
+      <div class="persos-controls">
+        <div class="persos-field"><label for="ep-horde-lettre" data-i18n="dev.epoque.horde.choix"></label><select id="ep-horde-lettre" class="persos-select"></select></div>
+      </div>
+      <div class="ep-reel" tabindex="0" role="region" aria-labelledby="ep-h-horde"><canvas id="ep-canvas-horde" class="ep-canvas-reel" width="667" height="375" aria-hidden="true"></canvas></div>
+      <h3 id="ep-h-hd" class="persos-subheading" data-i18n="dev.epoque.hd"></h3>
+      <div class="ep-reel" tabindex="0" role="region" aria-labelledby="ep-h-hd"><canvas id="ep-canvas-hd" class="ep-canvas-reel" width="1920" height="1080" aria-hidden="true"></canvas></div>
+      <h3 class="persos-subheading" data-i18n="dev.epoque.budgets"></h3>
+      <p class="persos-note" data-i18n="dev.epoque.budgets.intro"></p>
+      <div class="ep-table-boite" tabindex="0" role="region" aria-labelledby="ep-budgets-titre">
+        <table class="ep-table">
+          <caption id="ep-budgets-titre" data-i18n="dev.epoque.budgets"></caption>
+          <thead><tr><th scope="col" data-i18n="dev.epoque.budget.perso"></th><th scope="col" data-i18n="dev.epoque.budget.actuelle"></th><th scope="col">A</th><th scope="col">B</th><th scope="col">C</th></tr></thead>
+          <tbody id="ep-budgets"></tbody>
+        </table>
+      </div>
+      <h3 class="persos-subheading" data-i18n="dev.epoque.choix"></h3>
+      <p class="persos-note" data-i18n="dev.epoque.choix.intro"></p>
+      <div class="persos-controls">
+        <div class="persos-field"><label for="ep-choix-survivant" data-i18n="dev.epoque.perso.survivant"></label><select id="ep-choix-survivant" class="persos-select"></select></div>
+        <div class="persos-field"><label for="ep-choix-personnage-2" data-i18n="dev.epoque.perso.personnage-2"></label><select id="ep-choix-personnage-2" class="persos-select"></select></div>
+        <div class="persos-field"><label for="ep-choix-marcheur" data-i18n="dev.epoque.perso.marcheur"></label><select id="ep-choix-marcheur" class="persos-select"></select></div>
+        <div class="persos-field"><label for="ep-choix-petit" data-i18n="dev.epoque.perso.petit"></label><select id="ep-choix-petit" class="persos-select"></select></div>
+        <div class="persos-field"><label for="ep-choix-voute" data-i18n="dev.epoque.perso.voute"></label><select id="ep-choix-voute" class="persos-select"></select></div>
+        <div class="persos-field"><label for="ep-choix-grand" data-i18n="dev.epoque.perso.grand"></label><select id="ep-choix-grand" class="persos-select"></select></div>
+      </div>
+      <label class="persos-choices-label" for="ep-choix-texte" data-i18n="dev.epoque.choix.label"></label>
+      <textarea id="ep-choix-texte" class="persos-choices" rows="12" readonly spellcheck="false"></textarea>
+      <button id="ep-copier" class="button persos-button" type="button" data-i18n="dev.epoque.copier"></button>
+      <p id="ep-copie" class="persos-note" role="status" aria-live="polite"></p>
+    </section>
 
     <section id="section-choix" class="persos-section" aria-labelledby="choix-title">
       <h2 id="choix-title" class="persos-heading" data-i18n="dev.persos.choose"></h2>

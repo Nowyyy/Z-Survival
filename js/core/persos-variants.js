@@ -90,16 +90,32 @@ function widenDims(p, k) {
 export function partRgb(part, resolved, lookup, { averageTears = false } = {}) {
   const r = obj(resolved);
   const token = obj(r.palette)[part?.palette];
-  const base = (typeof lookup === 'function' ? lookup(token) : null) ?? [128, 128, 128];
+  const base = paletteColor(token, lookup) ?? [128, 128, 128];
   const tinted = shade(base, num(r.tint));
   const w = obj(r.wear);
-  const crasse = (typeof lookup === 'function' ? lookup(obj(r.palette).crasse) : null) ?? tinted;
+  const crasse = paletteColor(obj(r.palette).crasse, lookup) ?? tinted;
   let c = mix(tinted, crasse, part?.skin ? num(w.dirt) * 0.5 : num(w.dirt));
   if (averageTears && part?.cloth) {
-    const torn = (typeof lookup === 'function' ? lookup(obj(r.palette).dechirure) : null) ?? c;
+    const torn = paletteColor(obj(r.palette).dechirure, lookup) ?? c;
     c = mix(c, torn, num(w.tears));
   }
   return c;
+}
+
+// Lot 9g : couleur (0 à 255) d'une entrée de palette : jeton (« --perso-… ») lu par lookup, ou couleur dérivée de deux jetons existants
+// { jeton, vers (jeton, facultatif), part (0 à 1 : part de `vers`), ombre (-1 à 1 : assombrit ou éclaircit) } : aucune couleur en dur,
+// aucun jeton nouveau. Entrée invalide ou jeton inconnu : null.
+const TOKEN = /^--[a-z0-9-]{1,40}$/;
+export function paletteColor(entry, lookup) {
+  if (typeof lookup !== 'function') return null;
+  if (typeof entry === 'string') return lookup(entry) ?? null;
+  const e = obj(entry);
+  if (!TOKEN.test(e.jeton ?? '')) return null;
+  const a = lookup(e.jeton);
+  if (!a) return null;
+  const b = TOKEN.test(e.vers ?? '') ? lookup(e.vers) : null;
+  const m = b ? mix(a, b, clamp(num(e.part), 0, 1)) : a;
+  return shade(m, clamp(num(e.ombre), -1, 1));
 }
 
 // « Mes choix » : une ligne par personnage, `cle=valeur` séparés par « ; », plus une ligne `sang=…`. Entrées hostiles : ignorées.
@@ -132,4 +148,148 @@ export function parseChoices(text) {
     else Object.assign(out.extra, entry);
   }
   return out;
+}
+
+// --- Lot 9g : variantes d'époque (apparence seulement) ----------------------------------------------------------------------------------
+// Une variante d'époque = variante d'origine du type (riche : niveau « complet » ; A : niveau « simple ») dont on garde tout ce qui règle le
+// gabarit et l'animation (squelette, joints, scale, posture, style, sole, contacts, shadow, anchors, macros), plus une recette de
+// data/game/persos-epoque.json : palette (jetons ou couleurs nommées dérivées de jetons), pièces de base modifiées ou retirées, tenues
+// (palette et groupes de pièces portées, pièces de base retirées ou modifiées pour une tenue). Pur : arguments jamais modifiés.
+export const NIVEAUX_EPOQUE = ['complet', 'simple'];
+export const SUFFIXE_SIMPLE = '-simple';
+const GARDES = ['kind', 'skeleton', 'style', 'scale', 'sole', 'joints', 'posture', 'contacts', 'shadow', 'anchors', 'macros'];
+// Pièce de référence (variante riche du marcheur) de chaque ancrage : les pièces portées suivent la taille de la pièce du type.
+const SUIT = {
+  head: { part: 'head', ref: { rx: 4.6, ry: 5, rz: 4.8 }, k: (d, r) => [d.rx / r.rx, d.ry / r.ry, d.rz / r.rz] },
+  chest: { part: 'chest', ref: { sx: 1.85, sz: 1 }, k: (d, r) => [num(d.sx, 1) / r.sx, 1, num(d.sz, 1) / r.sz] },
+  belly: { part: 'belly', ref: { sx: 1.55, sz: 0.92 }, k: (d, r) => [num(d.sx, 1) / r.sx, 1, num(d.sz, 1) / r.sz] },
+  thigh: { part: 'thighL', ref: { r: 3.3 }, k: (d, r) => [d.r / r.r, 1, d.r / r.r] },
+  shin: { part: 'shinL', ref: { r: 2.7 }, k: (d, r) => [d.r / r.r, 1, d.r / r.r] },
+  upper: { part: 'upperL', ref: { r: 2.5 }, k: (d, r) => [d.r / r.r, 1, d.r / r.r] },
+  fore: { part: 'foreL', ref: { r: 2.1 }, k: (d, r) => [d.r / r.r, 1, d.r / r.r] },
+};
+const r3 = (v) => Math.round(v * 1000) / 1000;
+function scaleDims(kind, d, [kx, ky, kz]) {
+  const o = { ...d };
+  const m = (key, k) => { if (isNum(o[key])) o[key] = r3(o[key] * k); };
+  if (kind === 'box' || kind === 'wedge') { m('w', kx); m('h', ky); m('d', kz); }
+  else if (kind === 'sphere') { m('rx', kx); m('ry', ky); m('rz', kz); }
+  else if (kind === 'taper') { m('r0', kx); m('r1', kx); m('h', ky); if (isNum(o.sz) || kz !== kx) o.sz = r3(num(o.sz, 1) * (kz / kx)); }
+  else if (kind === 'capsule') { m('r', kx); m('h', ky); if (isNum(o.sz) || kz !== kx) o.sz = r3(num(o.sz, 1) * (kz / kx)); }
+  else if (kind === 'quad') { m('w', kx); m('h', ky); }
+  return o;
+}
+// Tessellation du niveau simple (celle des variantes A).
+function simplerDims(kind, d) {
+  const o = { ...d };
+  if (kind === 'capsule') { o.radial = Math.min(num(o.radial, 8), 6); o.caps = 1; }
+  if (kind === 'sphere') { o.w = Math.min(num(o.w, 8), 6); o.h = Math.min(num(o.h, 6), 4); }
+  if (kind === 'taper') o.sides = Math.min(num(o.sides, 6), 6);
+  return o;
+}
+const merge = (part, modif) => {
+  const m = obj(modif);
+  return { ...part, ...m, dims: { ...obj(part.dims), ...obj(m.dims) } };
+};
+// Entrée de palette d'une recette : nom de couleur dérivée (couleurs) ou jeton.
+const colorOf = (couleurs, v) => (typeof v === 'string' && !v.startsWith('--') && couleurs[v] ? { ...couleurs[v] } : v);
+
+// slot : emplacement de characters-v2.json ; recette : une entrée de persos-epoque.json → variantes ; data : { couleurs, pieces } ;
+// niveau : 'complet' | 'simple'. Renvoie la variante (id de la recette ; niveau simple : id + SUFFIXE_SIMPLE), ou null.
+export function buildEpochVariant(slot, recette, data, niveau = 'complet') {
+  const s = obj(slot);
+  const r = obj(recette);
+  const d = obj(data);
+  const variants = Array.isArray(s.variants) ? s.variants : [];
+  const simple = niveau === 'simple';
+  const base = variants.find((v) => v.id === (simple ? 'A' : 'riche')) ?? variants.find((v) => v.id === 'A');
+  if (!base || typeof r.id !== 'string') return null;
+  const couleurs = obj(d.couleurs);
+  const pieces = obj(d.pieces);
+  const tenues = Array.isArray(r.tenues) && r.tenues.length ? r.tenues : [{ id: 'unique', label: 'unique' }];
+  const all = tenues.map((_, i) => i);
+  const baseOf = Object.fromEntries((base.parts ?? []).map((p) => [p.id, p]));
+  const lvl = (p) => (simple ? { ...p, dims: simplerDims(p.kind, obj(p.dims)) } : p);
+  const out = [];
+  // retireSimple : pièces d'origine retirées au niveau simple seulement (cou caché, lambeaux) pour tenir le budget de la variante A.
+  const retire = new Set([...(Array.isArray(obj(r.base).retire) ? r.base.retire : []), ...(simple && Array.isArray(obj(r.base).retireSimple) ? r.base.retireSimple : [])]);
+  const modifs = obj(obj(r.base).modifs);
+  for (const p of base.parts ?? []) {
+    if (retire.has(p.id)) continue;
+    let part = modifs[p.id] ? merge(p, modifs[p.id]) : p;
+    if (simple && modifs[p.id]?.dims) part = lvl(part);
+    // Tenues qui retirent ou modifient cette pièce : copies par groupe de tenues.
+    const groups = new Map();
+    const gone = [];
+    tenues.forEach((t, i) => {
+      if (Array.isArray(t.retire) && t.retire.includes(p.id)) gone.push(i);
+      else if (obj(t.modifs)[p.id]) {
+        const key = JSON.stringify(t.modifs[p.id]);
+        groups.set(key, [...(groups.get(key) ?? []), i]);
+      }
+    });
+    const special = new Set([...gone, ...[...groups.values()].flat()]);
+    const keep = all.filter((i) => !special.has(i) && (!Array.isArray(p.outfits) || p.outfits.includes(i)));
+    if (keep.length) out.push(keep.length === all.length && !Array.isArray(p.outfits) ? part : { ...part, outfits: keep });
+    for (const [key, idx] of groups) out.push({ ...(simple ? lvl(merge(part, JSON.parse(key))) : merge(part, JSON.parse(key))), outfits: idx });
+  }
+  // Pièces portées : groupes nommés, ancrés sur une pièce du type (taille suivie), tenues qui les portent.
+  const use = new Map();
+  const porte = (name, i) => use.set(name, [...(use.get(name) ?? []), i]);
+  (Array.isArray(r.pieces) ? r.pieces : []).forEach((n) => all.forEach((i) => porte(n, i)));
+  tenues.forEach((t, i) => (Array.isArray(t.pieces) ? t.pieces : []).forEach((n) => porte(n, i)));
+  for (const [name, idx] of use) {
+    const g = obj(pieces[name]);
+    const sv = SUIT[g.suit];
+    const ref = sv ? baseOf[sv.part] : null;
+    const k = sv && ref ? sv.k(obj(ref.dims), sv.ref) : [1, 1, 1];
+    const pick = [...new Set(idx)].sort((a, b) => a - b);
+    for (const raw of Array.isArray(g.parts) ? g.parts : []) {
+      if (simple && raw.simple === false) continue;
+      const p = Object.fromEntries(Object.entries(raw).filter(([key]) => key !== 'simple'));
+      const dims = scaleDims(p.kind, obj(p.dims), k);
+      const offset = Array.isArray(p.offset) ? p.offset.map((v, j) => r3(v * k[j])) : [0, 0, 0];
+      const part = { rotation: [0, 0, 0], ...p, id: `${p.id}`, dims: simple ? simplerDims(p.kind, dims) : dims, offset, widen: p.widen ?? false };
+      out.push(pick.length === all.length ? part : { ...part, outfits: pick });
+    }
+  }
+  const palette = { ...obj(base.palette), ...Object.fromEntries(Object.entries(obj(r.palette)).map(([key, v]) => [key, colorOf(couleurs, v)])) };
+  const outfits = tenues.map((t) => ({ id: String(t.id), label: String(t.label ?? t.id), palette: Object.fromEntries(Object.entries(obj(t.palette)).map(([key, v]) => [key, colorOf(couleurs, v)])) }));
+  const kept = Object.fromEntries(GARDES.filter((key) => base[key] !== undefined).map((key) => [key, base[key]]));
+  return {
+    id: simple ? `${r.id}${SUFFIXE_SIMPLE}` : r.id,
+    label: `${String(r.label ?? r.id)}${simple ? ' (simple)' : ''}`,
+    intent: String(r.intent ?? ''),
+    ...kept,
+    parts: out,
+    palette,
+    outfits,
+    epoque: true,
+    niveau: simple ? 'simple' : 'complet',
+    base: base.id,
+    flags: simple ? { epoque: true } : { outOfBudget: true, epoque: true },
+  };
+}
+
+// Emplacements avec leurs variantes d'époque ajoutées (les deux niveaux) : characters-v2.json → slots, persos-epoque.json. Arguments intacts.
+export function slotsWithEpoch(slots, epoque) {
+  const e = obj(epoque);
+  const list = Array.isArray(e.variantes) ? e.variantes : [];
+  return (Array.isArray(slots) ? slots : []).map((s) => {
+    const extra = list.filter((r) => r?.slot === s.id).flatMap((r) => NIVEAUX_EPOQUE.map((n) => buildEpochVariant(s, r, e, n))).filter(Boolean);
+    return extra.length ? { ...s, variants: [...s.variants, ...extra] } : s;
+  });
+}
+
+// Fichier de choix (data/game/persos-epoque-choix.json) : { choix: { cle: id } } ; cle : personnage du menu (survivant, personnage-2) ou
+// type de zombie ; slotOf(cle) : emplacement (joueur pour les personnages). Id inconnu, absent ou fichier invalide : défaut (premier id
+// d'époque de l'emplacement pour la clé, sinon null). Renvoie { cle: id }.
+export function lireChoixEpoque(json, epoque, cles, slotOf = (c) => c) {
+  const choix = obj(obj(json).choix);
+  const list = Array.isArray(obj(epoque).variantes) ? epoque.variantes : [];
+  return Object.fromEntries((Array.isArray(cles) ? cles : []).map((cle) => {
+    const ids = list.filter((r) => r?.slot === slotOf(cle) && (!Array.isArray(r.pour) || r.pour.includes(cle))).map((r) => r.id);
+    const v = choix[cle];
+    return [cle, typeof v === 'string' && ids.includes(v) ? v : ids[0] ?? null];
+  }));
 }

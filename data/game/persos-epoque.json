@@ -1,0 +1,4216 @@
+{
+ "_provisoire": "Lot 9g (atelier, provisoire jusqu'au choix du propriétaire) : variantes d'époque (Seconde Guerre mondiale) des personnages, apparence seulement. Chaque variante = variante d'origine du type (riche au niveau complet, A au niveau simple : squelette, articulations, échelle, posture, contacts, ombre et ancres gardés) + cette recette, construite par js/core/persos-variants.js (buildEpochVariant). couleurs : dérivées de deux jetons existants de css/tokens.css (jeton, vers, part, ombre) ; aucune couleur en dur, aucun jeton nouveau. pieces : groupes de pièces portées, en unités de la variante riche du marcheur, qui suivent la taille de la pièce « suit » du type ; simple: false = absente au niveau simple. variantes : slot, id, pour (personnages du menu, joueur), palette, base (retire, modifs des pièces d'origine), pieces (toutes tenues), tenues (sous-variantes : palette, pieces, retire, modifs). Aucun insigne, aucun symbole politique, aucun démembrement. Choix : data/game/persos-epoque-choix.json ; fiche Docs/ref/personnages-epoque.md.",
+ "version": 1,
+ "couleurs": {
+  "feldgrau": {
+   "jeton": "--perso-tissu-kaki",
+   "vers": "--perso-tissu-os",
+   "part": 0.2
+  },
+  "feldgrau-vert": {
+   "jeton": "--perso-tissu-kaki",
+   "vers": "--perso-tissu-olive",
+   "part": 0.5
+  },
+  "feldgrau-boue": {
+   "jeton": "--perso-tissu-kaki",
+   "vers": "--perso-sac",
+   "part": 0.08
+  },
+  "capote": {
+   "jeton": "--perso-tissu-kaki",
+   "vers": "--perso-tissu-gris",
+   "part": 0.4
+  },
+  "capote-boue": {
+   "jeton": "--perso-tissu-kaki",
+   "vers": "--perso-sac",
+   "part": 0.25
+  },
+  "officier": {
+   "jeton": "--perso-tissu-kaki",
+   "vers": "--perso-tissu-os",
+   "part": 0.3
+  },
+  "steingrau": {
+   "jeton": "--perso-pantalon-gris",
+   "vers": "--perso-tissu-os",
+   "part": 0.35
+  },
+  "culotte": {
+   "jeton": "--perso-tissu-kaki",
+   "vers": "--perso-pantalon-gris",
+   "part": 0.6
+  },
+  "col-vert": {
+   "jeton": "--perso-tissu-olive",
+   "vers": "--perso-sombre",
+   "part": 0.3
+  },
+  "casque-gris": {
+   "jeton": "--perso-tissu-kaki",
+   "vers": "--perso-sombre",
+   "part": 0.08
+  },
+  "casque-vert": {
+   "jeton": "--perso-tissu-olive",
+   "vers": "--perso-sombre",
+   "part": 0.1
+  },
+  "casque-boue": {
+   "jeton": "--perso-sac",
+   "vers": "--perso-tissu-kaki",
+   "part": 0.3
+  },
+  "cuir-noir": {
+   "jeton": "--perso-cuir",
+   "vers": "--perso-sombre",
+   "part": 0.04
+  },
+  "equipement": {
+   "jeton": "--perso-cuir",
+   "vers": "--perso-tissu-kaki",
+   "part": 0.32
+  },
+  "cheveux": {
+   "jeton": "--perso-cuir",
+   "vers": "--perso-sac",
+   "part": 0.4
+  },
+  "toile-musette": {
+   "jeton": "--perso-sac",
+   "vers": "--perso-tissu-kaki",
+   "part": 0.5
+  },
+  "boite-gaz": {
+   "jeton": "--perso-tissu-kaki",
+   "vers": "--perso-sombre",
+   "part": 0.2
+  },
+  "cuir-havresac": {
+   "jeton": "--perso-cuir"
+  },
+  "hbt": {
+   "jeton": "--perso-tissu-olive",
+   "vers": "--perso-tissu-kaki",
+   "part": 0.4
+  },
+  "hbt-delave": {
+   "jeton": "--perso-tissu-olive",
+   "vers": "--perso-tissu-os",
+   "part": 0.3
+  },
+  "m41": {
+   "jeton": "--perso-tissu-sable"
+  },
+  "od": {
+   "jeton": "--perso-tissu-olive",
+   "vers": "--perso-cuir",
+   "part": 0.1
+  },
+  "guetre": {
+   "jeton": "--perso-pantalon-toile"
+  },
+  "casque-m1": {
+   "jeton": "--perso-tissu-olive",
+   "vers": "--perso-cuir",
+   "part": 0.3,
+   "ombre": -0.06
+  },
+  "sangle-us": {
+   "jeton": "--perso-pantalon-toile",
+   "vers": "--perso-sac",
+   "part": 0.4
+  },
+  "brodequin": {
+   "jeton": "--perso-cuir",
+   "vers": "--perso-tissu-sable",
+   "part": 0.3
+  },
+  "m42": {
+   "jeton": "--perso-tissu-sable",
+   "vers": "--perso-tissu-os",
+   "part": 0.15
+  },
+  "botte-saut": {
+   "jeton": "--perso-cuir",
+   "vers": "--perso-tissu-sable",
+   "part": 0.65
+  },
+  "m42-olive": {
+   "jeton": "--perso-tissu-olive",
+   "vers": "--perso-tissu-os",
+   "part": 0.15
+  },
+  "p41": {
+   "jeton": "--perso-tissu-olive",
+   "vers": "--perso-tissu-kaki",
+   "part": 0.15,
+   "ombre": -0.04
+  },
+  "camo": {
+   "jeton": "--perso-tissu-olive",
+   "vers": "--perso-tissu-sable",
+   "part": 0.45
+  },
+  "filet": {
+   "jeton": "--perso-tissu-olive",
+   "vers": "--perso-cuir",
+   "part": 0.25
+  },
+  "poche-us": {
+   "jeton": "--perso-tissu-olive",
+   "vers": "--perso-sac",
+   "part": 0.4
+  }
+ },
+ "pieces": {
+  "casque-m35": {
+   "suit": "head",
+   "parts": [
+    {
+     "id": "m35Dome",
+     "joint": "head",
+     "kind": "sphere",
+     "dims": {
+      "rx": 5.3,
+      "ry": 3.6,
+      "rz": 5.6,
+      "w": 10,
+      "h": 6
+     },
+     "offset": [
+      0,
+      6.6,
+      -0.1
+     ],
+     "palette": "casque"
+    },
+    {
+     "id": "m35Jupe",
+     "joint": "head",
+     "kind": "taper",
+     "dims": {
+      "r0": 6.5,
+      "r1": 5.5,
+      "h": 2.2,
+      "sides": 8
+     },
+     "offset": [
+      0,
+      5.3,
+      -0.7
+     ],
+     "palette": "casque",
+     "rotation": [
+      0.16,
+      0,
+      0
+     ]
+    }
+   ]
+  },
+  "casque-m35-travers": {
+   "suit": "head",
+   "parts": [
+    {
+     "id": "m35Dome",
+     "joint": "head",
+     "kind": "sphere",
+     "dims": {
+      "rx": 5.3,
+      "ry": 3.5,
+      "rz": 5.6,
+      "w": 10,
+      "h": 6
+     },
+     "offset": [
+      0.4,
+      6.4,
+      -0.3
+     ],
+     "palette": "casque",
+     "rotation": [
+      -0.14,
+      0,
+      0.2
+     ]
+    },
+    {
+     "id": "m35Jupe",
+     "joint": "head",
+     "kind": "taper",
+     "dims": {
+      "r0": 6.5,
+      "r1": 5.5,
+      "h": 2.2,
+      "sides": 8
+     },
+     "offset": [
+      0.8,
+      5.1,
+      -0.9
+     ],
+     "palette": "casque",
+     "rotation": [
+      -0.02,
+      0,
+      0.2
+     ]
+    }
+   ]
+  },
+  "casque-m1": {
+   "suit": "head",
+   "parts": [
+    {
+     "id": "m1Dome",
+     "joint": "head",
+     "kind": "sphere",
+     "dims": {
+      "rx": 5.4,
+      "ry": 3.7,
+      "rz": 5.7,
+      "w": 10,
+      "h": 6
+     },
+     "offset": [
+      0,
+      6.4,
+      0.1
+     ],
+     "palette": "casque"
+    },
+    {
+     "id": "m1Bord",
+     "joint": "head",
+     "kind": "taper",
+     "dims": {
+      "r0": 6.1,
+      "r1": 5.7,
+      "h": 0.8,
+      "sides": 8
+     },
+     "offset": [
+      0,
+      5.5,
+      0.1
+     ],
+     "palette": "casque"
+    },
+    {
+     "id": "m1JugulaireG",
+     "joint": "head",
+     "kind": "box",
+     "dims": {
+      "w": 0.5,
+      "h": 4,
+      "d": 0.5
+     },
+     "offset": [
+      4.7,
+      3.4,
+      0.6
+     ],
+     "palette": "equipement",
+     "simple": false
+    },
+    {
+     "id": "m1JugulaireD",
+     "joint": "head",
+     "kind": "box",
+     "dims": {
+      "w": 0.5,
+      "h": 4,
+      "d": 0.5
+     },
+     "offset": [
+      -4.7,
+      3.4,
+      0.6
+     ],
+     "palette": "equipement",
+     "simple": false
+    }
+   ]
+  },
+  "casque-m1-filet": {
+   "suit": "head",
+   "parts": [
+    {
+     "id": "m1Dome",
+     "joint": "head",
+     "kind": "sphere",
+     "dims": {
+      "rx": 5.5,
+      "ry": 3.8,
+      "rz": 5.8,
+      "w": 10,
+      "h": 6
+     },
+     "offset": [
+      0,
+      6.4,
+      0.1
+     ],
+     "palette": "filet"
+    },
+    {
+     "id": "m1Bord",
+     "joint": "head",
+     "kind": "taper",
+     "dims": {
+      "r0": 6.2,
+      "r1": 5.8,
+      "h": 0.9,
+      "sides": 8
+     },
+     "offset": [
+      0,
+      5.5,
+      0.1
+     ],
+     "palette": "filet"
+    },
+    {
+     "id": "m1JugulaireG",
+     "joint": "head",
+     "kind": "box",
+     "dims": {
+      "w": 0.5,
+      "h": 4,
+      "d": 0.5
+     },
+     "offset": [
+      4.7,
+      3.4,
+      0.6
+     ],
+     "palette": "equipement",
+     "simple": false
+    }
+   ]
+  },
+  "casque-m1-camo": {
+   "suit": "head",
+   "parts": [
+    {
+     "id": "m1Dome",
+     "joint": "head",
+     "kind": "sphere",
+     "dims": {
+      "rx": 5.5,
+      "ry": 3.8,
+      "rz": 5.8,
+      "w": 10,
+      "h": 6
+     },
+     "offset": [
+      0,
+      6.4,
+      0.1
+     ],
+     "palette": "camo"
+    },
+    {
+     "id": "m1Bord",
+     "joint": "head",
+     "kind": "taper",
+     "dims": {
+      "r0": 6.2,
+      "r1": 5.8,
+      "h": 0.9,
+      "sides": 8
+     },
+     "offset": [
+      0,
+      5.5,
+      0.1
+     ],
+     "palette": "camo"
+    }
+   ]
+  },
+  "casque-m1-travers": {
+   "suit": "head",
+   "parts": [
+    {
+     "id": "m1Dome",
+     "joint": "head",
+     "kind": "sphere",
+     "dims": {
+      "rx": 5.4,
+      "ry": 3.7,
+      "rz": 5.7,
+      "w": 10,
+      "h": 6
+     },
+     "offset": [
+      -0.4,
+      6.3,
+      -0.5
+     ],
+     "palette": "casque",
+     "rotation": [
+      -0.2,
+      0,
+      -0.1
+     ]
+    },
+    {
+     "id": "m1Bord",
+     "joint": "head",
+     "kind": "taper",
+     "dims": {
+      "r0": 6.1,
+      "r1": 5.7,
+      "h": 0.8,
+      "sides": 8
+     },
+     "offset": [
+      -0.6,
+      5.5,
+      -0.6
+     ],
+     "palette": "casque",
+     "rotation": [
+      -0.22,
+      0,
+      -0.12
+     ]
+    },
+    {
+     "id": "m1JugulaireG",
+     "joint": "head",
+     "kind": "box",
+     "dims": {
+      "w": 0.5,
+      "h": 4.6,
+      "d": 0.5
+     },
+     "offset": [
+      4.6,
+      3,
+      1
+     ],
+     "palette": "equipement",
+     "rotation": [
+      0.3,
+      0,
+      0
+     ],
+     "simple": false
+    }
+   ]
+  },
+  "calot": {
+   "suit": "head",
+   "parts": [
+    {
+     "id": "calot",
+     "joint": "head",
+     "kind": "box",
+     "dims": {
+      "w": 5.4,
+      "h": 2.6,
+      "d": 9.4
+     },
+     "offset": [
+      0.4,
+      8.7,
+      -0.2
+     ],
+     "palette": "casquette",
+     "rotation": [
+      0,
+      0,
+      0.16
+     ]
+    },
+    {
+     "id": "cheveuxCalot",
+     "joint": "head",
+     "kind": "sphere",
+     "dims": {
+      "rx": 4.7,
+      "ry": 2.8,
+      "rz": 4.9,
+      "w": 8,
+      "h": 5
+     },
+     "offset": [
+      0,
+      6.6,
+      -0.5
+     ],
+     "palette": "cheveux"
+    }
+   ]
+  },
+  "casquette-m43": {
+   "suit": "head",
+   "parts": [
+    {
+     "id": "m43",
+     "joint": "head",
+     "kind": "sphere",
+     "dims": {
+      "rx": 4.9,
+      "ry": 2.5,
+      "rz": 5.1,
+      "w": 10,
+      "h": 6
+     },
+     "offset": [
+      0,
+      7.6,
+      -0.2
+     ],
+     "palette": "casquette"
+    },
+    {
+     "id": "m43Visiere",
+     "joint": "head",
+     "kind": "box",
+     "dims": {
+      "w": 6,
+      "h": 0.5,
+      "d": 3
+     },
+     "offset": [
+      0,
+      7,
+      5.1
+     ],
+     "palette": "visiere",
+     "rotation": [
+      -0.15,
+      0,
+      0
+     ]
+    }
+   ]
+  },
+  "casquette-officier": {
+   "suit": "head",
+   "parts": [
+    {
+     "id": "offPlateau",
+     "joint": "head",
+     "kind": "sphere",
+     "dims": {
+      "rx": 6.1,
+      "ry": 1.2,
+      "rz": 6.4,
+      "w": 10,
+      "h": 5
+     },
+     "offset": [
+      0,
+      9,
+      0.3
+     ],
+     "palette": "casquette"
+    },
+    {
+     "id": "offBandeau",
+     "joint": "head",
+     "kind": "taper",
+     "dims": {
+      "r0": 4.95,
+      "r1": 5.05,
+      "h": 2,
+      "sides": 8
+     },
+     "offset": [
+      0,
+      7.5,
+      0.2
+     ],
+     "palette": "col",
+     "simple": false
+    },
+    {
+     "id": "offVisiere",
+     "joint": "head",
+     "kind": "box",
+     "dims": {
+      "w": 6.4,
+      "h": 0.5,
+      "d": 3.2
+     },
+     "offset": [
+      0,
+      7,
+      5.4
+     ],
+     "palette": "visiere",
+     "rotation": [
+      -0.25,
+      0,
+      0
+     ]
+    }
+   ]
+  },
+  "cheveux": {
+   "suit": "head",
+   "parts": [
+    {
+     "id": "cheveux",
+     "joint": "head",
+     "kind": "sphere",
+     "dims": {
+      "rx": 4.85,
+      "ry": 3.4,
+      "rz": 5.05,
+      "w": 10,
+      "h": 7
+     },
+     "offset": [
+      0,
+      6.5,
+      -0.4
+     ],
+     "palette": "cheveux"
+    }
+   ]
+  },
+  "ceinturon": {
+   "suit": "belly",
+   "parts": [
+    {
+     "id": "ceinturon",
+     "joint": "spine",
+     "kind": "taper",
+     "dims": {
+      "r0": 6.1,
+      "r1": 6.1,
+      "h": 1.8,
+      "sides": 8,
+      "sx": 1.55,
+      "sz": 0.95
+     },
+     "offset": [
+      0,
+      0.8,
+      0
+     ],
+     "palette": "equipement"
+    }
+   ]
+  },
+  "cartouchieres": {
+   "suit": "belly",
+   "parts": [
+    {
+     "id": "cartoucheG",
+     "joint": "spine",
+     "kind": "box",
+     "dims": {
+      "w": 4.6,
+      "h": 2.6,
+      "d": 1.8
+     },
+     "offset": [
+      4.2,
+      1.7,
+      6.1
+     ],
+     "palette": "equipement",
+     "simple": false
+    },
+    {
+     "id": "cartoucheD",
+     "joint": "spine",
+     "kind": "box",
+     "dims": {
+      "w": 4.6,
+      "h": 2.6,
+      "d": 1.8
+     },
+     "offset": [
+      -4.2,
+      1.7,
+      6.1
+     ],
+     "palette": "equipement",
+     "simple": false
+    }
+   ]
+  },
+  "bretelles-y": {
+   "suit": "chest",
+   "parts": [
+    {
+     "id": "yAvantG",
+     "joint": "chest",
+     "kind": "box",
+     "dims": {
+      "w": 1.4,
+      "h": 10,
+      "d": 0.6
+     },
+     "offset": [
+      4.4,
+      4.6,
+      5.5
+     ],
+     "palette": "equipement",
+     "rotation": [
+      0,
+      0,
+      -0.18
+     ],
+     "simple": false
+    },
+    {
+     "id": "yAvantD",
+     "joint": "chest",
+     "kind": "box",
+     "dims": {
+      "w": 1.4,
+      "h": 10,
+      "d": 0.6
+     },
+     "offset": [
+      -4.4,
+      4.6,
+      5.5
+     ],
+     "palette": "equipement",
+     "rotation": [
+      0,
+      0,
+      0.18
+     ],
+     "simple": false
+    },
+    {
+     "id": "yEpauleG",
+     "joint": "chest",
+     "kind": "box",
+     "dims": {
+      "w": 1.6,
+      "h": 0.6,
+      "d": 10.4
+     },
+     "offset": [
+      5.4,
+      10.6,
+      0
+     ],
+     "palette": "equipement"
+    },
+    {
+     "id": "yEpauleD",
+     "joint": "chest",
+     "kind": "box",
+     "dims": {
+      "w": 1.6,
+      "h": 0.6,
+      "d": 10.4
+     },
+     "offset": [
+      -5.4,
+      10.6,
+      0
+     ],
+     "palette": "equipement"
+    },
+    {
+     "id": "yDos",
+     "joint": "chest",
+     "kind": "box",
+     "dims": {
+      "w": 1.6,
+      "h": 9.5,
+      "d": 0.6
+     },
+     "offset": [
+      0,
+      5.4,
+      -5.5
+     ],
+     "palette": "equipement",
+     "simple": false
+    }
+   ]
+  },
+  "bretelle-seule": {
+   "suit": "chest",
+   "parts": [
+    {
+     "id": "yAvantG",
+     "joint": "chest",
+     "kind": "box",
+     "dims": {
+      "w": 1.4,
+      "h": 10,
+      "d": 0.6
+     },
+     "offset": [
+      4.4,
+      4.6,
+      5.5
+     ],
+     "palette": "equipement",
+     "rotation": [
+      0,
+      0,
+      -0.18
+     ]
+    },
+    {
+     "id": "yEpauleG",
+     "joint": "chest",
+     "kind": "box",
+     "dims": {
+      "w": 1.6,
+      "h": 0.6,
+      "d": 10.4
+     },
+     "offset": [
+      5.4,
+      10.6,
+      0
+     ],
+     "palette": "equipement"
+    }
+   ]
+  },
+  "gourde": {
+   "suit": "belly",
+   "parts": [
+    {
+     "id": "gourde",
+     "joint": "spine",
+     "kind": "sphere",
+     "dims": {
+      "rx": 1.7,
+      "ry": 2.4,
+      "rz": 1.3,
+      "w": 6,
+      "h": 4
+     },
+     "offset": [
+      -8.4,
+      0.2,
+      -3.2
+     ],
+     "palette": "cuir",
+     "simple": false
+    }
+   ]
+  },
+  "musette": {
+   "suit": "belly",
+   "parts": [
+    {
+     "id": "musette",
+     "joint": "spine",
+     "kind": "box",
+     "dims": {
+      "w": 6,
+      "h": 4.6,
+      "d": 2.4
+     },
+     "offset": [
+      -4.6,
+      0.2,
+      -6.1
+     ],
+     "palette": "sac",
+     "simple": false
+    }
+   ]
+  },
+  "gamelle": {
+   "suit": "belly",
+   "parts": [
+    {
+     "id": "gamelle",
+     "joint": "spine",
+     "kind": "sphere",
+     "dims": {
+      "rx": 2,
+      "ry": 2.2,
+      "rz": 1.2,
+      "w": 6,
+      "h": 3
+     },
+     "offset": [
+      -4.6,
+      3,
+      -7.4
+     ],
+     "palette": "casque",
+     "simple": false
+    }
+   ]
+  },
+  "pelle": {
+   "suit": "belly",
+   "parts": [
+    {
+     "id": "pelle",
+     "joint": "spine",
+     "kind": "box",
+     "dims": {
+      "w": 2.4,
+      "h": 6.2,
+      "d": 1.1
+     },
+     "offset": [
+      6,
+      -0.9,
+      -6
+     ],
+     "palette": "cuir",
+     "rotation": [
+      0.12,
+      0,
+      0
+     ],
+     "simple": false
+    }
+   ]
+  },
+  "boite-gaz": {
+   "suit": "belly",
+   "parts": [
+    {
+     "id": "boiteGaz",
+     "joint": "spine",
+     "kind": "capsule",
+     "dims": {
+      "r": 1.9,
+      "h": 8.6,
+      "caps": 1,
+      "radial": 6
+     },
+     "offset": [
+      3,
+      1.4,
+      -7
+     ],
+     "palette": "metal",
+     "rotation": [
+      0,
+      0,
+      0.22
+     ],
+     "simple": false
+    }
+   ]
+  },
+  "jumelles": {
+   "suit": "chest",
+   "parts": [
+    {
+     "id": "jumelles",
+     "joint": "chest",
+     "kind": "box",
+     "dims": {
+      "w": 4,
+      "h": 2.2,
+      "d": 1.6
+     },
+     "offset": [
+      0,
+      3.4,
+      6.2
+     ],
+     "palette": "sombre"
+    }
+   ]
+  },
+  "porte-cartes": {
+   "suit": "belly",
+   "parts": [
+    {
+     "id": "porteCartes",
+     "joint": "spine",
+     "kind": "box",
+     "dims": {
+      "w": 1,
+      "h": 5,
+      "d": 4
+     },
+     "offset": [
+      9,
+      0.4,
+      1.6
+     ],
+     "palette": "cuir",
+     "simple": false
+    }
+   ]
+  },
+  "etui": {
+   "suit": "belly",
+   "parts": [
+    {
+     "id": "etui",
+     "joint": "spine",
+     "kind": "box",
+     "dims": {
+      "w": 1.7,
+      "h": 3.4,
+      "d": 2.8
+     },
+     "offset": [
+      7.6,
+      0.4,
+      4
+     ],
+     "palette": "equipement"
+    }
+   ]
+  },
+  "baudrier": {
+   "suit": "chest",
+   "parts": [
+    {
+     "id": "baudrierAvant",
+     "joint": "chest",
+     "kind": "box",
+     "dims": {
+      "w": 1.3,
+      "h": 13.5,
+      "d": 0.6
+     },
+     "offset": [
+      0.4,
+      4.4,
+      5.5
+     ],
+     "palette": "equipement",
+     "rotation": [
+      0,
+      0,
+      0.62
+     ]
+    },
+    {
+     "id": "baudrierEpaule",
+     "joint": "chest",
+     "kind": "box",
+     "dims": {
+      "w": 1.4,
+      "h": 0.6,
+      "d": 10.4
+     },
+     "offset": [
+      -5.4,
+      10.6,
+      0
+     ],
+     "palette": "equipement"
+    },
+    {
+     "id": "baudrierDos",
+     "joint": "chest",
+     "kind": "box",
+     "dims": {
+      "w": 1.3,
+      "h": 13.5,
+      "d": 0.6
+     },
+     "offset": [
+      0.4,
+      4.4,
+      -5.5
+     ],
+     "palette": "equipement",
+     "rotation": [
+      0,
+      0,
+      -0.62
+     ],
+     "simple": false
+    }
+   ]
+  },
+  "havresac": {
+   "suit": "chest",
+   "parts": [
+    {
+     "id": "havresac",
+     "joint": "chest",
+     "kind": "box",
+     "dims": {
+      "w": 10,
+      "h": 8.5,
+      "d": 4
+     },
+     "offset": [
+      0,
+      5.2,
+      -7.2
+     ],
+     "palette": "sac"
+    },
+    {
+     "id": "havresacRabat",
+     "joint": "chest",
+     "kind": "box",
+     "dims": {
+      "w": 10.4,
+      "h": 1.2,
+      "d": 4.4
+     },
+     "offset": [
+      0,
+      9.6,
+      -7.2
+     ],
+     "palette": "cuir",
+     "simple": false
+    }
+   ]
+  },
+  "capote": {
+   "suit": "thigh",
+   "parts": [
+    {
+     "id": "panL",
+     "joint": "hipL",
+     "kind": "box",
+     "dims": {
+      "w": 7.2,
+      "h": 12.5,
+      "d": 7.4
+     },
+     "offset": [
+      0.7,
+      -5.8,
+      0.4
+     ],
+     "palette": "laine",
+     "mirror": true
+    },
+    {
+     "id": "panDos",
+     "joint": "pelvis",
+     "kind": "box",
+     "dims": {
+      "w": 17,
+      "h": 12,
+      "d": 3
+     },
+     "offset": [
+      0,
+      -5.6,
+      -4.4
+     ],
+     "palette": "laine",
+     "rotation": [
+      -0.12,
+      0,
+      0
+     ],
+     "simple": false
+    }
+   ]
+  },
+  "capote-ouverte": {
+   "suit": "thigh",
+   "parts": [
+    {
+     "id": "panL",
+     "joint": "hipL",
+     "kind": "box",
+     "dims": {
+      "w": 6.4,
+      "h": 12.5,
+      "d": 6.6
+     },
+     "offset": [
+      1.4,
+      -5.8,
+      -0.4
+     ],
+     "palette": "laine",
+     "mirror": true
+    },
+    {
+     "id": "panDos",
+     "joint": "pelvis",
+     "kind": "box",
+     "dims": {
+      "w": 17,
+      "h": 12,
+      "d": 3
+     },
+     "offset": [
+      0,
+      -5.6,
+      -4.4
+     ],
+     "palette": "laine",
+     "rotation": [
+      -0.18,
+      0,
+      0
+     ],
+     "simple": false
+    },
+    {
+     "id": "lambeauPan",
+     "joint": "pelvis",
+     "kind": "quad",
+     "dims": {
+      "w": 5,
+      "h": 5
+     },
+     "offset": [
+      3,
+      -11,
+      -6.2
+     ],
+     "rotation": [
+      -0.15,
+      3.141592653589793,
+      0.1
+     ],
+     "palette": "laine",
+     "cloth": true,
+     "simple": false
+    }
+   ]
+  },
+  "lambeaux": {
+   "suit": "chest",
+   "parts": [
+    {
+     "id": "lambeauDos",
+     "joint": "chest",
+     "kind": "quad",
+     "dims": {
+      "w": 5,
+      "h": 6
+     },
+     "offset": [
+      2.5,
+      1.2,
+      -5.4
+     ],
+     "rotation": [
+      -0.15,
+      3.141592653589793,
+      0.1
+     ],
+     "palette": "tenue",
+     "cloth": true,
+     "simple": false
+    },
+    {
+     "id": "lambeauCote",
+     "joint": "chest",
+     "kind": "quad",
+     "dims": {
+      "w": 4,
+      "h": 5
+     },
+     "offset": [
+      9.4,
+      2.5,
+      1
+     ],
+     "rotation": [
+      0,
+      1.5707963267948966,
+      0.1
+     ],
+     "palette": "tenue",
+     "cloth": true,
+     "simple": false
+    },
+    {
+     "id": "lambeauManche",
+     "joint": "elbowL",
+     "kind": "quad",
+     "dims": {
+      "w": 3,
+      "h": 4
+     },
+     "offset": [
+      0,
+      -2.5,
+      2.2
+     ],
+     "rotation": [
+      0.25,
+      0,
+      0
+     ],
+     "palette": "tenue",
+     "cloth": true,
+     "simple": false
+    }
+   ]
+  },
+  "ceinturon-us": {
+   "suit": "belly",
+   "parts": [
+    {
+     "id": "ceinturonUs",
+     "joint": "spine",
+     "kind": "taper",
+     "dims": {
+      "r0": 6.3,
+      "r1": 6.3,
+      "h": 2.8,
+      "sides": 8,
+      "sx": 1.55,
+      "sz": 0.97
+     },
+     "offset": [
+      0,
+      0.9,
+      0
+     ],
+     "palette": "equipement"
+    },
+    {
+     "id": "pocheUsG",
+     "joint": "spine",
+     "kind": "box",
+     "dims": {
+      "w": 5.4,
+      "h": 2.8,
+      "d": 1.6
+     },
+     "offset": [
+      4.4,
+      1,
+      6.4
+     ],
+     "palette": "equipement"
+    },
+    {
+     "id": "pocheUsD",
+     "joint": "spine",
+     "kind": "box",
+     "dims": {
+      "w": 5.4,
+      "h": 2.8,
+      "d": 1.6
+     },
+     "offset": [
+      -4.4,
+      1,
+      6.4
+     ],
+     "palette": "equipement"
+    }
+   ]
+  },
+  "bretelles-us": {
+   "suit": "chest",
+   "parts": [
+    {
+     "id": "susAvantG",
+     "joint": "chest",
+     "kind": "box",
+     "dims": {
+      "w": 1.3,
+      "h": 10,
+      "d": 0.6
+     },
+     "offset": [
+      4.2,
+      4.6,
+      5.5
+     ],
+     "palette": "equipement",
+     "simple": false
+    },
+    {
+     "id": "susAvantD",
+     "joint": "chest",
+     "kind": "box",
+     "dims": {
+      "w": 1.3,
+      "h": 10,
+      "d": 0.6
+     },
+     "offset": [
+      -4.2,
+      4.6,
+      5.5
+     ],
+     "palette": "equipement",
+     "simple": false
+    },
+    {
+     "id": "susEpauleG",
+     "joint": "chest",
+     "kind": "box",
+     "dims": {
+      "w": 1.5,
+      "h": 0.6,
+      "d": 10.4
+     },
+     "offset": [
+      5,
+      10.6,
+      0
+     ],
+     "palette": "equipement"
+    },
+    {
+     "id": "susEpauleD",
+     "joint": "chest",
+     "kind": "box",
+     "dims": {
+      "w": 1.5,
+      "h": 0.6,
+      "d": 10.4
+     },
+     "offset": [
+      -5,
+      10.6,
+      0
+     ],
+     "palette": "equipement"
+    }
+   ]
+  },
+  "gourde-us": {
+   "suit": "belly",
+   "parts": [
+    {
+     "id": "gourdeUs",
+     "joint": "spine",
+     "kind": "sphere",
+     "dims": {
+      "rx": 2,
+      "ry": 2.6,
+      "rz": 1.4,
+      "w": 6,
+      "h": 4
+     },
+     "offset": [
+      -7.4,
+      -0.6,
+      -3.6
+     ],
+     "palette": "poche"
+    }
+   ]
+  },
+  "musette-m1928": {
+   "suit": "chest",
+   "parts": [
+    {
+     "id": "musetteDos",
+     "joint": "chest",
+     "kind": "box",
+     "dims": {
+      "w": 8.6,
+      "h": 11,
+      "d": 3.4
+     },
+     "offset": [
+      0,
+      4.6,
+      -6.9
+     ],
+     "palette": "sac"
+    },
+    {
+     "id": "pelleUs",
+     "joint": "chest",
+     "kind": "box",
+     "dims": {
+      "w": 2.6,
+      "h": 5,
+      "d": 1.2
+     },
+     "offset": [
+      0,
+      -3,
+      -7.4
+     ],
+     "palette": "cuir",
+     "simple": false
+    }
+   ]
+  },
+  "harnais": {
+   "suit": "chest",
+   "parts": [
+    {
+     "id": "harnaisG",
+     "joint": "chest",
+     "kind": "box",
+     "dims": {
+      "w": 1.5,
+      "h": 10,
+      "d": 0.7
+     },
+     "offset": [
+      4,
+      4.6,
+      5.6
+     ],
+     "palette": "equipement",
+     "rotation": [
+      0,
+      0,
+      0.12
+     ]
+    },
+    {
+     "id": "harnaisD",
+     "joint": "chest",
+     "kind": "box",
+     "dims": {
+      "w": 1.5,
+      "h": 10,
+      "d": 0.7
+     },
+     "offset": [
+      -4,
+      4.6,
+      5.6
+     ],
+     "palette": "equipement",
+     "rotation": [
+      0,
+      0,
+      -0.12
+     ]
+    },
+    {
+     "id": "harnaisEpG",
+     "joint": "chest",
+     "kind": "box",
+     "dims": {
+      "w": 1.6,
+      "h": 0.7,
+      "d": 10.4
+     },
+     "offset": [
+      5,
+      10.6,
+      0
+     ],
+     "palette": "equipement"
+    },
+    {
+     "id": "harnaisEpD",
+     "joint": "chest",
+     "kind": "box",
+     "dims": {
+      "w": 1.6,
+      "h": 0.7,
+      "d": 10.4
+     },
+     "offset": [
+      -5,
+      10.6,
+      0
+     ],
+     "palette": "equipement"
+    }
+   ]
+  },
+  "poches-m42": {
+   "suit": "chest",
+   "parts": [
+    {
+     "id": "pocheM42G",
+     "joint": "chest",
+     "kind": "box",
+     "dims": {
+      "w": 4.8,
+      "h": 4.4,
+      "d": 1.6
+     },
+     "offset": [
+      4.6,
+      5.8,
+      5.4
+     ],
+     "palette": "poche",
+     "rotation": [
+      0,
+      0,
+      -0.3
+     ]
+    },
+    {
+     "id": "pocheM42D",
+     "joint": "chest",
+     "kind": "box",
+     "dims": {
+      "w": 4.8,
+      "h": 4.4,
+      "d": 1.6
+     },
+     "offset": [
+      -4.6,
+      5.8,
+      5.4
+     ],
+     "palette": "poche",
+     "rotation": [
+      0,
+      0,
+      0.3
+     ]
+    }
+   ]
+  },
+  "poche-p41": {
+   "suit": "chest",
+   "parts": [
+    {
+     "id": "pocheP41",
+     "joint": "chest",
+     "kind": "box",
+     "dims": {
+      "w": 4.6,
+      "h": 4.2,
+      "d": 1.4
+     },
+     "offset": [
+      4.4,
+      5.6,
+      5.3
+     ],
+     "palette": "poche"
+    }
+   ]
+  },
+  "poches-cuisse": {
+   "suit": "thigh",
+   "parts": [
+    {
+     "id": "pocheCuisseL",
+     "joint": "hipL",
+     "kind": "box",
+     "dims": {
+      "w": 2.4,
+      "h": 5,
+      "d": 5
+     },
+     "offset": [
+      3.2,
+      -6.8,
+      0.8
+     ],
+     "palette": "poche",
+     "mirror": true
+    }
+   ]
+  },
+  "renforts-genou": {
+   "suit": "shin",
+   "parts": [
+    {
+     "id": "renfortGenouL",
+     "joint": "kneeL",
+     "kind": "box",
+     "dims": {
+      "w": 4.6,
+      "h": 4,
+      "d": 2
+     },
+     "offset": [
+      0,
+      -0.6,
+      2.6
+     ],
+     "palette": "poche",
+     "mirror": true,
+     "simple": false
+    }
+   ]
+  },
+  "musette-ventrale": {
+   "suit": "belly",
+   "parts": [
+    {
+     "id": "musetteVentre",
+     "joint": "spine",
+     "kind": "box",
+     "dims": {
+      "w": 7,
+      "h": 5,
+      "d": 2.4
+     },
+     "offset": [
+      0,
+      0.4,
+      6
+     ],
+     "palette": "sac"
+    }
+   ]
+  },
+  "trousse": {
+   "suit": "belly",
+   "parts": [
+    {
+     "id": "trousse",
+     "joint": "spine",
+     "kind": "box",
+     "dims": {
+      "w": 3,
+      "h": 2.4,
+      "d": 1.6
+     },
+     "offset": [
+      2,
+      0.9,
+      7
+     ],
+     "palette": "poche",
+     "simple": false
+    }
+   ]
+  }
+ },
+ "variantes": [
+  {
+   "slot": "marcheur",
+   "id": "epoque-A",
+   "label": "Époque A",
+   "intent": "Soldat du camp adverse, années 40 (soldat ordinaire, équipement équilibré). A « lisible » : gris-vert clair, casque plus sombre que la veste pour lire la tête de dessus, peu de pièces. Aucun insigne ni symbole ; usé, sali, déchiré.",
+   "palette": {
+    "tenue": "feldgrau",
+    "pantalon": "steingrau",
+    "botte": "cuir-noir",
+    "accent": "equipement",
+    "casque": "casque-gris",
+    "equipement": "equipement",
+    "col": "col-vert",
+    "cheveux": "cheveux",
+    "casquette": "feldgrau",
+    "visiere": "cuir-noir",
+    "laine": "capote",
+    "cuir": "cuir-havresac",
+    "sac": "toile-musette",
+    "metal": "boite-gaz"
+   },
+   "base": {
+    "retire": [
+     "vest",
+     "cap",
+     "coatTail"
+    ],
+    "retireSimple": [
+     "neck",
+     "collar",
+     "ragFront",
+     "ragBack",
+     "ragSleeve",
+     "ragHipL"
+    ],
+    "modifs": {
+     "shinL": {
+      "palette": "botte"
+     },
+     "collar": {
+      "palette": "col"
+     },
+     "neck": {
+      "dims": {
+       "radial": 8,
+       "caps": 1
+      }
+     },
+     "handL": {
+      "dims": {
+       "w": 8,
+       "h": 6
+      }
+     }
+    }
+   },
+   "tenues": [
+    {
+     "id": "soldat",
+     "label": "soldat, casque modèle 1935, veste",
+     "pieces": [
+      "casque-m35",
+      "ceinturon",
+      "cartouchieres",
+      "bretelles-y"
+     ],
+     "retire": [
+      "earL"
+     ]
+    },
+    {
+     "id": "calot",
+     "label": "soldat au calot, veste",
+     "pieces": [
+      "calot",
+      "ceinturon",
+      "cartouchieres"
+     ],
+     "retire": [
+      "earL"
+     ]
+    },
+    {
+     "id": "capote",
+     "label": "soldat en capote, casqué",
+     "palette": {
+      "tenue": "capote",
+      "laine": "capote"
+     },
+     "pieces": [
+      "casque-m35",
+      "capote",
+      "ceinturon",
+      "cartouchieres"
+     ],
+     "retire": [
+      "earL"
+     ]
+    },
+    {
+     "id": "sous-officier",
+     "label": "sous-officier, casquette souple, jumelles, porte-cartes",
+     "palette": {
+      "tenue": "feldgrau-vert"
+     },
+     "pieces": [
+      "casquette-m43",
+      "ceinturon",
+      "cartouchieres",
+      "jumelles",
+      "porte-cartes"
+     ],
+     "retire": [
+      "earL"
+     ]
+    },
+    {
+     "id": "officier",
+     "label": "officier, casquette à visière, baudrier, culotte, étui",
+     "palette": {
+      "tenue": "officier",
+      "pantalon": "culotte"
+     },
+     "pieces": [
+      "casquette-officier",
+      "ceinturon",
+      "baudrier",
+      "etui"
+     ],
+     "retire": [
+      "earL"
+     ],
+     "modifs": {
+      "thighL": {
+       "dims": {
+        "sx": 1.28
+       }
+      }
+     }
+    },
+    {
+     "id": "tete-nue",
+     "label": "tête nue, capote ouverte",
+     "palette": {
+      "tenue": "capote",
+      "laine": "capote"
+     },
+     "pieces": [
+      "cheveux",
+      "capote-ouverte",
+      "ceinturon"
+     ]
+    }
+   ]
+  },
+  {
+   "slot": "marcheur",
+   "id": "epoque-B",
+   "label": "Époque B",
+   "intent": "Soldat du camp adverse, années 40 (soldat ordinaire, équipement équilibré). B « équipé » : gris-vert plus vert, équipement complet (gamelle, musette, pelle, boîte de masque à gaz). Aucun insigne ni symbole ; usé, sali, déchiré.",
+   "palette": {
+    "tenue": "feldgrau-vert",
+    "pantalon": "steingrau",
+    "botte": "cuir-noir",
+    "accent": "equipement",
+    "casque": "casque-vert",
+    "equipement": "equipement",
+    "col": "col-vert",
+    "cheveux": "cheveux",
+    "casquette": "feldgrau-vert",
+    "visiere": "cuir-noir",
+    "laine": "capote",
+    "cuir": "cuir-havresac",
+    "sac": "toile-musette",
+    "metal": "boite-gaz"
+   },
+   "base": {
+    "retire": [
+     "vest",
+     "cap",
+     "coatTail"
+    ],
+    "retireSimple": [
+     "neck",
+     "collar",
+     "ragFront",
+     "ragBack",
+     "ragSleeve",
+     "ragHipL"
+    ],
+    "modifs": {
+     "shinL": {
+      "palette": "botte"
+     },
+     "collar": {
+      "palette": "col"
+     },
+     "neck": {
+      "dims": {
+       "radial": 8,
+       "caps": 1
+      }
+     },
+     "handL": {
+      "dims": {
+       "w": 8,
+       "h": 6
+      }
+     }
+    }
+   },
+   "tenues": [
+    {
+     "id": "soldat",
+     "label": "soldat, casque modèle 1935, veste",
+     "pieces": [
+      "casque-m35",
+      "ceinturon",
+      "cartouchieres",
+      "bretelles-y",
+      "gamelle",
+      "musette",
+      "pelle",
+      "boite-gaz"
+     ],
+     "retire": [
+      "earL"
+     ]
+    },
+    {
+     "id": "calot",
+     "label": "soldat au calot, veste",
+     "pieces": [
+      "calot",
+      "ceinturon",
+      "cartouchieres",
+      "gourde",
+      "musette"
+     ],
+     "retire": [
+      "earL"
+     ]
+    },
+    {
+     "id": "capote",
+     "label": "soldat en capote, casqué",
+     "palette": {
+      "tenue": "capote",
+      "laine": "capote"
+     },
+     "pieces": [
+      "casque-m35",
+      "capote",
+      "ceinturon",
+      "cartouchieres",
+      "gourde",
+      "musette"
+     ],
+     "retire": [
+      "earL"
+     ]
+    },
+    {
+     "id": "sous-officier",
+     "label": "sous-officier, casquette souple, jumelles, porte-cartes",
+     "palette": {
+      "tenue": "feldgrau"
+     },
+     "pieces": [
+      "casquette-m43",
+      "ceinturon",
+      "cartouchieres",
+      "jumelles",
+      "porte-cartes"
+     ],
+     "retire": [
+      "earL"
+     ]
+    },
+    {
+     "id": "officier",
+     "label": "officier, casquette à visière, baudrier, culotte, étui",
+     "palette": {
+      "tenue": "officier",
+      "pantalon": "culotte"
+     },
+     "pieces": [
+      "casquette-officier",
+      "ceinturon",
+      "baudrier",
+      "etui"
+     ],
+     "retire": [
+      "earL"
+     ],
+     "modifs": {
+      "thighL": {
+       "dims": {
+        "sx": 1.28
+       }
+      }
+     }
+    },
+    {
+     "id": "tete-nue",
+     "label": "tête nue, capote ouverte",
+     "palette": {
+      "tenue": "capote",
+      "laine": "capote"
+     },
+     "pieces": [
+      "cheveux",
+      "capote-ouverte",
+      "ceinturon"
+     ]
+    }
+   ]
+  },
+  {
+   "slot": "marcheur",
+   "id": "epoque-C",
+   "label": "Époque C",
+   "intent": "Soldat du camp adverse, années 40 (soldat ordinaire, équipement équilibré). C « délabré » : teintes boueuses, casque de travers, capote ouverte, lambeaux, une bretelle. Aucun insigne ni symbole ; usé, sali, déchiré.",
+   "palette": {
+    "tenue": "feldgrau-boue",
+    "pantalon": "steingrau",
+    "botte": "cuir-noir",
+    "accent": "equipement",
+    "casque": "casque-boue",
+    "equipement": "equipement",
+    "col": "feldgrau-boue",
+    "cheveux": "cheveux",
+    "casquette": "feldgrau-boue",
+    "visiere": "cuir-noir",
+    "laine": "capote-boue",
+    "cuir": "cuir-havresac",
+    "sac": "toile-musette",
+    "metal": "boite-gaz"
+   },
+   "base": {
+    "retire": [
+     "vest",
+     "cap",
+     "coatTail"
+    ],
+    "retireSimple": [
+     "neck",
+     "collar",
+     "ragFront",
+     "ragBack",
+     "ragSleeve",
+     "ragHipL"
+    ],
+    "modifs": {
+     "shinL": {
+      "palette": "botte"
+     },
+     "collar": {
+      "palette": "col"
+     },
+     "neck": {
+      "dims": {
+       "radial": 8,
+       "caps": 1
+      }
+     },
+     "handL": {
+      "dims": {
+       "w": 8,
+       "h": 6
+      }
+     }
+    }
+   },
+   "tenues": [
+    {
+     "id": "soldat",
+     "label": "soldat, casque modèle 1935, veste",
+     "pieces": [
+      "casque-m35-travers",
+      "ceinturon",
+      "cartouchieres",
+      "bretelle-seule",
+      "lambeaux",
+      "musette"
+     ],
+     "retire": [
+      "earL"
+     ]
+    },
+    {
+     "id": "calot",
+     "label": "soldat au calot, veste",
+     "pieces": [
+      "calot",
+      "ceinturon",
+      "lambeaux"
+     ],
+     "retire": [
+      "earL"
+     ]
+    },
+    {
+     "id": "capote",
+     "label": "soldat en capote, casqué",
+     "palette": {
+      "tenue": "capote-boue",
+      "laine": "capote-boue"
+     },
+     "pieces": [
+      "casque-m35-travers",
+      "capote-ouverte",
+      "ceinturon",
+      "lambeaux"
+     ],
+     "retire": [
+      "earL"
+     ]
+    },
+    {
+     "id": "sous-officier",
+     "label": "sous-officier, casquette souple, jumelles, porte-cartes",
+     "palette": {
+      "tenue": "feldgrau"
+     },
+     "pieces": [
+      "casquette-m43",
+      "ceinturon",
+      "cartouchieres",
+      "jumelles",
+      "porte-cartes",
+      "lambeaux"
+     ],
+     "retire": [
+      "earL"
+     ]
+    },
+    {
+     "id": "officier",
+     "label": "officier, casquette à visière, baudrier, culotte, étui",
+     "palette": {
+      "tenue": "officier",
+      "pantalon": "culotte"
+     },
+     "pieces": [
+      "casquette-officier",
+      "ceinturon",
+      "baudrier",
+      "etui",
+      "lambeaux"
+     ],
+     "retire": [
+      "earL"
+     ],
+     "modifs": {
+      "thighL": {
+       "dims": {
+        "sx": 1.28
+       }
+      }
+     }
+    },
+    {
+     "id": "tete-nue",
+     "label": "tête nue, capote ouverte",
+     "palette": {
+      "tenue": "capote-boue",
+      "laine": "capote-boue"
+     },
+     "pieces": [
+      "cheveux",
+      "capote-ouverte",
+      "ceinturon",
+      "lambeaux"
+     ]
+    }
+   ]
+  },
+  {
+   "slot": "petit",
+   "id": "epoque-A",
+   "label": "Époque A",
+   "intent": "Soldat du camp adverse, années 40 (adulte de petite taille (jamais un enfant : proportions adultes), équipement léger, calot fréquent). A « lisible » : gris-vert clair, casque plus sombre que la veste pour lire la tête de dessus, peu de pièces. Aucun insigne ni symbole ; usé, sali, déchiré.",
+   "palette": {
+    "tenue": "feldgrau",
+    "pantalon": "steingrau",
+    "botte": "cuir-noir",
+    "accent": "equipement",
+    "casque": "casque-gris",
+    "equipement": "equipement",
+    "col": "col-vert",
+    "cheveux": "cheveux",
+    "casquette": "feldgrau",
+    "visiere": "cuir-noir",
+    "laine": "capote",
+    "cuir": "cuir-havresac",
+    "sac": "toile-musette",
+    "metal": "boite-gaz"
+   },
+   "base": {
+    "retire": [
+     "vest",
+     "cap",
+     "coatTail"
+    ],
+    "retireSimple": [
+     "neck",
+     "collar",
+     "ragFront",
+     "ragBack",
+     "ragSleeve",
+     "ragHipL"
+    ],
+    "modifs": {
+     "shinL": {
+      "palette": "botte"
+     },
+     "collar": {
+      "palette": "col"
+     },
+     "neck": {
+      "dims": {
+       "radial": 8,
+       "caps": 1
+      }
+     },
+     "handL": {
+      "dims": {
+       "w": 8,
+       "h": 6
+      }
+     }
+    }
+   },
+   "tenues": [
+    {
+     "id": "calot",
+     "label": "soldat au calot, veste",
+     "pieces": [
+      "calot",
+      "ceinturon",
+      "cartouchieres"
+     ],
+     "retire": [
+      "earL"
+     ]
+    },
+    {
+     "id": "soldat",
+     "label": "soldat, casque modèle 1935, veste",
+     "pieces": [
+      "casque-m35",
+      "ceinturon",
+      "cartouchieres",
+      "bretelles-y"
+     ],
+     "retire": [
+      "earL"
+     ]
+    },
+    {
+     "id": "sous-officier",
+     "label": "sous-officier, casquette souple, jumelles, porte-cartes",
+     "palette": {
+      "tenue": "feldgrau-vert"
+     },
+     "pieces": [
+      "casquette-m43",
+      "ceinturon",
+      "cartouchieres",
+      "jumelles",
+      "porte-cartes"
+     ],
+     "retire": [
+      "earL"
+     ]
+    },
+    {
+     "id": "capote-calot",
+     "label": "soldat en capote, au calot",
+     "palette": {
+      "tenue": "capote",
+      "laine": "capote"
+     },
+     "pieces": [
+      "calot",
+      "capote",
+      "ceinturon",
+      "cartouchieres"
+     ],
+     "retire": [
+      "earL"
+     ]
+    },
+    {
+     "id": "officier",
+     "label": "officier, casquette à visière, baudrier, culotte, étui",
+     "palette": {
+      "tenue": "officier",
+      "pantalon": "culotte"
+     },
+     "pieces": [
+      "casquette-officier",
+      "ceinturon",
+      "baudrier",
+      "etui"
+     ],
+     "retire": [
+      "earL"
+     ],
+     "modifs": {
+      "thighL": {
+       "dims": {
+        "sx": 1.28
+       }
+      }
+     }
+    },
+    {
+     "id": "tete-nue-veste",
+     "label": "tête nue, veste déboutonnée",
+     "pieces": [
+      "cheveux",
+      "ceinturon",
+      "cartouchieres"
+     ]
+    }
+   ]
+  },
+  {
+   "slot": "petit",
+   "id": "epoque-B",
+   "label": "Époque B",
+   "intent": "Soldat du camp adverse, années 40 (adulte de petite taille (jamais un enfant : proportions adultes), équipement léger, calot fréquent). B « équipé » : gris-vert plus vert, équipement complet (gamelle, musette, pelle, boîte de masque à gaz). Aucun insigne ni symbole ; usé, sali, déchiré.",
+   "palette": {
+    "tenue": "feldgrau-vert",
+    "pantalon": "steingrau",
+    "botte": "cuir-noir",
+    "accent": "equipement",
+    "casque": "casque-vert",
+    "equipement": "equipement",
+    "col": "col-vert",
+    "cheveux": "cheveux",
+    "casquette": "feldgrau-vert",
+    "visiere": "cuir-noir",
+    "laine": "capote",
+    "cuir": "cuir-havresac",
+    "sac": "toile-musette",
+    "metal": "boite-gaz"
+   },
+   "base": {
+    "retire": [
+     "vest",
+     "cap",
+     "coatTail"
+    ],
+    "retireSimple": [
+     "neck",
+     "collar",
+     "ragFront",
+     "ragBack",
+     "ragSleeve",
+     "ragHipL"
+    ],
+    "modifs": {
+     "shinL": {
+      "palette": "botte"
+     },
+     "collar": {
+      "palette": "col"
+     },
+     "neck": {
+      "dims": {
+       "radial": 8,
+       "caps": 1
+      }
+     },
+     "handL": {
+      "dims": {
+       "w": 8,
+       "h": 6
+      }
+     }
+    }
+   },
+   "tenues": [
+    {
+     "id": "calot",
+     "label": "soldat au calot, veste",
+     "pieces": [
+      "calot",
+      "ceinturon",
+      "cartouchieres",
+      "gourde",
+      "musette"
+     ],
+     "retire": [
+      "earL"
+     ]
+    },
+    {
+     "id": "soldat",
+     "label": "soldat, casque modèle 1935, veste",
+     "pieces": [
+      "casque-m35",
+      "ceinturon",
+      "cartouchieres",
+      "bretelles-y",
+      "gamelle",
+      "musette",
+      "pelle",
+      "boite-gaz"
+     ],
+     "retire": [
+      "earL"
+     ]
+    },
+    {
+     "id": "sous-officier",
+     "label": "sous-officier, casquette souple, jumelles, porte-cartes",
+     "palette": {
+      "tenue": "feldgrau"
+     },
+     "pieces": [
+      "casquette-m43",
+      "ceinturon",
+      "cartouchieres",
+      "jumelles",
+      "porte-cartes"
+     ],
+     "retire": [
+      "earL"
+     ]
+    },
+    {
+     "id": "capote-calot",
+     "label": "soldat en capote, au calot",
+     "palette": {
+      "tenue": "capote",
+      "laine": "capote"
+     },
+     "pieces": [
+      "calot",
+      "capote",
+      "ceinturon",
+      "cartouchieres",
+      "gourde",
+      "musette"
+     ],
+     "retire": [
+      "earL"
+     ]
+    },
+    {
+     "id": "officier",
+     "label": "officier, casquette à visière, baudrier, culotte, étui",
+     "palette": {
+      "tenue": "officier",
+      "pantalon": "culotte"
+     },
+     "pieces": [
+      "casquette-officier",
+      "ceinturon",
+      "baudrier",
+      "etui"
+     ],
+     "retire": [
+      "earL"
+     ],
+     "modifs": {
+      "thighL": {
+       "dims": {
+        "sx": 1.28
+       }
+      }
+     }
+    },
+    {
+     "id": "tete-nue-veste",
+     "label": "tête nue, veste déboutonnée",
+     "pieces": [
+      "cheveux",
+      "ceinturon",
+      "cartouchieres"
+     ]
+    }
+   ]
+  },
+  {
+   "slot": "petit",
+   "id": "epoque-C",
+   "label": "Époque C",
+   "intent": "Soldat du camp adverse, années 40 (adulte de petite taille (jamais un enfant : proportions adultes), équipement léger, calot fréquent). C « délabré » : teintes boueuses, casque de travers, capote ouverte, lambeaux, une bretelle. Aucun insigne ni symbole ; usé, sali, déchiré.",
+   "palette": {
+    "tenue": "feldgrau-boue",
+    "pantalon": "steingrau",
+    "botte": "cuir-noir",
+    "accent": "equipement",
+    "casque": "casque-boue",
+    "equipement": "equipement",
+    "col": "feldgrau-boue",
+    "cheveux": "cheveux",
+    "casquette": "feldgrau-boue",
+    "visiere": "cuir-noir",
+    "laine": "capote-boue",
+    "cuir": "cuir-havresac",
+    "sac": "toile-musette",
+    "metal": "boite-gaz"
+   },
+   "base": {
+    "retire": [
+     "vest",
+     "cap",
+     "coatTail"
+    ],
+    "retireSimple": [
+     "neck",
+     "collar",
+     "ragFront",
+     "ragBack",
+     "ragSleeve",
+     "ragHipL"
+    ],
+    "modifs": {
+     "shinL": {
+      "palette": "botte"
+     },
+     "collar": {
+      "palette": "col"
+     },
+     "neck": {
+      "dims": {
+       "radial": 8,
+       "caps": 1
+      }
+     },
+     "handL": {
+      "dims": {
+       "w": 8,
+       "h": 6
+      }
+     }
+    }
+   },
+   "tenues": [
+    {
+     "id": "calot",
+     "label": "soldat au calot, veste",
+     "pieces": [
+      "calot",
+      "ceinturon",
+      "lambeaux"
+     ],
+     "retire": [
+      "earL"
+     ]
+    },
+    {
+     "id": "soldat",
+     "label": "soldat, casque modèle 1935, veste",
+     "pieces": [
+      "casque-m35-travers",
+      "ceinturon",
+      "cartouchieres",
+      "bretelle-seule",
+      "lambeaux",
+      "musette"
+     ],
+     "retire": [
+      "earL"
+     ]
+    },
+    {
+     "id": "sous-officier",
+     "label": "sous-officier, casquette souple, jumelles, porte-cartes",
+     "palette": {
+      "tenue": "feldgrau"
+     },
+     "pieces": [
+      "casquette-m43",
+      "ceinturon",
+      "cartouchieres",
+      "jumelles",
+      "porte-cartes",
+      "lambeaux"
+     ],
+     "retire": [
+      "earL"
+     ]
+    },
+    {
+     "id": "capote-calot",
+     "label": "soldat en capote, au calot",
+     "palette": {
+      "tenue": "capote-boue",
+      "laine": "capote-boue"
+     },
+     "pieces": [
+      "calot",
+      "capote-ouverte",
+      "ceinturon",
+      "lambeaux"
+     ],
+     "retire": [
+      "earL"
+     ]
+    },
+    {
+     "id": "officier",
+     "label": "officier, casquette à visière, baudrier, culotte, étui",
+     "palette": {
+      "tenue": "officier",
+      "pantalon": "culotte"
+     },
+     "pieces": [
+      "casquette-officier",
+      "ceinturon",
+      "baudrier",
+      "etui",
+      "lambeaux"
+     ],
+     "retire": [
+      "earL"
+     ],
+     "modifs": {
+      "thighL": {
+       "dims": {
+        "sx": 1.28
+       }
+      }
+     }
+    },
+    {
+     "id": "tete-nue-veste",
+     "label": "tête nue, veste déboutonnée",
+     "pieces": [
+      "cheveux",
+      "ceinturon",
+      "cartouchieres",
+      "lambeaux"
+     ]
+    }
+   ]
+  },
+  {
+   "slot": "voute",
+   "id": "epoque-A",
+   "label": "Époque A",
+   "intent": "Soldat du camp adverse, années 40 (capote et havresac en majorité (dos chargé)). A « lisible » : gris-vert clair, casque plus sombre que la veste pour lire la tête de dessus, peu de pièces. Aucun insigne ni symbole ; usé, sali, déchiré.",
+   "palette": {
+    "tenue": "feldgrau",
+    "pantalon": "steingrau",
+    "botte": "cuir-noir",
+    "accent": "equipement",
+    "casque": "casque-gris",
+    "equipement": "equipement",
+    "col": "col-vert",
+    "cheveux": "cheveux",
+    "casquette": "feldgrau",
+    "visiere": "cuir-noir",
+    "laine": "capote",
+    "cuir": "cuir-havresac",
+    "sac": "toile-musette",
+    "metal": "boite-gaz"
+   },
+   "base": {
+    "retire": [
+     "vest",
+     "cap",
+     "coatTail"
+    ],
+    "retireSimple": [
+     "neck",
+     "collar",
+     "ragFront",
+     "ragBack",
+     "ragSleeve",
+     "ragHipL"
+    ],
+    "modifs": {
+     "shinL": {
+      "palette": "botte"
+     },
+     "collar": {
+      "palette": "col"
+     },
+     "neck": {
+      "dims": {
+       "radial": 8,
+       "caps": 1
+      }
+     },
+     "handL": {
+      "dims": {
+       "w": 8,
+       "h": 6
+      }
+     }
+    }
+   },
+   "tenues": [
+    {
+     "id": "havresac",
+     "label": "soldat en capote, casqué, havresac",
+     "palette": {
+      "tenue": "capote",
+      "laine": "capote"
+     },
+     "pieces": [
+      "casque-m35",
+      "capote",
+      "havresac",
+      "ceinturon",
+      "cartouchieres"
+     ],
+     "retire": [
+      "earL"
+     ]
+    },
+    {
+     "id": "capote-calot",
+     "label": "soldat en capote, au calot",
+     "palette": {
+      "tenue": "capote",
+      "laine": "capote"
+     },
+     "pieces": [
+      "calot",
+      "capote",
+      "ceinturon",
+      "cartouchieres"
+     ],
+     "retire": [
+      "earL"
+     ]
+    },
+    {
+     "id": "soldat-havresac",
+     "label": "soldat, casque, havresac",
+     "pieces": [
+      "casque-m35",
+      "havresac",
+      "ceinturon",
+      "cartouchieres",
+      "bretelles-y"
+     ],
+     "retire": [
+      "earL"
+     ]
+    },
+    {
+     "id": "sous-officier",
+     "label": "sous-officier, casquette souple, jumelles, porte-cartes",
+     "palette": {
+      "tenue": "feldgrau-vert"
+     },
+     "pieces": [
+      "casquette-m43",
+      "ceinturon",
+      "cartouchieres",
+      "jumelles",
+      "porte-cartes"
+     ],
+     "retire": [
+      "earL"
+     ]
+    },
+    {
+     "id": "officier-capote",
+     "label": "officier en capote, casquette à visière",
+     "palette": {
+      "tenue": "capote",
+      "laine": "capote",
+      "casquette": "officier",
+      "pantalon": "culotte"
+     },
+     "pieces": [
+      "casquette-officier",
+      "capote",
+      "ceinturon",
+      "etui"
+     ],
+     "retire": [
+      "earL"
+     ]
+    },
+    {
+     "id": "tete-nue",
+     "label": "tête nue, capote ouverte",
+     "palette": {
+      "tenue": "capote",
+      "laine": "capote"
+     },
+     "pieces": [
+      "cheveux",
+      "capote-ouverte",
+      "ceinturon"
+     ]
+    }
+   ]
+  },
+  {
+   "slot": "voute",
+   "id": "epoque-B",
+   "label": "Époque B",
+   "intent": "Soldat du camp adverse, années 40 (capote et havresac en majorité (dos chargé)). B « équipé » : gris-vert plus vert, équipement complet (gamelle, musette, pelle, boîte de masque à gaz). Aucun insigne ni symbole ; usé, sali, déchiré.",
+   "palette": {
+    "tenue": "feldgrau-vert",
+    "pantalon": "steingrau",
+    "botte": "cuir-noir",
+    "accent": "equipement",
+    "casque": "casque-vert",
+    "equipement": "equipement",
+    "col": "col-vert",
+    "cheveux": "cheveux",
+    "casquette": "feldgrau-vert",
+    "visiere": "cuir-noir",
+    "laine": "capote",
+    "cuir": "cuir-havresac",
+    "sac": "toile-musette",
+    "metal": "boite-gaz"
+   },
+   "base": {
+    "retire": [
+     "vest",
+     "cap",
+     "coatTail"
+    ],
+    "retireSimple": [
+     "neck",
+     "collar",
+     "ragFront",
+     "ragBack",
+     "ragSleeve",
+     "ragHipL"
+    ],
+    "modifs": {
+     "shinL": {
+      "palette": "botte"
+     },
+     "collar": {
+      "palette": "col"
+     },
+     "neck": {
+      "dims": {
+       "radial": 8,
+       "caps": 1
+      }
+     },
+     "handL": {
+      "dims": {
+       "w": 8,
+       "h": 6
+      }
+     }
+    }
+   },
+   "tenues": [
+    {
+     "id": "havresac",
+     "label": "soldat en capote, casqué, havresac",
+     "palette": {
+      "tenue": "capote",
+      "laine": "capote"
+     },
+     "pieces": [
+      "casque-m35",
+      "capote",
+      "havresac",
+      "ceinturon",
+      "cartouchieres",
+      "gourde",
+      "musette"
+     ],
+     "retire": [
+      "earL"
+     ]
+    },
+    {
+     "id": "capote-calot",
+     "label": "soldat en capote, au calot",
+     "palette": {
+      "tenue": "capote",
+      "laine": "capote"
+     },
+     "pieces": [
+      "calot",
+      "capote",
+      "ceinturon",
+      "cartouchieres",
+      "gourde",
+      "musette"
+     ],
+     "retire": [
+      "earL"
+     ]
+    },
+    {
+     "id": "soldat-havresac",
+     "label": "soldat, casque, havresac",
+     "pieces": [
+      "casque-m35",
+      "havresac",
+      "ceinturon",
+      "cartouchieres",
+      "bretelles-y"
+     ],
+     "retire": [
+      "earL"
+     ]
+    },
+    {
+     "id": "sous-officier",
+     "label": "sous-officier, casquette souple, jumelles, porte-cartes",
+     "palette": {
+      "tenue": "feldgrau"
+     },
+     "pieces": [
+      "casquette-m43",
+      "ceinturon",
+      "cartouchieres",
+      "jumelles",
+      "porte-cartes"
+     ],
+     "retire": [
+      "earL"
+     ]
+    },
+    {
+     "id": "officier-capote",
+     "label": "officier en capote, casquette à visière",
+     "palette": {
+      "tenue": "capote",
+      "laine": "capote",
+      "casquette": "officier",
+      "pantalon": "culotte"
+     },
+     "pieces": [
+      "casquette-officier",
+      "capote",
+      "ceinturon",
+      "etui"
+     ],
+     "retire": [
+      "earL"
+     ]
+    },
+    {
+     "id": "tete-nue",
+     "label": "tête nue, capote ouverte",
+     "palette": {
+      "tenue": "capote",
+      "laine": "capote"
+     },
+     "pieces": [
+      "cheveux",
+      "capote-ouverte",
+      "ceinturon"
+     ]
+    }
+   ]
+  },
+  {
+   "slot": "voute",
+   "id": "epoque-C",
+   "label": "Époque C",
+   "intent": "Soldat du camp adverse, années 40 (capote et havresac en majorité (dos chargé)). C « délabré » : teintes boueuses, casque de travers, capote ouverte, lambeaux, une bretelle. Aucun insigne ni symbole ; usé, sali, déchiré.",
+   "palette": {
+    "tenue": "feldgrau-boue",
+    "pantalon": "steingrau",
+    "botte": "cuir-noir",
+    "accent": "equipement",
+    "casque": "casque-boue",
+    "equipement": "equipement",
+    "col": "feldgrau-boue",
+    "cheveux": "cheveux",
+    "casquette": "feldgrau-boue",
+    "visiere": "cuir-noir",
+    "laine": "capote-boue",
+    "cuir": "cuir-havresac",
+    "sac": "toile-musette",
+    "metal": "boite-gaz"
+   },
+   "base": {
+    "retire": [
+     "vest",
+     "cap",
+     "coatTail"
+    ],
+    "retireSimple": [
+     "neck",
+     "collar",
+     "ragFront",
+     "ragBack",
+     "ragSleeve",
+     "ragHipL"
+    ],
+    "modifs": {
+     "shinL": {
+      "palette": "botte"
+     },
+     "collar": {
+      "palette": "col"
+     },
+     "neck": {
+      "dims": {
+       "radial": 8,
+       "caps": 1
+      }
+     },
+     "handL": {
+      "dims": {
+       "w": 8,
+       "h": 6
+      }
+     }
+    }
+   },
+   "tenues": [
+    {
+     "id": "havresac",
+     "label": "soldat en capote, casqué, havresac",
+     "palette": {
+      "tenue": "capote-boue",
+      "laine": "capote-boue"
+     },
+     "pieces": [
+      "casque-m35-travers",
+      "capote-ouverte",
+      "havresac",
+      "ceinturon",
+      "lambeaux"
+     ],
+     "retire": [
+      "earL"
+     ]
+    },
+    {
+     "id": "capote-calot",
+     "label": "soldat en capote, au calot",
+     "palette": {
+      "tenue": "capote-boue",
+      "laine": "capote-boue"
+     },
+     "pieces": [
+      "calot",
+      "capote-ouverte",
+      "ceinturon",
+      "lambeaux"
+     ],
+     "retire": [
+      "earL"
+     ]
+    },
+    {
+     "id": "soldat-havresac",
+     "label": "soldat, casque, havresac",
+     "pieces": [
+      "casque-m35-travers",
+      "havresac",
+      "ceinturon",
+      "cartouchieres",
+      "bretelles-y"
+     ],
+     "retire": [
+      "earL"
+     ]
+    },
+    {
+     "id": "sous-officier",
+     "label": "sous-officier, casquette souple, jumelles, porte-cartes",
+     "palette": {
+      "tenue": "feldgrau"
+     },
+     "pieces": [
+      "casquette-m43",
+      "ceinturon",
+      "cartouchieres",
+      "jumelles",
+      "porte-cartes",
+      "lambeaux"
+     ],
+     "retire": [
+      "earL"
+     ]
+    },
+    {
+     "id": "officier-capote",
+     "label": "officier en capote, casquette à visière",
+     "palette": {
+      "tenue": "capote-boue",
+      "laine": "capote-boue",
+      "casquette": "officier",
+      "pantalon": "culotte"
+     },
+     "pieces": [
+      "casquette-officier",
+      "capote-ouverte",
+      "ceinturon",
+      "etui"
+     ],
+     "retire": [
+      "earL"
+     ]
+    },
+    {
+     "id": "tete-nue",
+     "label": "tête nue, capote ouverte",
+     "palette": {
+      "tenue": "capote-boue",
+      "laine": "capote-boue"
+     },
+     "pieces": [
+      "cheveux",
+      "capote-ouverte",
+      "ceinturon",
+      "lambeaux"
+     ]
+    }
+   ]
+  },
+  {
+   "slot": "grand",
+   "id": "epoque-A",
+   "label": "Époque A",
+   "intent": "Soldat du camp adverse, années 40 (capote, boîte de masque à gaz, équipement lourd). A « lisible » : gris-vert clair, casque plus sombre que la veste pour lire la tête de dessus, peu de pièces. Aucun insigne ni symbole ; usé, sali, déchiré.",
+   "palette": {
+    "tenue": "feldgrau",
+    "pantalon": "steingrau",
+    "botte": "cuir-noir",
+    "accent": "equipement",
+    "casque": "casque-gris",
+    "equipement": "equipement",
+    "col": "col-vert",
+    "cheveux": "cheveux",
+    "casquette": "feldgrau",
+    "visiere": "cuir-noir",
+    "laine": "capote",
+    "cuir": "cuir-havresac",
+    "sac": "toile-musette",
+    "metal": "boite-gaz"
+   },
+   "base": {
+    "retire": [
+     "vest",
+     "cap",
+     "coatTail"
+    ],
+    "retireSimple": [
+     "neck",
+     "collar",
+     "ragFront",
+     "ragBack",
+     "ragSleeve",
+     "ragHipL"
+    ],
+    "modifs": {
+     "shinL": {
+      "palette": "botte"
+     },
+     "collar": {
+      "palette": "col"
+     },
+     "neck": {
+      "dims": {
+       "radial": 8,
+       "caps": 1
+      }
+     },
+     "handL": {
+      "dims": {
+       "w": 8,
+       "h": 6
+      }
+     }
+    }
+   },
+   "tenues": [
+    {
+     "id": "lourd",
+     "label": "soldat en capote, casqué, masque à gaz et équipement lourd",
+     "palette": {
+      "tenue": "capote",
+      "laine": "capote"
+     },
+     "pieces": [
+      "casque-m35",
+      "capote",
+      "ceinturon",
+      "cartouchieres",
+      "bretelles-y",
+      "boite-gaz"
+     ],
+     "retire": [
+      "earL"
+     ]
+    },
+    {
+     "id": "soldat",
+     "label": "soldat, casque modèle 1935, veste",
+     "pieces": [
+      "casque-m35",
+      "ceinturon",
+      "cartouchieres",
+      "bretelles-y"
+     ],
+     "retire": [
+      "earL"
+     ]
+    },
+    {
+     "id": "tete-nue",
+     "label": "tête nue, capote ouverte",
+     "palette": {
+      "tenue": "capote",
+      "laine": "capote"
+     },
+     "pieces": [
+      "cheveux",
+      "capote-ouverte",
+      "ceinturon"
+     ]
+    },
+    {
+     "id": "sous-officier",
+     "label": "sous-officier, casquette souple, jumelles, porte-cartes",
+     "palette": {
+      "tenue": "feldgrau-vert"
+     },
+     "pieces": [
+      "casquette-m43",
+      "ceinturon",
+      "cartouchieres",
+      "jumelles",
+      "porte-cartes"
+     ],
+     "retire": [
+      "earL"
+     ]
+    },
+    {
+     "id": "officier",
+     "label": "officier, casquette à visière, baudrier, culotte, étui",
+     "palette": {
+      "tenue": "officier",
+      "pantalon": "culotte"
+     },
+     "pieces": [
+      "casquette-officier",
+      "ceinturon",
+      "baudrier",
+      "etui"
+     ],
+     "retire": [
+      "earL"
+     ],
+     "modifs": {
+      "thighL": {
+       "dims": {
+        "sx": 1.28
+       }
+      }
+     }
+    },
+    {
+     "id": "calot",
+     "label": "soldat au calot, veste",
+     "pieces": [
+      "calot",
+      "ceinturon",
+      "cartouchieres"
+     ],
+     "retire": [
+      "earL"
+     ]
+    }
+   ]
+  },
+  {
+   "slot": "grand",
+   "id": "epoque-B",
+   "label": "Époque B",
+   "intent": "Soldat du camp adverse, années 40 (capote, boîte de masque à gaz, équipement lourd). B « équipé » : gris-vert plus vert, équipement complet (gamelle, musette, pelle, boîte de masque à gaz). Aucun insigne ni symbole ; usé, sali, déchiré.",
+   "palette": {
+    "tenue": "feldgrau-vert",
+    "pantalon": "steingrau",
+    "botte": "cuir-noir",
+    "accent": "equipement",
+    "casque": "casque-vert",
+    "equipement": "equipement",
+    "col": "col-vert",
+    "cheveux": "cheveux",
+    "casquette": "feldgrau-vert",
+    "visiere": "cuir-noir",
+    "laine": "capote",
+    "cuir": "cuir-havresac",
+    "sac": "toile-musette",
+    "metal": "boite-gaz"
+   },
+   "base": {
+    "retire": [
+     "vest",
+     "cap",
+     "coatTail"
+    ],
+    "retireSimple": [
+     "neck",
+     "collar",
+     "ragFront",
+     "ragBack",
+     "ragSleeve",
+     "ragHipL"
+    ],
+    "modifs": {
+     "shinL": {
+      "palette": "botte"
+     },
+     "collar": {
+      "palette": "col"
+     },
+     "neck": {
+      "dims": {
+       "radial": 8,
+       "caps": 1
+      }
+     },
+     "handL": {
+      "dims": {
+       "w": 8,
+       "h": 6
+      }
+     }
+    }
+   },
+   "tenues": [
+    {
+     "id": "lourd",
+     "label": "soldat en capote, casqué, masque à gaz et équipement lourd",
+     "palette": {
+      "tenue": "capote",
+      "laine": "capote"
+     },
+     "pieces": [
+      "casque-m35",
+      "capote",
+      "ceinturon",
+      "cartouchieres",
+      "bretelles-y",
+      "boite-gaz",
+      "musette",
+      "gamelle",
+      "pelle"
+     ],
+     "retire": [
+      "earL"
+     ]
+    },
+    {
+     "id": "soldat",
+     "label": "soldat, casque modèle 1935, veste",
+     "pieces": [
+      "casque-m35",
+      "ceinturon",
+      "cartouchieres",
+      "bretelles-y",
+      "gamelle",
+      "musette",
+      "pelle",
+      "boite-gaz"
+     ],
+     "retire": [
+      "earL"
+     ]
+    },
+    {
+     "id": "tete-nue",
+     "label": "tête nue, capote ouverte",
+     "palette": {
+      "tenue": "capote",
+      "laine": "capote"
+     },
+     "pieces": [
+      "cheveux",
+      "capote-ouverte",
+      "ceinturon"
+     ]
+    },
+    {
+     "id": "sous-officier",
+     "label": "sous-officier, casquette souple, jumelles, porte-cartes",
+     "palette": {
+      "tenue": "feldgrau"
+     },
+     "pieces": [
+      "casquette-m43",
+      "ceinturon",
+      "cartouchieres",
+      "jumelles",
+      "porte-cartes"
+     ],
+     "retire": [
+      "earL"
+     ]
+    },
+    {
+     "id": "officier",
+     "label": "officier, casquette à visière, baudrier, culotte, étui",
+     "palette": {
+      "tenue": "officier",
+      "pantalon": "culotte"
+     },
+     "pieces": [
+      "casquette-officier",
+      "ceinturon",
+      "baudrier",
+      "etui"
+     ],
+     "retire": [
+      "earL"
+     ],
+     "modifs": {
+      "thighL": {
+       "dims": {
+        "sx": 1.28
+       }
+      }
+     }
+    },
+    {
+     "id": "calot",
+     "label": "soldat au calot, veste",
+     "pieces": [
+      "calot",
+      "ceinturon",
+      "cartouchieres",
+      "gourde",
+      "musette"
+     ],
+     "retire": [
+      "earL"
+     ]
+    }
+   ]
+  },
+  {
+   "slot": "grand",
+   "id": "epoque-C",
+   "label": "Époque C",
+   "intent": "Soldat du camp adverse, années 40 (capote, boîte de masque à gaz, équipement lourd). C « délabré » : teintes boueuses, casque de travers, capote ouverte, lambeaux, une bretelle. Aucun insigne ni symbole ; usé, sali, déchiré.",
+   "palette": {
+    "tenue": "feldgrau-boue",
+    "pantalon": "steingrau",
+    "botte": "cuir-noir",
+    "accent": "equipement",
+    "casque": "casque-boue",
+    "equipement": "equipement",
+    "col": "feldgrau-boue",
+    "cheveux": "cheveux",
+    "casquette": "feldgrau-boue",
+    "visiere": "cuir-noir",
+    "laine": "capote-boue",
+    "cuir": "cuir-havresac",
+    "sac": "toile-musette",
+    "metal": "boite-gaz"
+   },
+   "base": {
+    "retire": [
+     "vest",
+     "cap",
+     "coatTail"
+    ],
+    "retireSimple": [
+     "neck",
+     "collar",
+     "ragFront",
+     "ragBack",
+     "ragSleeve",
+     "ragHipL"
+    ],
+    "modifs": {
+     "shinL": {
+      "palette": "botte"
+     },
+     "collar": {
+      "palette": "col"
+     },
+     "neck": {
+      "dims": {
+       "radial": 8,
+       "caps": 1
+      }
+     },
+     "handL": {
+      "dims": {
+       "w": 8,
+       "h": 6
+      }
+     }
+    }
+   },
+   "tenues": [
+    {
+     "id": "lourd",
+     "label": "soldat en capote, casqué, masque à gaz et équipement lourd",
+     "palette": {
+      "tenue": "capote-boue",
+      "laine": "capote-boue"
+     },
+     "pieces": [
+      "casque-m35-travers",
+      "capote-ouverte",
+      "ceinturon",
+      "cartouchieres",
+      "bretelles-y",
+      "boite-gaz"
+     ],
+     "retire": [
+      "earL"
+     ]
+    },
+    {
+     "id": "soldat",
+     "label": "soldat, casque modèle 1935, veste",
+     "pieces": [
+      "casque-m35-travers",
+      "ceinturon",
+      "cartouchieres",
+      "bretelle-seule",
+      "lambeaux",
+      "musette"
+     ],
+     "retire": [
+      "earL"
+     ]
+    },
+    {
+     "id": "tete-nue",
+     "label": "tête nue, capote ouverte",
+     "palette": {
+      "tenue": "capote-boue",
+      "laine": "capote-boue"
+     },
+     "pieces": [
+      "cheveux",
+      "capote-ouverte",
+      "ceinturon",
+      "lambeaux"
+     ]
+    },
+    {
+     "id": "sous-officier",
+     "label": "sous-officier, casquette souple, jumelles, porte-cartes",
+     "palette": {
+      "tenue": "feldgrau"
+     },
+     "pieces": [
+      "casquette-m43",
+      "ceinturon",
+      "cartouchieres",
+      "jumelles",
+      "porte-cartes",
+      "lambeaux"
+     ],
+     "retire": [
+      "earL"
+     ]
+    },
+    {
+     "id": "officier",
+     "label": "officier, casquette à visière, baudrier, culotte, étui",
+     "palette": {
+      "tenue": "officier",
+      "pantalon": "culotte"
+     },
+     "pieces": [
+      "casquette-officier",
+      "ceinturon",
+      "baudrier",
+      "etui",
+      "lambeaux"
+     ],
+     "retire": [
+      "earL"
+     ],
+     "modifs": {
+      "thighL": {
+       "dims": {
+        "sx": 1.28
+       }
+      }
+     }
+    },
+    {
+     "id": "calot",
+     "label": "soldat au calot, veste",
+     "pieces": [
+      "calot",
+      "ceinturon",
+      "lambeaux"
+     ],
+     "retire": [
+      "earL"
+     ]
+    }
+   ]
+  },
+  {
+   "slot": "joueur",
+   "pour": [
+    "survivant"
+   ],
+   "id": "epoque-A",
+   "label": "Survivant A",
+   "intent": "Fantassin américain de 1942, lisible : casque M1 nu à jugulaire, veste M41 sable, pantalon olive, guêtres de toile claires, ceinturon à cartouchières et bretelles, brodequins.",
+   "palette": {
+    "peau": "--perso-peau-joueur",
+    "botte": "brodequin",
+    "equipement": "sangle-us",
+    "casque": "casque-m1",
+    "filet": "filet",
+    "camo": "camo",
+    "guetre": "guetre",
+    "poche": "poche-us",
+    "sac": "sangle-us",
+    "cuir": "brodequin",
+    "accent": "sangle-us",
+    "tenue": "m41",
+    "pantalon": "od"
+   },
+   "base": {
+    "retire": [
+     "cap",
+     "capBrim",
+     "vestA",
+     "kneeL",
+     "pack",
+     "earL"
+    ],
+    "retireSimple": [
+     "neck",
+     "ragHipL"
+    ],
+    "modifs": {
+     "shinL": {
+      "palette": "guetre"
+     },
+     "neck": {
+      "dims": {
+       "radial": 8,
+       "caps": 1
+      }
+     },
+     "handL": {
+      "dims": {
+       "w": 8,
+       "h": 6
+      }
+     }
+    }
+   },
+   "pieces": [
+    "casque-m1",
+    "ceinturon-us",
+    "bretelles-us",
+    "gourde-us"
+   ],
+   "tenues": [
+    {
+     "id": "standard",
+     "label": "standard",
+     "palette": {}
+    },
+    {
+     "id": "boue",
+     "label": "crotté",
+     "palette": {
+      "botte": "od",
+      "guetre": "sangle-us"
+     }
+    },
+    {
+     "id": "delave",
+     "label": "délavé",
+     "palette": {
+      "tenue": "hbt-delave"
+     }
+    }
+   ]
+  },
+  {
+   "slot": "joueur",
+   "pour": [
+    "survivant"
+   ],
+   "id": "epoque-B",
+   "label": "Survivant B",
+   "intent": "Marine de 1942, équipé : treillis à chevrons olive, casque à filet, guêtres, ceinturon M1923, bretelles, gourde, musette au dos et pelle.",
+   "palette": {
+    "peau": "--perso-peau-joueur",
+    "botte": "brodequin",
+    "equipement": "sangle-us",
+    "casque": "casque-m1",
+    "filet": "filet",
+    "camo": "camo",
+    "guetre": "guetre",
+    "poche": "poche-us",
+    "sac": "sangle-us",
+    "cuir": "brodequin",
+    "accent": "sangle-us",
+    "tenue": "hbt",
+    "pantalon": "hbt"
+   },
+   "base": {
+    "retire": [
+     "cap",
+     "capBrim",
+     "vestA",
+     "kneeL",
+     "pack",
+     "earL"
+    ],
+    "retireSimple": [
+     "neck",
+     "ragHipL"
+    ],
+    "modifs": {
+     "shinL": {
+      "palette": "guetre"
+     },
+     "neck": {
+      "dims": {
+       "radial": 8,
+       "caps": 1
+      }
+     },
+     "handL": {
+      "dims": {
+       "w": 8,
+       "h": 6
+      }
+     },
+     "chest": {
+      "palette": "chevron"
+     },
+     "belly": {
+      "palette": "chevron"
+     },
+     "upperL": {
+      "palette": "chevron"
+     },
+     "foreL": {
+      "palette": "chevron"
+     }
+    }
+   },
+   "pieces": [
+    "casque-m1-filet",
+    "ceinturon-us",
+    "bretelles-us",
+    "gourde-us",
+    "musette-m1928"
+   ],
+   "tenues": [
+    {
+     "id": "standard",
+     "label": "standard",
+     "palette": {
+      "chevron": "hbt"
+     }
+    },
+    {
+     "id": "boue",
+     "label": "crotté",
+     "palette": {
+      "chevron": "hbt",
+      "guetre": "sangle-us",
+      "botte": "od"
+     }
+    },
+    {
+     "id": "delave",
+     "label": "délavé",
+     "palette": {
+      "chevron": "hbt-delave",
+      "tenue": "hbt-delave",
+      "pantalon": "hbt-delave"
+     }
+    }
+   ]
+  },
+  {
+   "slot": "joueur",
+   "pour": [
+    "survivant"
+   ],
+   "id": "epoque-C",
+   "label": "Survivant C",
+   "intent": "Fantassin de 1942, baroudeur : manches retroussées, casque M1 de travers à jugulaire pendante, treillis olive délavé, guêtres, ceinturon, bretelles.",
+   "palette": {
+    "peau": "--perso-peau-joueur",
+    "botte": "brodequin",
+    "equipement": "sangle-us",
+    "casque": "casque-m1",
+    "filet": "filet",
+    "camo": "camo",
+    "guetre": "guetre",
+    "poche": "poche-us",
+    "sac": "sangle-us",
+    "cuir": "brodequin",
+    "accent": "sangle-us",
+    "tenue": "hbt-delave",
+    "pantalon": "od"
+   },
+   "base": {
+    "retire": [
+     "cap",
+     "capBrim",
+     "vestA",
+     "kneeL",
+     "pack",
+     "earL"
+    ],
+    "retireSimple": [
+     "neck",
+     "ragHipL"
+    ],
+    "modifs": {
+     "shinL": {
+      "palette": "guetre"
+     },
+     "neck": {
+      "dims": {
+       "radial": 8,
+       "caps": 1
+      }
+     },
+     "handL": {
+      "dims": {
+       "w": 8,
+       "h": 6
+      }
+     },
+     "foreL": {
+      "palette": "peau",
+      "cloth": false,
+      "skin": true
+     }
+    }
+   },
+   "pieces": [
+    "casque-m1-travers",
+    "ceinturon-us",
+    "bretelles-us",
+    "gourde-us",
+    "trousse"
+   ],
+   "tenues": [
+    {
+     "id": "standard",
+     "label": "standard",
+     "palette": {}
+    },
+    {
+     "id": "boue",
+     "label": "crotté",
+     "palette": {
+      "guetre": "sangle-us",
+      "botte": "od"
+     }
+    },
+    {
+     "id": "delave",
+     "label": "délavé",
+     "palette": {
+      "tenue": "m41"
+     }
+    }
+   ]
+  },
+  {
+   "slot": "joueur",
+   "pour": [
+    "personnage-2"
+   ],
+   "id": "para-A",
+   "label": "Personnage 2 A (parachutiste)",
+   "intent": "Parachutiste américain de 1942 : veste M42 sable à grandes poches de poitrine, pantalon à poches de cuisse, bottes de saut, casque à filet, harnais.",
+   "palette": {
+    "peau": "--perso-peau-joueur",
+    "botte": "botte-saut",
+    "equipement": "guetre",
+    "casque": "casque-m1",
+    "filet": "filet",
+    "camo": "camo",
+    "guetre": "guetre",
+    "poche": "guetre",
+    "sac": "sangle-us",
+    "cuir": "brodequin",
+    "accent": "sangle-us",
+    "tenue": "m42",
+    "pantalon": "m42"
+   },
+   "base": {
+    "retire": [
+     "cap",
+     "capBrim",
+     "vestA",
+     "kneeL",
+     "pack",
+     "earL"
+    ],
+    "retireSimple": [
+     "neck",
+     "ragHipL"
+    ],
+    "modifs": {
+     "shinL": {
+      "palette": "botte"
+     },
+     "neck": {
+      "dims": {
+       "radial": 8,
+       "caps": 1
+      }
+     },
+     "handL": {
+      "dims": {
+       "w": 8,
+       "h": 6
+      }
+     }
+    }
+   },
+   "pieces": [
+    "casque-m1-filet",
+    "poches-m42",
+    "poches-cuisse",
+    "ceinturon-us",
+    "harnais"
+   ],
+   "tenues": [
+    {
+     "id": "standard",
+     "label": "standard",
+     "palette": {}
+    },
+    {
+     "id": "boue",
+     "label": "crotté",
+     "palette": {
+      "tenue": "m42-olive",
+      "pantalon": "m42-olive"
+     }
+    },
+    {
+     "id": "delave",
+     "label": "délavé",
+     "palette": {
+      "tenue": "hbt-delave",
+      "pantalon": "hbt-delave"
+     }
+    }
+   ]
+  },
+  {
+   "slot": "joueur",
+   "pour": [
+    "personnage-2"
+   ],
+   "id": "para-B",
+   "label": "Personnage 2 B (parachutiste équipé)",
+   "intent": "Parachutiste à la veste M42 renforcée olive : renforts aux genoux, musette ventrale, poches de cuisse, bottes de saut, casque à filet, harnais, gourde.",
+   "palette": {
+    "peau": "--perso-peau-joueur",
+    "botte": "botte-saut",
+    "equipement": "guetre",
+    "casque": "casque-m1",
+    "filet": "filet",
+    "camo": "camo",
+    "guetre": "guetre",
+    "poche": "guetre",
+    "sac": "sangle-us",
+    "cuir": "brodequin",
+    "accent": "sangle-us",
+    "tenue": "m42-olive",
+    "pantalon": "m42-olive"
+   },
+   "base": {
+    "retire": [
+     "cap",
+     "capBrim",
+     "vestA",
+     "kneeL",
+     "pack",
+     "earL"
+    ],
+    "retireSimple": [
+     "neck",
+     "ragHipL"
+    ],
+    "modifs": {
+     "shinL": {
+      "palette": "botte"
+     },
+     "neck": {
+      "dims": {
+       "radial": 8,
+       "caps": 1
+      }
+     },
+     "handL": {
+      "dims": {
+       "w": 8,
+       "h": 6
+      }
+     }
+    }
+   },
+   "pieces": [
+    "casque-m1-filet",
+    "poches-m42",
+    "poches-cuisse",
+    "renforts-genou",
+    "musette-ventrale",
+    "harnais",
+    "gourde-us"
+   ],
+   "tenues": [
+    {
+     "id": "standard",
+     "label": "standard",
+     "palette": {}
+    },
+    {
+     "id": "boue",
+     "label": "crotté",
+     "palette": {
+      "tenue": "m42",
+      "pantalon": "m42"
+     }
+    },
+    {
+     "id": "delave",
+     "label": "délavé",
+     "palette": {
+      "tenue": "hbt-delave",
+      "pantalon": "hbt-delave"
+     }
+    }
+   ]
+  },
+  {
+   "slot": "joueur",
+   "pour": [
+    "personnage-2"
+   ],
+   "id": "para-C",
+   "label": "Personnage 2 C (Marine du Pacifique)",
+   "intent": "Marine du Pacifique (option) : couvre-casque camouflé, treillis P41 vert à poche de poitrine, brodequins sans guêtres, ceinturon, bretelles.",
+   "palette": {
+    "peau": "--perso-peau-joueur",
+    "botte": "brodequin",
+    "equipement": "sangle-us",
+    "casque": "casque-m1",
+    "filet": "filet",
+    "camo": "camo",
+    "guetre": "guetre",
+    "poche": "poche-us",
+    "sac": "sangle-us",
+    "cuir": "brodequin",
+    "accent": "sangle-us",
+    "tenue": "p41",
+    "pantalon": "p41"
+   },
+   "base": {
+    "retire": [
+     "cap",
+     "capBrim",
+     "vestA",
+     "kneeL",
+     "pack",
+     "earL"
+    ],
+    "retireSimple": [
+     "neck",
+     "ragHipL"
+    ],
+    "modifs": {
+     "shinL": {
+      "palette": "pantalon"
+     },
+     "neck": {
+      "dims": {
+       "radial": 8,
+       "caps": 1
+      }
+     },
+     "handL": {
+      "dims": {
+       "w": 8,
+       "h": 6
+      }
+     }
+    }
+   },
+   "pieces": [
+    "casque-m1-camo",
+    "poche-p41",
+    "ceinturon-us",
+    "bretelles-us",
+    "gourde-us"
+   ],
+   "tenues": [
+    {
+     "id": "standard",
+     "label": "standard",
+     "palette": {}
+    },
+    {
+     "id": "boue",
+     "label": "crotté",
+     "palette": {
+      "tenue": "hbt",
+      "pantalon": "hbt"
+     }
+    },
+    {
+     "id": "delave",
+     "label": "délavé",
+     "palette": {
+      "tenue": "hbt-delave",
+      "pantalon": "hbt-delave"
+     }
+    }
+   ]
+  }
+ ]
+}

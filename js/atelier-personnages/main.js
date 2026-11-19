@@ -507,6 +507,11 @@ function tick(dt) {
   }
 }
 
+// Lot 9g : section « Époque » (variantes d'époque, js/atelier-personnages/epoque.js), même page, même sols et même rendu ; préparée avant
+// l'affichage de la page (aucun décalage de mise en page).
+const { initEpoque } = await import('./epoque.js');
+const epoque = await initEpoque({ t, $, characters, poses, render, camera, palette, lookup, floors: floorTextures, enemies, gaits, player, zombieIds: variantsJson.zombie.variants.map((v) => v.id), testMode });
+
 rebuild();
 syncControls();
 $('grid-legend').textContent = `${COLUMNS.map((c) => t(`dev.persos.variant.${c}`)).join(' | ')} — ${SCALES.map((k) => (k === 1 ? t('dev.persos.scale.jeu') : t('dev.persos.scale', { k }))).join(', ')}`;
@@ -538,6 +543,7 @@ window.addEventListener('resize', () => draw());
 
 if (testMode) {
   window.__zsPersos = {
+    epoque,
     getState: () => ({
       ready: true, webgl, perso: state.perso, variante: state.variante, tenue: state.tenue, usure: state.usure, wear: wear(), manche: state.manche, anim: state.anim, sol: state.sol, vue: state.vue,
       orbite: state.orbite, vitesse: state.vitesse, playing: state.playing, time: state.time, macros: structuredClone(state.macros[state.perso]),
