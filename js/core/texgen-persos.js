@@ -7,6 +7,16 @@ import { isNum } from './vec.js';
 export const REGION_KINDS = ['tissu', 'denim', 'peau', 'cuir', 'metal', 'toile', 'plastique', 'lampe', 'sombre'];
 // Clé de palette d'une pièce -> type de région.
 export const PALETTE_REGION = { peau: 'peau', tenue: 'tissu', pantalon: 'denim', botte: 'cuir', accent: 'tissu', sombre: 'sombre', metal: 'metal', cuir: 'cuir', sac: 'toile', casque: 'plastique', lampe: 'lampe', yeux: 'lampe' };
+// Lot 9g (époque) : quatre régions de plus dans les cases libres de la grille (indices 9 à 12), générées seulement pour une spécification
+// `epoque: true` (variantes d'époque) : laine (capotes), chevrons (treillis à chevrons), filet (casques à filet), camouflage (couvre-casque) ;
+// sans ce drapeau, les cases libres restent « sombre » et les textures actuelles sont identiques au bit près.
+export const EPOQUE_KINDS = ['laine', 'chevron', 'filet', 'camo'];
+// Clés de palette des variantes d'époque -> type de région (les clés de PALETTE_REGION gardent la leur).
+export const PALETTE_REGION_EPOQUE = { laine: 'laine', chevron: 'chevron', filet: 'filet', camo: 'camo', equipement: 'cuir', col: 'tissu', cheveux: 'sombre', guetre: 'toile', casquette: 'tissu', visiere: 'cuir', poche: 'toile' };
+// Région d'une clé de palette (actuelle, puis d'époque ; inconnue : sombre).
+export const regionOfPalette = (key) => PALETTE_REGION[key] ?? PALETTE_REGION_EPOQUE[key] ?? 'sombre';
+const ALL_KINDS = [...REGION_KINDS, ...EPOQUE_KINDS];
+const kindAt = (spec, ri) => (ri < REGION_KINDS.length ? REGION_KINDS[ri] : spec.epoque ? EPOQUE_KINDS[ri - REGION_KINDS.length] : undefined) ?? 'sombre';
 const GRID = 4; // régions par côté d'une tuile
 const num = (v, d = 0) => (isNum(v) ? v : d);
 
@@ -44,20 +54,27 @@ function detail(kind, u, v, seed) {
     case 'toile': return 0.89 + 0.04 * Math.sin(u * 70) * Math.sin(v * 70) + 0.07 * n;
     case 'plastique': return 0.94 + 0.04 * n;
     case 'lampe': return 1;
+    // Lot 9g : motifs géométriques seulement (aucun signe, aucune lettre).
+    case 'laine': return 0.86 + 0.08 * n + 0.05 * f;
+    case 'chevron': return 0.86 + 0.06 * (Math.abs(((u * 6 + Math.abs(((v * 10) % 2) - 1)) % 1) - 0.5) * 2) + 0.05 * n;
+    case 'filet': return Math.min(Math.abs(Math.sin(u * 22)), Math.abs(Math.sin(v * 22))) < 0.25 ? 0.78 : 0.95 - 0.04 * n;
+    case 'camo': return noise(u * 4, v * 4, seed + 3) > 0.55 ? 0.78 + 0.04 * f : noise(u * 3 + 9, v * 3, seed + 5) > 0.5 ? 0.9 : 0.98 - 0.03 * f;
     default: return 0.9 + 0.06 * n;
   }
 }
 
 // Spécification : { size (256 zombies, 128 joueur), tiles (2 : quatre paliers ; 1 : une tuile), seed, blood: [frais, sec] (couleurs),
 // coverage: [0, c1, c2, c3] (part de la surface tachée par palier) }.
-export function persoSpec({ size = 256, tiles = 2, seed = 1, blood = null, coverage = [0, 0.12, 0.28, 0.45] } = {}) {
+// Lot 9g : epoque (booléen) : régions d'époque dans les cases libres (EPOQUE_KINDS) ; absent : spécification d'avant, sans la clé.
+export function persoSpec({ size = 256, tiles = 2, seed = 1, blood = null, coverage = [0, 0.12, 0.28, 0.45], epoque = false } = {}) {
   const s = [64, 128, 256, 512].includes(size) ? size : 256;
-  return { size: s, tiles: tiles === 1 ? 1 : 2, seed: Math.trunc(num(seed, 1)), blood: Array.isArray(blood) ? blood : null, coverage: Array.isArray(coverage) ? coverage.map((c) => Math.min(1, Math.max(0, num(c)))) : [0, 0, 0, 0] };
+  const spec = { size: s, tiles: tiles === 1 ? 1 : 2, seed: Math.trunc(num(seed, 1)), blood: Array.isArray(blood) ? blood : null, coverage: Array.isArray(coverage) ? coverage.map((c) => Math.min(1, Math.max(0, num(c)))) : [0, 0, 0, 0] };
+  return epoque === true ? { ...spec, epoque: true } : spec;
 }
 
 // Rectangle UV (0 à 1) d'une région dans la tuile 0 (les autres tuiles s'obtiennent par décalage de texture), rentré d'un texel.
 export function persoRegionRect(spec, kind) {
-  const i = Math.max(0, REGION_KINDS.indexOf(kind));
+  const i = Math.max(0, (spec.epoque ? ALL_KINDS : REGION_KINDS).indexOf(kind));
   const tile = spec.size / spec.tiles;
   const cell = tile / GRID;
   const x = (i % GRID) * cell;
@@ -83,7 +100,7 @@ export function createPersoTexture(spec) {
       const lx = x - tx * tile;
       const ly = y - ty * tile;
       const ri = Math.floor(lx / cell) + Math.floor(ly / cell) * GRID;
-      const kind = REGION_KINDS[ri] ?? 'sombre';
+      const kind = kindAt(sp, ri);
       const u = (lx % cell) / cell;
       const v = (ly % cell) / cell;
       const di = ly * tile + lx;

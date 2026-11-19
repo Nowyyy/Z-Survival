@@ -1,7 +1,8 @@
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
-// Lot 3j-C : sections « Sang » et « Mini-arène » de atelier-personnages.html (667 × 375, hooks de ?test=1, temps simulé).
+// Lot 3j-C : section « Sang » de atelier-personnages.html (667 × 375, hooks de ?test=1, temps simulé). Lot 9g (retour du propriétaire) :
+// la mini-arène est retirée de la page ; le test d'accessibilité garde le sang en marche (temps simulé de la vue principale à la place).
 // Lancer : E2E_FULL=1 npx playwright test tests/e2e/persos-sang.spec.js
 const SIZE = { width: 667, height: 375 };
 const S = (page) => page.evaluate(() => window.__zsPersos.getState());
@@ -27,7 +28,7 @@ const sixtySeconds = (page) => page.evaluate(() => {
   return max;
 });
 
-test.describe('sang et mini-arène', () => {
+test.describe('sang', () => {
   test.skip(({ isMobile }) => isMobile, 'bureau (la fenêtre est réglée par chaque test)');
 
   for (const [level, maxP, maxD] of [['reduit', 96, 12], ['1', 256, 48]]) {
@@ -58,11 +59,11 @@ test.describe('sang et mini-arène', () => {
     expect(after - before).toBeGreaterThan(0);
   });
 
-  test('axe : aucune violation avec le sang et l\'arène en marche', async ({ page }) => {
+  test('axe : aucune violation avec le sang en marche', async ({ page }) => {
     await open(page);
     await set(page, 'ctl-sang', '1');
     await page.click('#btn-hit');
-    await page.evaluate(() => window.__zsPersos.arena.run(2));
+    await page.evaluate(() => window.__zsPersos.step(2));
     await page.mouse.move(1, 1); // l'état survolé des boutons (.button:hover de base.css, commun au site) n'est pas l'objet de ce test
     const r = await new AxeBuilder({ page }).analyze();
     expect(r.violations.map((v) => `${v.id} : ${v.nodes.length}`)).toEqual([]);

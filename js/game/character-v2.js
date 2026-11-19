@@ -7,8 +7,8 @@ import * as THREE from 'three';
 import { expandParts, jointMatrices, jointsOf, mergeParts } from '../core/character-parts.js';
 import { createRng, nextFloat } from '../core/rng.js';
 import { DEATHS, addPoseInto, armIK, blendPosesInto, copyPoseInto, createPose, createPoseWork, cycleSeconds, poseAt, poseAtInto, rigOf, toucheInto } from '../core/pose-v2.js';
-import { partRgb, pickOutfit, resolveVariant, wearTier } from '../core/persos-variants.js';
-import { PALETTE_REGION, createPersoTexture, persoRegionRect, persoSpec, regionFactor } from '../core/texgen-persos.js';
+import { paletteColor, partRgb, pickOutfit, resolveVariant, wearTier } from '../core/persos-variants.js';
+import { PALETTE_REGION, PALETTE_REGION_EPOQUE, createPersoTexture, persoRegionRect, persoSpec, regionFactor, regionOfPalette } from '../core/texgen-persos.js';
 import { EPAULE_REFERENCE, echellesCorps, lireCorps, rigCorps, varianteCorps } from '../core/gabarit.js';
 
 const KICK_TIME = 0.25; // durée du recul du pistolet du joueur (secondes de jeu)
@@ -185,7 +185,8 @@ export function createV2Kit(options) {
     if (kits.has(key)) return kits.get(key);
     const { slot, variant } = variantOf(slotId, choice);
     const isPlayer = variant.kind === 'player';
-    const spec = persoSpec({ size: isPlayer ? 128 : 256, tiles: isPlayer ? 1 : 2, seed: 11 + characters.slots.indexOf(slot) * 17, blood });
+    // Lot 9g : variantes d'époque (variant.epoque) : régions d'époque dans les cases libres de l'atlas (même taille).
+    const spec = persoSpec({ size: isPlayer ? 128 : 256, tiles: isPlayer ? 1 : 2, seed: 11 + characters.slots.indexOf(slot) * 17, blood, epoque: variant.epoque === true });
     const tex = createPersoTexture(spec);
     const base = new THREE.DataTexture(new Uint8Array(tex.data.buffer), tex.width, tex.height, THREE.RGBAFormat);
     base.colorSpace = THREE.SRGBColorSpace;
@@ -194,7 +195,7 @@ export function createV2Kit(options) {
     base.magFilter = THREE.LinearFilter;
     base.needsUpdate = true;
     textures.push({ id: key, texture: base, bytes: tex.bytes });
-    const factors = Object.fromEntries(Object.values(PALETTE_REGION).map((k) => [k, regionFactor(tex, spec, k)]));
+    const factors = Object.fromEntries([...Object.values(PALETTE_REGION), ...(spec.epoque ? Object.values(PALETTE_REGION_EPOQUE) : [])].map((k) => [k, regionFactor(tex, spec, k)]));
     // Lot 3m (levier de chargement 1) : matières de blessure (tuiles 1 à 3 de l'atlas) créées au premier usage (premier palier de blessure),
     // pas au démarrage : seule la tuile 0 (corps propre) est envoyée à la carte graphique avec le personnage.
     const woundTiles = TILE_OFFSETS.slice(0, isPlayer ? 1 : 4);
@@ -231,7 +232,7 @@ export function createV2Kit(options) {
     if (!shared) {
       const joints = jointsOf(res, skeletons);
       const parts = expandParts(res);
-      const rect = (p) => persoRegionRect(k.spec, PALETTE_REGION[p.palette] ?? 'sombre');
+      const rect = (p) => persoRegionRect(k.spec, regionOfPalette(p.palette));
       const order = parts.some((p) => p.material === 'glow') ? ['body', 'glow'] : ['body'];
       const { geometry, groups } = rigidBuild(parts, { joints, rect, color: () => [1, 1, 1], materials: order });
       const triParts = order.flatMap((m) => groups.find((g) => g.material === m)?.parts ?? []);
@@ -240,7 +241,7 @@ export function createV2Kit(options) {
       k.shared.set(outfit, shared);
     }
     const colors = new Float32Array(shared.geometry.attributes.position.count * 3);
-    const tearRgb = lookup(res.palette.dechirure) ?? [0, 0, 0];
+    const tearRgb = paletteColor(res.palette.dechirure, lookup) ?? [0, 0, 0];
     const tears = Number(res.wear?.tears) || 0;
     // Les couleurs des jetons sont en sRGB ; le rendu travaille en linéaire (les textures aussi sont déclarées sRGB). Une conversion par
     // couleur (pièce ou déchirure), pas par sommet ; Math.fround : la valeur sRGB passe en flottant 32 bits avant la conversion.

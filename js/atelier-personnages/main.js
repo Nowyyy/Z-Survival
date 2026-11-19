@@ -1,6 +1,7 @@
 // Atelier des personnages (lot 3j) : page technique. Compare les variantes v2 (js/game/character-v2.js, js/core/pose-v2.js ; lot 5e :
 // l'ancien modèle « actuel » est retiré du jeu et de la page) dans le rendu du jeu (lumière, brume, ombres de render.json),
-// à l'échelle du jeu à 667 × 375, ×2 et ×4 ; mesures, curseurs et « Mes choix » (texte à copier, rien n'est enregistré).
+// à l'échelle du jeu à 667 × 375, ×2 et ×4 ; sang et « Mes choix » (texte à copier, rien n'est enregistré). Lot 9g (retour du propriétaire) :
+// sections Mesures, Curseurs et Mini-arène retirées (macros à 0) ; barre de réglages toujours visible au défilement ; section Époque.
 // ?test=1 expose window.__zsPersos (état, réglages, pas de temps simulé) ; sans ?test=1, rien n'est exposé.
 import * as THREE from 'three';
 import { translate } from '../i18n.js';
@@ -9,27 +10,24 @@ import { createTokenLookup, readPalette } from '../game/palette.js';
 import { createThreeTextures, generateTextureData } from '../game/textures.js';
 import { PLAYER_ANIMS, ZOMBIE_ANIMS, cycleSeconds, rigOf } from '../core/pose-v2.js';
 import { ANIM_MACROS, MACRO_IDS, formatChoices, wearTier } from '../core/persos-variants.js';
-import { buildSpec, createTextureData, meanColor } from '../core/texgen.js';
-import { ARENA_STEP, createArena, stepArena } from '../core/arena.js';
 import { LEVELS, woundTier } from '../core/blood.js';
 import { createBloodFx } from '../game/blood-fx.js';
-import { createMeasures, gameView } from './measures.js';
+import { gameView } from './measures.js';
 import { VIEWS, createStage, viewCamera } from './scene.js';
 
 const query = new URLSearchParams(location.search);
 const testMode = query.get('test') === '1';
 const $ = (id) => document.getElementById(id);
 const fmt = (text, params) => String(text).replace(/\{(\w+)\}/g, (_, k) => String(params?.[k] ?? ''));
-const n2 = (v) => (Number.isFinite(v) ? v.toFixed(2).replace('.', ',') : '–');
 const loadJson = async (path) => {
   const r = await fetch(path);
   if (!r.ok) throw new Error(`${path} : ${r.status}`);
   return r.json();
 };
-const [dict, characters, poses, render, cameraJson, texturesJson, variantsJson, enemies, gaits, player, world, windows, bloodCfg, weapons] = await Promise.all([
+const [dict, characters, poses, render, cameraJson, texturesJson, variantsJson, enemies, gaits, player, world, windows, bloodCfg] = await Promise.all([
   'data/i18n/atelier-personnages.json', 'data/game/characters-v2.json', 'data/game/poses-v2.json', 'data/game/render.json', 'data/game/camera.json', 'data/game/textures.json',
   'data/game/zombie-variants.json', 'data/game/enemies.json', 'data/game/gaits.json', 'data/game/player.json', 'data/game/maps/rez-de-chaussee/world.json', 'data/game/windows.json',
-  'data/game/blood.json', 'data/game/weapons.json',
+  'data/game/blood.json',
 ].map(loadJson));
 const t = (key, params) => fmt(translate(dict, key), params);
 for (const node of document.querySelectorAll('[data-i18n]')) node.textContent = t(node.dataset.i18n);
@@ -62,8 +60,6 @@ for (let y = 0; y < salle.height; y += 1) {
   }
 }
 generated.items.push({ entry: { ...salle.entry, id: 'sol-tache' }, width: salle.width, height: salle.height, data: stainedData });
-const floorMean = (id) => meanColor(createTextureData(buildSpec(texturesJson.textures.find((e) => e.id === id), lookup)));
-const floorMeans = { carrelage: floorMean('sol-salle'), herbe: floorMean('herbe'), terre: floorMean('sol-exterieur'), route: floorMean('route'), trottoir: floorMean('trottoir'), escalier: floorMean('mur') };
 const camera = gameView(world, render, cameraJson);
 
 // --- État des réglages -------------------------------------------------------------------------------------------------------------------
@@ -100,11 +96,12 @@ const floorTextures = Object.fromEntries(Object.entries(FLOOR_IDS).map(([k, id])
 const v2Opts = { characters, poses, lookup, hit: palette.hit, zombieIds: variantsJson.zombie.variants.map((v) => v.id), seed: 7, wear, macros: state.macros, animMacros: state.macros };
 let v2Kit = createV2Kit(v2Opts);
 const zombieIndex = (slot) => variantsJson.zombie.variants.findIndex((v) => v.id === slot);
-const measures = createMeasures({ characters, poses, enemies, player, lookup, floors: floorMeans, blood, factors: (slot) => v2Kit.slotKit(slot, 'A').factors, camera });
+// Retour du propriétaire (lot 9g) : sections Mesures, Curseurs et Mini-arène retirées ; les macros restent à 0 (paramètres actuels).
+const slotOf = (id) => characters.slots.find((x) => x.id === id);
 
 function makeChar(slot, variant) {
   const kind = slot === 'joueur' ? 'player' : 'zombie';
-  return { c: v2Kit.create(kind, Math.max(0, zombieIndex(slot)), { choice: variant, outfit: Math.min(state.tenue, (measures.slotOf(slot).variants.find((x) => x.id === variant)?.outfits.length ?? 1) - 1), wear: wear() }) };
+  return { c: v2Kit.create(kind, Math.max(0, zombieIndex(slot)), { choice: variant, outfit: Math.min(state.tenue, (slotOf(slot).variants.find((x) => x.id === variant)?.outfits.length ?? 1) - 1), wear: wear() }) };
 }
 
 const mainStage = createStage({ render, palette, floors: floorTextures });
@@ -200,43 +197,6 @@ function draw() {
   lastInfo.grid = { calls, triangles };
 }
 
-// --- Mesures ------------------------------------------------------------------------------------------------------------------------------
-let current = null;
-function updateMeasures() {
-  const slot = state.perso;
-  const m = measures.v2(slot, state.variante, { outfit: state.tenue, wear: wear(), macros: state.macros[slot], animMacros: state.macros[slot] });
-  m.gap = measures.gap(slot, state.variante, m);
-  current = m;
-  const list = $('measures');
-  list.textContent = '';
-  const add = (text, out = false) => {
-    const li = document.createElement('li');
-    li.textContent = text;
-    if (out) {
-      const span = document.createElement('span');
-      span.className = 'persos-out';
-      span.textContent = ` — ${t('dev.persos.m.out')}`;
-      li.append(span);
-    }
-    list.append(li);
-    return li;
-  };
-  add(t('dev.persos.m.architecture', { arch: t(`dev.persos.m.arch.${m.architecture}`) }));
-  add(t('dev.persos.m.pieces', { n: m.stats.pieces }));
-  add(t('dev.persos.m.triangles', { n: m.stats.triangles, max: m.budget }), m.stats.triangles > m.budget);
-  add(t('dev.persos.m.calls', { n: m.calls, body: m.architecture === 'rigid' ? m.stats.calls : m.stats.pieces, shadow: m.architecture === 'rigid' ? m.stats.shadowCalls : m.stats.casters }), m.calls > 4);
-  if (m.architecture === 'rigid') add(t('dev.persos.m.shadow', { calls: m.stats.shadowCalls, tri: m.stats.shadowTriangles }), m.stats.shadowTriangles > 64);
-  add(t('dev.persos.m.height', { h: n2(m.height), lo: n2(m.heightRange[0]), hi: n2(m.heightRange[1]) }));
-  add(t('dev.persos.m.reach', { r: n2(m.reach), max: n2(1.3 * m.radius), radius: n2(m.radius) }), m.reach > 1.3 * m.radius + 1e-9);
-  const floorKey = state.sol === 'tache' ? 'carrelage-tache' : state.sol;
-  add(t('dev.persos.m.contrast', { c: n2(m.contrasts[floorKey]), min: n2(m.minContrast), floor: m.minFloor }), m.minContrast < 3);
-  const target = state.variante === 'C' ? 20 : 12;
-  if (m.gap !== null) add(t('dev.persos.m.silhouette', { area: n2(m.sil.area), aspect: n2(m.sil.aspect), gap: n2(100 * m.gap), target }), 100 * m.gap < target);
-  else add(t('dev.persos.m.silhouette', { area: n2(m.sil.area), aspect: n2(m.sil.aspect), gap: '–', target }));
-  if (m.violations.length === 0) add(t('dev.persos.m.ok'));
-  for (const v of m.violations) add(t('dev.persos.m.violation', { code: v.code, detail: v.detail }), true);
-}
-
 // --- Contrôles ------------------------------------------------------------------------------------------------------------------------------
 const fill = (select, options, value) => {
   select.textContent = '';
@@ -251,7 +211,7 @@ const fill = (select, options, value) => {
 function syncControls() {
   fill($('ctl-perso'), SLOTS.map((s) => [s, t(`dev.persos.slot.${s}`)]), state.perso);
   fill($('ctl-variante'), VARIANTS.map((v) => [v, t(`dev.persos.variant.${v}`)]), state.variante);
-  const variant = measures.slotOf(state.perso).variants.find((v) => v.id === state.variante);
+  const variant = slotOf(state.perso).variants.find((v) => v.id === state.variante);
   const outfits = variant.outfits;
   state.tenue = Math.min(state.tenue, outfits.length - 1);
   fill($('ctl-tenue'), outfits.map((o, i) => [i, t('dev.persos.tenue.n', { n: i + 1, label: o.label })]), state.tenue);
@@ -267,34 +227,7 @@ function syncControls() {
   $('out-orbite').textContent = `${state.orbite}°`;
   $('btn-play').textContent = t(state.playing ? 'dev.persos.pause' : 'dev.persos.play');
   $('btn-play').setAttribute('aria-pressed', String(state.playing));
-  buildMacros();
 }
-function buildMacros() {
-  const box = $('macros');
-  box.textContent = '';
-  const ids = [...MACRO_IDS, ...ANIM_MACROS];
-  for (const id of ids) {
-    const field = document.createElement('div');
-    field.className = 'persos-field persos-field-range';
-    const label = document.createElement('label');
-    label.htmlFor = `macro-${id}`;
-    label.textContent = t(`dev.persos.macro.${id}`);
-    const input = document.createElement('input');
-    Object.assign(input, { id: `macro-${id}`, type: 'range', min: '-2', max: '2', step: '1', className: 'persos-range', value: String(state.macros[state.perso][id]) });
-    const out = document.createElement('output');
-    out.className = 'persos-value';
-    out.htmlFor = input.id;
-    out.textContent = signed(state.macros[state.perso][id]);
-    input.addEventListener('input', () => {
-      state.macros[state.perso][id] = Number(input.value);
-      out.textContent = signed(Number(input.value));
-      changed(true);
-    });
-    field.append(label, input, out);
-    box.append(field);
-  }
-}
-const signed = (v) => (v > 0 ? `+${v}` : String(v));
 function updateChoices() {
   const lines = [...state.picks.values()];
   $('choices-text').value = formatChoices(lines, { sang: state.sang ?? '0' });
@@ -305,11 +238,8 @@ function changed(rebuildChars = false) {
     v2Kit = createV2Kit(v2Opts);
     mainBlood.reset();
     rebuild();
-    arenaReset(arena.seed);
-    arenaDraw();
     old.dispose();
   }
-  updateMeasures();
   draw();
 }
 const bind = (id, key, cast = (v) => v, rebuildChars = true, sync = false) => {
@@ -388,103 +318,10 @@ function bloodText(fx, renderer) {
   return t('dev.persos.blood.stats', { p: st.particles, d: st.decals, c: st.corpses, calls: st.calls, tri: st.triangles, rcalls: renderer?.info.render.calls ?? 0, rtri: renderer?.info.render.triangles ?? 0 });
 }
 
-// --- Mini-arène (section 6) : simulation pure (js/core/arena.js), rendu à l'échelle du jeu ---------------------------------------------------
-const arenaRenderer = webgl ? makeRenderer($('canvas-arena')) : null;
-const arenaStage = createStage({ render, palette, floors: floorTextures });
-const arenaCam = new THREE.PerspectiveCamera();
-const arenaCfg = { enemies, gaits, weapon: weapons.pistol, player, count: 10, radius: 300 };
-const arena = { seed: 1, state: null, chars: new Map(), player: null, blood: null, acc: 0, speed: 1, playing: false, lastShot: -1, kills: [] };
-function arenaReset(seed) {
-  for (const ch of arena.chars.values()) arenaStage.scene.remove(ch.c.root);
-  arena.chars.clear();
-  if (arena.player) arenaStage.scene.remove(arena.player.c.root);
-  arena.blood?.dispose();
-  arena.seed = seed;
-  arena.state = createArena(seed, arenaCfg);
-  arena.acc = 0;
-  arena.lastShot = -1;
-  arena.player = makeChar('joueur', state.variante);
-  arenaStage.scene.add(arena.player.c.root);
-  for (const z of arena.state.zombies) {
-    const ch = makeChar(z.type, state.variante);
-    arena.chars.set(z.id, ch);
-    arenaStage.scene.add(ch.c.root);
-  }
-  arena.blood = makeBlood(arenaStage.scene, seed * 13);
-  arenaStage.ground.set(state.sol);
-}
-// Avance l'arène de `seconds` (temps d'arène, pas fixes) : mêmes résultats quelle que soit la vitesse d'affichage.
-function arenaRun(seconds) {
-  arena.acc += Math.max(0, seconds);
-  while (arena.acc >= ARENA_STEP - 1e-9) {
-    arena.acc -= ARENA_STEP;
-    if (arena.state.done) {
-      arena.blood.update(ARENA_STEP);
-      continue;
-    }
-    const r = stepArena(arena.state, ARENA_STEP, arenaCfg);
-    arena.state = r.state;
-    for (const e of r.events) {
-      if (e.type === 'shot') arena.lastShot = arena.state.time;
-      if (e.type === 'hit') {
-        arena.blood.hit({ x: e.x, y: e.y, dir: e.dir });
-        const ch = arena.chars.get(e.id);
-        if (ch) ch.c.setWound(settingsBodyStains() ? woundTier(e.hpFraction, bloodCfg.wounds) : 0);
-      }
-      if (e.type === 'kill') {
-        arena.blood.kill({ x: e.x, y: e.y, dir: e.dir, type: e.zombie, facing: e.facing });
-        const ch = arena.chars.get(e.id);
-        if (ch) arenaStage.scene.remove(ch.c.root);
-        arena.chars.delete(e.id);
-      }
-    }
-    arena.blood.update(ARENA_STEP);
-  }
-}
-function arenaDraw() {
-  if (!webgl || !arena.state) return;
-  const tm = arena.state.time;
-  for (const z of arena.state.zombies) {
-    const ch = arena.chars.get(z.id);
-    if (!ch) continue;
-    ch.c.root.position.set(z.x, 0, z.y);
-    ch.c.root.rotation.y = Math.PI / 2 - z.facing;
-    const anim = z.attacking ? 'attaque' : { lent: 'marcheLente', marche: 'marche', rampe: 'rampe', course: 'course' }[z.gait];
-    ch.c.setAnim(anim, z.attacking ? tm % 1 : z.distance / gaits.gaits[z.gait].stride, {}, tm);
-  }
-  const pl = arena.player;
-  pl.c.root.rotation.y = Math.PI / 2 - arena.state.aim;
-  const recoil = Math.max(0, 1 - (tm - arena.lastShot) / 0.12);
-  pl.c.setAnim('repos', tm / 3, { twist: 0, recoil }, tm);
-  arena.blood.sync('rdc');
-  const c = $('canvas-arena');
-  const w = Math.max(1, c.clientWidth);
-  const h = Math.max(1, c.clientHeight);
-  arenaRenderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
-  arenaRenderer.setSize(w, h, false);
-  const v = viewCamera(arenaCam, { view: 'jeu', width: w, height: h, zoom: 1, gameDistance: camera.distance, fov: render.camera.fov, tilt: render.camera.tilt });
-  arenaStage.setFog(v.distance);
-  arenaStage.sun.position.set(render.light.sunOffset.x, render.light.sunOffset.y, render.light.sunOffset.z);
-  Object.assign(arenaStage.sun.shadow.camera, { left: -500, right: 500, top: 500, bottom: -500 });
-  arenaStage.sun.shadow.camera.updateProjectionMatrix();
-  arenaRenderer.render(arenaStage.scene, arenaCam);
-  const st = arena.blood.stats();
-  $('arena-stats').textContent = t('dev.persos.arena.stats', { seed: arena.seed, t: arena.state.time.toFixed(1).replace('.', ','), alive: arena.state.zombies.filter((z) => z.alive).length, kills: arena.state.kills, shots: arena.state.shots, p: st.particles, d: st.decals, c: st.corpses, calls: arenaRenderer.info.render.calls, tri: arenaRenderer.info.render.triangles });
-}
-fill($('ctl-arena-speed'), [0.5, 1, 2].map((k) => [k, t('dev.persos.speed.n', { k: String(k).replace('.', ',') })]), 1);
-$('ctl-arena-speed').addEventListener('change', () => { arena.speed = Number($('ctl-arena-speed').value); });
-$('btn-arena-restart').addEventListener('click', () => { arenaReset(arena.seed); arenaDraw(); });
-$('btn-arena-next').addEventListener('click', () => { arenaReset(arena.seed + 1); arenaDraw(); });
-$('btn-arena-play').addEventListener('click', () => {
-  arena.playing = !arena.playing;
-  $('btn-arena-play').textContent = t(arena.playing ? 'dev.persos.pause' : 'dev.persos.play');
-  $('btn-arena-play').setAttribute('aria-pressed', String(arena.playing));
-});
 fill($('ctl-sang'), LEVELS.map((l) => [l, t({ 0: 'dev.persos.blood.l0', reduit: 'dev.persos.blood.lreduit', 1: 'dev.persos.blood.l1' }[l])]), state.sang);
 $('ctl-sang').addEventListener('change', () => {
   state.sang = $('ctl-sang').value;
   mainBlood.setLevel(state.sang);
-  arena.blood?.setLevel(state.sang);
   mainHp = 1;
   if (mainChar) mainChar.c.setWound(0);
   mainChar.c.root.visible = true;
@@ -497,7 +334,7 @@ $('btn-burst').addEventListener('click', () => {
   for (let i = 0; i < 5; i += 1) shootMain(false);
   draw();
 });
-// Pas de temps commun : animations de la page, sang de la vue principale, arène.
+// Pas de temps commun : animations de la page, sang de la vue principale.
 function tick(dt) {
   state.time += dt * state.vitesse;
   mainBlood.update(dt * state.vitesse);
@@ -507,15 +344,17 @@ function tick(dt) {
   }
 }
 
+// Lot 9g : section « Époque » (variantes d'époque, js/atelier-personnages/epoque.js), même page, même sols et même rendu ; préparée avant
+// l'affichage de la page (aucun décalage de mise en page).
+const { initEpoque } = await import('./epoque.js');
+const epoque = await initEpoque({ t, $, characters, poses, render, camera, palette, lookup, floors: floorTextures, enemies, gaits, player, zombieIds: variantsJson.zombie.variants.map((v) => v.id), testMode });
+
 rebuild();
 syncControls();
 $('grid-legend').textContent = `${COLUMNS.map((c) => t(`dev.persos.variant.${c}`)).join(' | ')} — ${SCALES.map((k) => (k === 1 ? t('dev.persos.scale.jeu') : t('dev.persos.scale', { k }))).join(', ')}`;
-updateMeasures();
 updateChoices();
 $('app').hidden = false;
-arenaReset(1);
 draw();
-arenaDraw();
 status.textContent = t('dev.persos.ready');
 
 // Lecture : le temps avance avec l'horloge réelle (sauf ?test=1, où seul step() le fait avancer).
@@ -525,10 +364,6 @@ const loop = (now) => {
   const dt = last === null ? 0 : Math.min(0.1, (now - last) / 1000);
   last = now;
   if (testMode || document.hidden) return;
-  if (arena.playing && !arena.state.done) {
-    arenaRun(dt * arena.speed);
-    arenaDraw();
-  }
   if (!state.playing) return;
   tick(dt);
   draw();
@@ -538,10 +373,10 @@ window.addEventListener('resize', () => draw());
 
 if (testMode) {
   window.__zsPersos = {
+    epoque,
     getState: () => ({
       ready: true, webgl, perso: state.perso, variante: state.variante, tenue: state.tenue, usure: state.usure, wear: wear(), manche: state.manche, anim: state.anim, sol: state.sol, vue: state.vue,
       orbite: state.orbite, vitesse: state.vitesse, playing: state.playing, time: state.time, macros: structuredClone(state.macros[state.perso]),
-      measures: current ? { triangles: current.stats.triangles, pieces: current.stats.pieces, calls: current.calls, architecture: current.architecture, minContrast: current.minContrast, area: current.sil.area, aspect: current.sil.aspect, reach: current.reach, gap: current.gap, violations: current.violations.map((v) => v.code) } : null,
       main: mainChar ? { ...mainChar.c.readPose?.() } : null,
       grid: { columns: COLUMNS, scales: SCALES, cells: gridInfo.map((g) => ({ ...g })) },
       camera: lastInfo.view ? { ...lastInfo.view, gameDistance: camera.distance, gameUnitsPerPixel: (2 * camera.distance * Math.tan((camera.fov * Math.PI) / 360)) / camera.height } : null,
@@ -552,7 +387,7 @@ if (testMode) {
       mainVisible: mainChar ? mainChar.c.root.visible : null,
       choices: $('choices-text').value,
     }),
-    // Change un réglage comme le ferait l'utilisateur (id d'un contrôle : ctl-perso, ctl-variante, …, macro-taille).
+    // Change un réglage comme le ferait l'utilisateur (id d'un contrôle : ctl-perso, ctl-variante, …).
     set(id, value) {
       const node = $(id);
       if (!node) return false;
@@ -567,21 +402,6 @@ if (testMode) {
       return state.time;
     },
     blood: () => mainBlood.stats(),
-    arena: {
-      // Avance l'arène de `seconds` secondes d'affichage à sa vitesse (×0,5, ×1, ×2) ; les résultats logiques ne dépendent que du temps d'arène.
-      step(seconds) {
-        arenaRun(Math.max(0, Number(seconds) || 0) * arena.speed);
-        arenaDraw();
-        return arena.state.time;
-      },
-      run(seconds) {
-        arenaRun(Math.max(0, Number(seconds) || 0));
-        arenaDraw();
-        return arena.state.time;
-      },
-      debug: () => arenaStage.scene.children.filter((o) => o.isGroup || o.type === 'Group').map((o) => ({ x: +o.position.x.toFixed(1), y: +o.position.y.toFixed(1), z: +o.position.z.toFixed(1), visible: o.visible, v2: o.userData.v2 === true, isPlayer: o === arena.player.c.root })),
-      state: () => ({ seed: arena.seed, time: arena.state.time, steps: arena.state.steps, done: arena.state.done, kills: arena.state.kills, shots: arena.state.shots, alive: arena.state.zombies.filter((z) => z.alive).length, zombies: arena.state.zombies.map((z) => ({ id: z.id, type: z.type, gait: z.gait, x: z.x, y: z.y, hp: z.hp, alive: z.alive })), blood: arena.blood.stats(), meshes: arena.chars.size, render: arenaRenderer ? { calls: arenaRenderer.info.render.calls, triangles: arenaRenderer.info.render.triangles } : null }),
-    },
     render: () => draw(),
   };
 }

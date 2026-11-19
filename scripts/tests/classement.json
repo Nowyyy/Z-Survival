@@ -331,6 +331,7 @@
     { "fichier": "tests/unit/noms.test.js", "categorie": "G", "valeur": "garde-fou", "recommandation": "garder", "raison": "Fichier des noms (lot 5h) : analyseur, priorité, fichier commité sans aucune erreur." },
     { "fichier": "tests/unit/persos-sang.test.js", "categorie": "G", "valeur": "garde-fou", "recommandation": "garder", "raison": "Sang : plafonds, déterminisme, budget." },
     { "fichier": "tests/unit/persos-variantes.test.js", "categorie": "P", "valeur": "règle de jeu", "recommandation": "garder", "raison": "Variantes des personnages." },
+    { "fichier": "tests/unit/persos-epoque.test.js", "categorie": "P", "valeur": "règle de jeu", "recommandation": "garder", "raison": "Lot 9g : variantes d'époque (budgets, contraste, gabarits, règles de contenu, fichier de choix)." },
     { "fichier": "tests/unit/publication.test.js", "categorie": "G", "valeur": "garde-fou", "recommandation": "garder", "raison": "Assembleur, workflow, publication." },
     { "fichier": "tests/unit/publication-ci-tests.test.js", "categorie": "P", "valeur": "contrôle de publication", "recommandation": "garder", "raison": "Lot 5q : CI de dev du contrôle de publication (dernier commit testé de la lignée, chemins ignorés lus dans tests.yml ; fonctions pures)." },
     { "fichier": "tests/unit/publication-controle.test.js", "categorie": "P", "valeur": "contrôle de publication", "recommandation": "garder", "raison": "Lot 5o : contrôle de publication en lecture seule (décisions pures, liste blanche des commandes)." },
