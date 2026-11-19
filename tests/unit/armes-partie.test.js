@@ -165,7 +165,7 @@ describe('inventaire : emplacements, chargeurs, rechargement, changement', () =>
     expect(r.ev).toEqual([
       { type: 'rechargeEtape', id: 'm1911', son: 'arme-chargeur-sort', lacher: true },
       { type: 'rechargeEtape', id: 'm1911', son: 'arme-chargeur-entre', lacher: false },
-      { type: 'rechargeEtape', id: 'm1911', son: 'arme-glissiere', lacher: false },
+      { type: 'rechargeEtape', id: 'm1911', son: 'arme-glissiere-tiree', lacher: false }, // partie J : glissière tirée et relâchée
     ]);
     expect(progressionRecharge(r.st, table)).toBeCloseTo(1.35 / 1.4, 9);
     r = run(r.st, 0.05, 1);
@@ -184,11 +184,14 @@ describe('inventaire : emplacements, chargeurs, rechargement, changement', () =>
     const r = recharger(s, table);
     expect(r.debut).toBe(true);
     expect(recharger(r.state, table).debut).toBe(false);
-    // Retour du propriétaire : le Kar98k se recharge balle par balle (verrou ouvert, deux cartouches, verrou fermé ; plus de « ching », partie I).
+    // Retour du propriétaire : le Kar98k se recharge balle par balle (verrou ouvert dès le début, cartouches prises une fois dans la poche puis
+    // mises une à une, verrou fermé au début du geste final ; plus de « ching », partie I ; plus lent, partie J).
     expect(armeActive(r.state).prevu).toBe(2);
-    expect(dureeRecharge(armeActive(r.state), table.armes.kar98k)).toBeCloseTo(0.35 + 2 * 0.38 + 0.5, 9);
-    const fin = run(r.state, 0.05, 33); // 1,61 s (et un pas d'arrondi)
-    expect(fin.ev.map((e) => [e.type, e.son])).toEqual([['rechargeEtape', 'arme-verrou-ouvre'], ['rechargeBalle', 'arme-cartouche'], ['rechargeBalle', 'arme-cartouche'], ['rechargeFin', 'arme-verrou-ferme']]);
+    expect(dureeRecharge(armeActive(r.state), table.armes.kar98k)).toBeCloseTo(0.95 + 2 * 0.5 + 0.45, 9);
+    const fin = run(r.state, 0.05, 49); // 2,4 s (et un pas d'arrondi)
+    expect(fin.ev.map((e) => [e.type, e.son])).toEqual([['rechargeEtape', 'arme-verrou-ouvre'], ['rechargeBalle', 'arme-cartouche'], ['rechargeBalle', 'arme-cartouche'], ['rechargeEtape', 'arme-verrou-ferme'], ['rechargeFin', null]]);
+    expect(table.armes.kar98k.recharge.poche).toBe('une');
+    expect(table.armes.kar98k.rechargement).toBeCloseTo(3.9, 9);
     expect(armeActive(fin.st)).toEqual({ id: 'kar98k', chargeur: 5, reserve: 28, recharge: null, prevu: null, vide: false });
   });
   it('balle par balle (Winchester, Kar98k) : chaque cartouche compte dès qu\'elle est mise ; interrompu, le rechargement garde ses cartouches et reprend', () => {
@@ -196,7 +199,7 @@ describe('inventaire : emplacements, chargeurs, rechargement, changement', () =>
     for (let i = 0; i < 6; i += 1) s = tirer(s);
     let r = run(s, 0.05, 1); // départ automatique : chargeur vide
     expect(armeActive(r.st).prevu).toBe(6);
-    expect(table.armes.winchester1897.rechargement).toBeCloseTo(0.25 + 6 * 0.42 + 0.45, 9);
+    expect(table.armes.winchester1897.rechargement).toBeCloseTo(0.25 + 6 * 0.42 + 0.4, 9);
     r = run(r.st, 0.05, 15); // 0,75 s : une cartouche (0,25 + 0,42 = 0,67)
     expect(armeActive(r.st).chargeur).toBe(1);
     expect(armeActive(r.st).reserve).toBe(29);
@@ -418,7 +421,14 @@ describe('rechargement animé et chargeurs des modèles (partie I)', () => {
   it('chorégraphie « chargeur » : retirer (il tombe), poche (le chargeur neuf est dans la main), le claquer, culasse seulement si l\'arme était vide', async () => {
     const { choregraphieChargeur, entreCles, dans, secousse, surCorps } = await import('../../js/core/armes/geste.js');
     const vide = choregraphieChargeur(table.armes.m1911, true);
-    expect(vide.cles.map((k) => k.cible)).toEqual(['prise', 'chargeur', 'chargeur', 'poche', 'poche', 'chargeur', 'culasse', 'culasse2', 'prise', 'prise']);
+    // Partie J : glissière atteinte, saisie au début du son, tirée (0,12 s), lâchée (0,17 s).
+    expect(vide.cles.map((k) => k.cible)).toEqual(['prise', 'chargeur', 'chargeur', 'poche', 'poche', 'chargeur', 'culasse', 'culasse', 'culasse2', 'culasse2', 'prise', 'prise']);
+    const g = vide.cles.findIndex((k) => k.cible === 'culasse2');
+    expect((vide.cles[g].t - vide.cles[g - 1].t) * table.armes.m1911.rechargement).toBeCloseTo(0.12, 9);
+    expect(vide.clesD).toBeNull(); // glissière : main gauche
+    const mg = choregraphieChargeur(table.armes.mg42, true); // levier à droite : main droite, la gauche reste sur sa prise
+    expect(mg.clesD.map((k) => k.cible)).toContain('culasse2');
+    expect(mg.cles.map((k) => k.cible)).not.toContain('culasse');
     const partiel = choregraphieChargeur(table.armes.m1911, false);
     expect(partiel.cles.map((k) => k.cible)).not.toContain('culasse');
     for (const k of [...vide.cles, ...partiel.cles]) expect(k.t).toBeGreaterThanOrEqual(0);
@@ -438,12 +448,14 @@ describe('rechargement animé et chargeurs des modèles (partie I)', () => {
       expect(table.armes[id].recharge.etapes.some((e) => e.geste === 'insere'), id).toBe(true);
     }
   });
-  it('chorégraphie « balle » : une cartouche prise dans la poche à chaque fois ; Kar98k : verrou ; Winchester : pompe à la fin', async () => {
+  it('chorégraphie « balle » : Winchester, une cartouche prise dans la poche à chaque fois, pompe à la fin ; Kar98k : une fois à la poche, verrou à droite', async () => {
     const { choregraphieBalle } = await import('../../js/core/armes/geste.js');
+    // Partie J : Kar98k, une seule fois à la poche, puis les cartouches enfoncées une à une ; verrou à la main droite.
     const k = choregraphieBalle(table.armes.kar98k, 3);
-    expect(k.cles.filter((c) => c.cible === 'port').length).toBe(3);
-    expect(k.objet.length).toBe(3);
-    expect(k.cles.map((c) => c.cible)).toContain('culasse2');
+    expect(k.cles.filter((c) => c.cible === 'poche').length).toBe(2);
+    expect(k.cles.filter((c) => c.cible === 'portHaut').length).toBe(3);
+    expect(k.objet.length).toBe(1);
+    expect(k.clesD.map((c) => c.cible)).toContain('culasse2');
     const w = choregraphieBalle(table.armes.winchester1897, 2);
     expect(w.cles.map((c) => c.cible)).toContain('pompe2');
     expect(w.cles.at(-1)).toEqual({ t: 1, cible: 'prise' });
@@ -486,3 +498,44 @@ describe('rechargement animé et chargeurs des modèles (partie I)', () => {
     expect(table.armes.winchester1897.recharge.sons.fin).toBe('arme-pompe');
   });
 });
+
+// Retours du propriétaire, partie J : mains sur l'arme (poignets de la pose de tenue), leviers d'armement aux places du modèle, chargeurs au sol
+// grossis, sons calés sur les gestes.
+describe('mains, leviers et sons calés (partie J)', () => {
+  const characters = load('data/game/characters-v2.json');
+  const posesV2 = load('data/game/poses-v2.json');
+  const posesArmes = load('data/armes/poses.json');
+  const variant = characters.slots.find((s) => s.id === 'joueur').variants.find((v) => v.id === 'A');
+  it.each(UTILES)('%s : poignets de la tenue dans le repère de l\'arme, près des prises (la main ne rentre plus dans l\'arme)', (id) => {
+    const t = tenueArme({ variant, skeletons: posesV2.skeletons, posesV2, posesArmes, id, corps: characters.corps });
+    const donnees = lireArmes(load('data/armes/armes.json'));
+    const a = armeParId(donnees, id);
+    const sc = echelleJeu(donnees, a);
+    const d = (u, v) => Math.hypot(u[0] - v[0], u[1] - v[1], u[2] - v[2]);
+    expect(d(t.poignets.droit, a.prises.droite.map((v) => v * sc)), id).toBeLessThan(4.5);
+    expect(d(t.poignets.droit, a.prises.droite.map((v) => v * sc)), id).toBeGreaterThan(0.5); // le poignet n'est pas le point tenu
+    if (a.prises.gauche) expect(d(t.poignets.gauche, a.prises.gauche.map((v) => v * sc)), id).toBeLessThan(4.5);
+  });
+  it('leviers d\'armement : Colt (glissière), Thompson, StG 44, BAR à gauche ; Garand, MG42, Kar98k à droite ; chargeurs au sol grossis', () => {
+    expect(table.echellePieces).toBeGreaterThan(1);
+    for (const [id, main] of [['m1911', 'gauche'], ['thompson', 'gauche'], ['stg44', 'gauche'], ['bar', 'gauche'], ['garand', 'droite'], ['mg42', 'droite'], ['kar98k', 'droite']]) {
+      expect(table.armes[id].levier?.main, id).toBe(main);
+      expect(table.armes[id].levier.course, id).toBeGreaterThan(0);
+    }
+    // Après un chargeur vide : glissière ou levier tiré (étape culasse siVide) pour le Colt, la Thompson, la StG 44, le BAR et la MG42.
+    for (const id of ['m1911', 'thompson', 'stg44', 'bar', 'mg42']) expect(table.armes[id].recharge.etapes.some((e) => e.geste === 'culasse' && e.siVide), id).toBe(true);
+  });
+  it('manœuvres calées sur leur son : pompe (arrière 0,06 s, avant 0,21 s) ; verrou du Kar98k un peu plus lent (butée 0,16, rabattu 0,50) et dans la cadence', async () => {
+    const { entreClesManoeuvre } = await import('../../js/core/armes/geste.js');
+    const w = table.armes.winchester1897.manoeuvre;
+    expect(entreClesManoeuvre(w, w.debut + 0.06)).toMatchObject({ vers: 'pompe2', k: 1 });
+    expect(entreClesManoeuvre(w, w.debut + 0.21)).toMatchObject({ de: 'pompe2', vers: 'pompe', k: 1 });
+    const k = table.armes.kar98k.manoeuvre;
+    expect(entreClesManoeuvre(k, k.debut + 0.16).vers).toBe('culasse2');
+    expect(k.debut + k.duree).toBeLessThanOrEqual(table.armes.kar98k.cadence);
+    const sons = load('data/game/sons-armes.json');
+    expect(sons.recettes.find((r) => r.id === 'arme-verrou').duration).toBeGreaterThanOrEqual(0.6);
+    expect(sons.recettes.some((r) => r.id === 'arme-glissiere-tiree')).toBe(true);
+  });
+});
+

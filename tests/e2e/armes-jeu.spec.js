@@ -405,7 +405,7 @@ test.describe('retours du propriétaire après le lot 9e', () => {
       for (let i = 0; i < 20; i += 1) zs.step(0.05);
       zs.recharger();
       const charges = [];
-      for (let i = 0; i < 30; i += 1) {
+      for (let i = 0; i < 45; i += 1) { // partie J : plus lent (0,95 + 0,5 + 0,45 s pour une cartouche)
         zs.step(0.05);
         charges.push(zs.getState().armes.emplacements[1].chargeur);
       }
@@ -433,7 +433,7 @@ test.describe('retours du propriétaire après le lot 9e', () => {
     expect(r.coltDouilles.visibles).toBeGreaterThan(0);
     expect(r.karDouillesVerrou - r.karDouillesTir).toBe(1); // Kar98k : la douille sort quand on tire le verrou, pas au coup de feu
     expect(r.coltPieces.auSol).toBe(1);
-    for (const n of ['arme-chargeur-sort', 'arme-chargeur-entre', 'arme-glissiere', 'arme-tombe']) expect(r.coltSons, n).toContain(n);
+    for (const n of ['arme-chargeur-sort', 'arme-chargeur-entre', 'arme-glissiere-tiree', 'arme-tombe']) expect(r.coltSons, n).toContain(n); // partie J : glissière tirée
     expect(r.coltApres.auSol).toBe(0);
     expect(r.manoeuvre?.id).toBe('kar98k');
     expect(r.karCharges).toEqual([4, 5]); // une cartouche à la fois (un seul tir : une seule à remettre)
@@ -523,3 +523,33 @@ test.describe('rechargement animé (partie I)', () => {
     expect(await page.evaluate(() => window.__ecritures.length)).toBe(0);
   });
 });
+
+// Retour du propriétaire, partie J : pas chassé (regarder en haut et marcher vers la gauche : le corps et les jambes restent tournés vers la
+// visée, les jambes s'écartent sur le côté).
+test('pas chassé : visée en haut, marche à gauche : le joueur reste tourné vers la visée (à 0,3 rad près), la marche est sur le côté', async ({ page }) => {
+  await page.goto('/jeu.html?test=1&seed=2&nospawn=1&map=salle&lum=off&vhs=0');
+  await waitReady(page);
+  const r = await page.evaluate(() => {
+    const zs = window.__zs;
+    const out = [];
+    for (const [mx, my, aim] of [[-1, 0, -Math.PI / 2], [1, 0, -Math.PI / 2], [0, -1, -Math.PI / 2], [0, 1, -Math.PI / 2]]) {
+      for (let i = 0; i < 20; i += 1) {
+        zs.setInput({ move: { x: mx, y: my }, aim: { angle: aim } });
+        zs.step(0.05);
+      }
+      const p = zs.getState().anim;
+      out.push({ ecart: Math.abs(Math.atan2(Math.sin(p.facing - aim), Math.cos(p.facing - aim))), avant: p.pas.avant, lateral: p.pas.lateral });
+    }
+    zs.setInput({ move: { x: 0, y: 0 } });
+    return out;
+  });
+  // À gauche et à droite : pas chassé (tourné vers la visée, marche surtout sur le côté) ; vers le haut : il marche ; vers le bas : il recule.
+  for (const x of r.slice(0, 2)) {
+    expect(x.ecart).toBeLessThan(0.35);
+    expect(Math.abs(x.lateral)).toBeGreaterThan(0.9);
+  }
+  expect(r[0].lateral * r[1].lateral).toBeLessThan(0); // côtés opposés
+  expect(r[2].avant).toBeGreaterThan(0.9);
+  expect(r[3].ecart).toBeLessThan(0.35); // recule en regardant devant lui
+});
+

@@ -139,16 +139,20 @@ export function avancerInventaire(state, table, dt) {
     if (r?.type === 'balle') {
       // Retour du propriétaire : fusil à pompe et fusil à verrou se rechargent balle par balle (chaque cartouche compte dès qu'elle est mise :
       // un rechargement interrompu les garde).
-      if (r.debut > 0 && franchi(t0, t1, r.debut) && r.sons.debut) evenements.push({ type: 'rechargeEtape', id: a.id, son: r.sons.debut, lacher: false });
+      // Sons calés sur les gestes (partie J) : début dès le départ (0,05 s : verrou ouvert), fin au début du geste final (pompe, verrou fermé).
+      const tDebut = Math.min(0.05, r.debut);
+      if (tDebut > 0 && franchi(t0, t1, tDebut) && r.sons.debut) evenements.push({ type: 'rechargeEtape', id: a.id, son: r.sons.debut, lacher: false });
       for (let i = 1; i <= a.prevu; i += 1) {
         if (!franchi(t0, t1, r.debut + i * r.parBalle) || reserve <= 0 || chargeur >= e.chargeur) continue;
         chargeur += 1;
         reserve = reserve === Infinity ? Infinity : reserve - 1;
         evenements.push({ type: 'rechargeBalle', id: a.id, son: r.sons.balle, lacher: false });
       }
+      const tFin = r.debut + a.prevu * r.parBalle; // après la dernière cartouche (même instant)
+      if (r.fin > 0 && franchi(t0, t1, tFin) && r.sons.fin) evenements.push({ type: 'rechargeEtape', id: a.id, son: r.sons.fin, lacher: false });
       if (t1 < total) return { state: avecArme(s, s.actif, { recharge: t1, chargeur, reserve }), evenements };
       s = avecArme(s, s.actif, { recharge: null, prevu: null, vide: false, chargeur, reserve });
-      evenements.push({ type: 'rechargeFin', id: a.id, son: r.sons.fin });
+      evenements.push({ type: 'rechargeFin', id: a.id, son: r.fin > 0 ? null : r.sons.fin });
       return { state: s, evenements };
     }
     // Chargeur : étapes du déroulé (chargeur retiré qui tombe, chargeur remis, culasse armée si l'arme était vide…).

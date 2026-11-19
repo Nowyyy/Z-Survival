@@ -17,7 +17,8 @@ const transpose = (m) => [m[0], m[3], m[6], m[1], m[4], m[7], m[2], m[5], m[8]];
 const mul = (a, b) => [0, 1, 2].flatMap((r) => [0, 1, 2].map((c) => a[r * 3] * b[c] + a[r * 3 + 1] * b[3 + c] + a[r * 3 + 2] * b[6 + c]));
 
 // Tenue d'une arme : { angles (os de OS_TENUE), local: { m (3 × 3, lignes), t } (arme dans le repère de l'os chest), position (repère du
-// personnage), pivot (épaule droite dans le repère de l'os chest : l'arme s'abaisse autour d'elle) } ou null (arme ou mode absents). variant : variante du joueur (characters-v2.json, avant résolution) ; corps : corps long.
+// personnage), rotation, pivot (épaule droite dans le repère de l'os chest : l'arme s'abaisse autour d'elle), poignets: { gauche, droit }
+// (repère de l'arme) } ou null (arme ou mode absents). variant : variante du joueur (characters-v2.json, avant résolution) ; corps : corps long.
 export function tenueArme({ variant, skeletons, posesV2, posesArmes, id, mode = 'deux-mains', corps }) {
   const m = obj(obj(obj(obj(posesArmes).armes)[id]).modes)[mode];
   if (!m || !obj(m.arme).position) return null;
@@ -28,14 +29,19 @@ export function tenueArme({ variant, skeletons, posesV2, posesArmes, id, mode = 
   for (const os of OS_TENUE) if (Array.isArray(obj(m.angles)[os])) angles[os] = m.angles[os].map((a) => num(a));
   const posee = { angles: { ...pose.angles, ...angles }, offsets: pose.offsets, scales: { ...pose.scales, ...echellesCorps(corps) } };
   const scale = isNum(res.scale) && res.scale > 0 ? res.scale : 1;
-  const chest = jointMatrices(joints, posee, scale).chest;
+  const M = jointMatrices(joints, posee, scale);
+  const chest = M.chest;
   const P = m.arme.position.map((v) => num(v));
   const R = matriceRotation(Array.isArray(m.arme.rotation) ? m.arme.rotation : [0, 0, 0]); // degrés, comme les pièces des armes (lot 9c)
   const inv = transpose(chest.m); // rotation pure (aucune échelle sur le tronc)
   const d = [P[0] - chest.t[0], P[1] - chest.t[1], P[2] - chest.t[2]];
   const t = applyAffine({ m: inv, t: [0, 0, 0] }, d);
   const epaule = joints.find((j) => j.id === 'shoulderR')?.offset ?? [0, 0, 0];
-  return { angles, local: { m: mul(inv, R), t }, position: P, rotation: R, pivot: [...epaule] };
+  // Retour du propriétaire (partie J) : poignets de la pose de tenue dans le repère de l'arme (les mains suivent l'arme quand elle bouge, et les
+  // gestes du rechargement gardent l'écart poignet / point tenu de la pose).
+  const RT = transpose(R);
+  const versArme = (w) => (w ? applyAffine({ m: RT, t: [0, 0, 0] }, [w.t[0] - P[0], w.t[1] - P[1], w.t[2] - P[2]]) : null);
+  return { angles, local: { m: mul(inv, R), t }, position: P, rotation: R, pivot: [...epaule], poignets: { gauche: versArme(M.wristL), droit: versArme(M.wristR) } };
 }
 
 // Bouche du canon devant le centre du joueur (logique : distance le long de la visée) : avant de la pose (z) + point le plus avancé du canon.

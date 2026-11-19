@@ -9,7 +9,7 @@ import { createRng, nextFloat } from '../core/rng.js';
 import { DEATHS, addPoseInto, armIK, blendPosesInto, copyPoseInto, createPose, createPoseWork, cycleSeconds, poseAtInto, rigOf, toucheInto } from '../core/pose-v2.js';
 import { partRgb, pickOutfit, resolveVariant, wearTier } from '../core/persos-variants.js';
 import { PALETTE_REGION, createPersoTexture, persoRegionRect, persoSpec, regionFactor } from '../core/texgen-persos.js';
-import { echellesCorps, lireCorps, rigCorps, varianteCorps } from '../core/gabarit.js';
+import { EPAULE_REFERENCE, echellesCorps, lireCorps, rigCorps, varianteCorps } from '../core/gabarit.js';
 
 const KICK_TIME = 0.25; // durée du recul du pistolet du joueur (secondes de jeu)
 const NO_PARAMS = Object.freeze({});
@@ -345,7 +345,17 @@ export function createV2Kit(options) {
       state.pose = pose;
       state.phase = phase;
       rig.setAngles(pose);
-      for (const [id, bone] of rig.bones) bone.scale.setScalar(id === 'prop' && arme ? 0 : (pose.scales?.[id] ?? 1) * (corpsEchelles[id] ?? 1));
+      // Retour du propriétaire (partie J : « l'animation des rampants est étrange depuis les longs bras ») : la reptation garde le corps d'avant
+      // (épaules de 11,5 et bras à 1) : ses bras s'écartent et tirent à tour de rôle comme avant ; debout, le corps long.
+      const rampe = Boolean(corps) && anim === 'rampe';
+      if (rampe) {
+        // setAngles replace les os à chaque image : l'écartement d'avant est remis à chaque image de reptation.
+        for (const id of ['shoulderL', 'shoulderR']) {
+          const bone = rig.bones.get(id);
+          if (bone) bone.position.x *= EPAULE_REFERENCE / corps.epaules;
+        }
+      }
+      for (const [id, bone] of rig.bones) bone.scale.setScalar(id === 'prop' && arme ? 0 : (pose.scales?.[id] ?? 1) * (rampe ? 1 : corpsEchelles[id] ?? 1));
     }
     // Lot 9e : arme en main du joueur (js/armes/en-main.js, js/core/armes/tenue-jeu.js) : maillage accroché à l'os chest (il suit le buste),
     // bras et tronc aux angles de la pose de tenue du lot 9c, tronc tourné vers la visée comme la pose « repos » ; le pistolet d'origine est
@@ -376,9 +386,10 @@ export function createV2Kit(options) {
         bone.rotation.set(a[0], a[1] + ty, a[2]);
       }
       const b = Math.max(0, Math.min(1, num(armeEtat.baisse)));
-      if (b > 0) {
+      if (b > 0 && !arme.poignets) {
         // Arme abaissée et ramenée devant le corps (rechargement, sortie ; visible de dessus) : bras et arme tournent ensemble autour de l'épaule
-        // droite, vers le bas (BAISSE) et vers la gauche (RENTRE) ; le bras gauche suit (ou va au chargeur, plus bas).
+        // droite, vers le bas (BAISSE) et vers la gauche (RENTRE) ; le bras gauche suit (ou va au chargeur, plus bas). Avec les poignets de la
+        // pose (partie J), les mains suivent l'arme par cinématique inverse (plus bas).
         for (const id of ['shoulderR', 'shoulderL']) {
           const bone = rig.bones.get(id);
           if (!bone) continue;
@@ -399,6 +410,24 @@ export function createV2Kit(options) {
       if (cant !== 0) armeMat.multiply(armeRot.makeRotationZ(cant));
       const sec = Math.max(0, Math.min(1, num(armeEtat.secousse)));
       if (sec > 0) armeMat.multiply(armeTmp.makeTranslation(0, 1.4 * sec, -0.8 * sec));
+      // Retour du propriétaire (partie J : « les mains sont décalées par rapport à l'arme ») : quand l'arme bouge (recul, baisse, roulis,
+      // à-coup), chaque main suit son poignet de la pose de tenue : on ajoute aux angles de la pose l'écart entre la cinématique inverse vers le
+      // poignet déplacé et celle vers le poignet d'origine (la forme du bras de la pose est gardée, aucun saut quand l'arme revient).
+      if (arme.poignets && (b > 0 || k > 0 || cant !== 0 || sec > 0)) {
+        for (const [cote, epId, coId] of [['gauche', 'shoulderL', 'elbowL'], ['droit', 'shoulderR', 'elbowR']]) {
+          const w = arme.poignets[cote];
+          const ep = rig.bones.get(epId);
+          const co = rig.bones.get(coId);
+          if (!w || !ep || !co) continue;
+          cibleA.set(w[0], w[1], w[2]).applyMatrix4(arme.base).sub(ep.position);
+          cibleB.set(w[0], w[1], w[2]).applyMatrix4(armeMat).sub(ep.position);
+          const [s0, e0] = armIK(gait.upper, gait.fore, [cibleA.x, cibleA.y, cibleA.z]);
+          const [s1, e1] = armIK(gait.upper, gait.fore, [cibleB.x, cibleB.y, cibleB.z]);
+          ep.rotation.x += s1[0] - s0[0];
+          ep.rotation.y += s1[1] - s0[1];
+          co.rotation.x += e1[0] - e0[0];
+        }
+      }
       // Chargeur retiré : l'arme sans son chargeur (même matière, même appel).
       if (arme.sans) {
         const g = armeEtat.sansChargeur ? arme.sans : arme.avec;
@@ -437,6 +466,21 @@ export function createV2Kit(options) {
         const [sh, el] = armIK(gait.upper, gait.fore, [pointGauche.x - epauleD.position.x, pointGauche.y - epauleD.position.y, pointGauche.z - epauleD.position.z]);
         epauleD.rotation.set(epauleD.rotation.x + (sh[0] - epauleD.rotation.x) * wd, epauleD.rotation.y + (sh[1] - epauleD.rotation.y) * wd, epauleD.rotation.z * (1 - wd));
         coudeD.rotation.set(coudeD.rotation.x + (el[0] - coudeD.rotation.x) * wd, 0, 0);
+      }
+    }
+    // Retour du propriétaire (partie J) : pas chassé. input.avant, input.lateral : marche par rapport au corps (avant : cos, côté vers la gauche
+    // du personnage : −sin). La foulée avant / arrière des hanches (rotation x) se réduit avec l'avant et passe sur le côté (rotation z) :
+    // le pied qui avancerait part vers le côté de la marche, l'autre revient (de dessus : les jambes s'écartent et se croisent, sans tourner).
+    function pasChasse(input) {
+      const lat = num(input.lateral);
+      if (Math.abs(lat) < 0.05) return;
+      const av = Number.isFinite(input.avant) ? Math.abs(input.avant) : 1;
+      for (const id of ['hipL', 'hipR']) {
+        const b = rig.bones.get(id);
+        if (!b) continue;
+        const x = b.rotation.x;
+        b.rotation.x = x * av;
+        b.rotation.z += -x * lat;
       }
     }
     const cycle = (anim, extra) => cycleSeconds(gait, anim, params(extra), poses) ?? 1;
@@ -583,7 +627,10 @@ export function createV2Kit(options) {
             const recoil = Math.max(0, 1 - (time - state.shotAt) / KICK_TIME);
             xMove.twist = twist;
             xMove.recoil = recoil;
-            if (num(input.amount) > 0.12) show('marche', num(input.phase) / TAU, xMove);
+            if (num(input.amount) > 0.12) {
+              show('marche', num(input.phase) / TAU, xMove);
+              pasChasse(input);
+            }
             else show('repos', time / cycle('repos'), xMove);
             armeEtat.recul = recoil;
             appliquerTenue(twist, true);
