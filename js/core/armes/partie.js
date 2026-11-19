@@ -15,7 +15,7 @@ function lireRecharge(r, rechargement) {
   const o = obj(r);
   if (o.type === 'balle') {
     const sons = obj(o.sons);
-    return { type: 'balle', debut: isNum(o.debut) && o.debut >= 0 ? o.debut : 0, parBalle: pos(o.parBalle, 0.4), fin: isNum(o.fin) && o.fin >= 0 ? o.fin : 0, sons: { debut: texte(sons.debut), balle: texte(sons.balle), fin: texte(sons.fin) } };
+    return { type: 'balle', poche: o.poche === 'une' ? 'une' : 'chaque', debut: isNum(o.debut) && o.debut >= 0 ? o.debut : 0, parBalle: pos(o.parBalle, 0.4), fin: isNum(o.fin) && o.fin >= 0 ? o.fin : 0, sons: { debut: texte(sons.debut), balle: texte(sons.balle), fin: texte(sons.fin) } };
   }
   const etapes = (Array.isArray(o.etapes) ? o.etapes : [])
     .map((x) => ({ t: part(obj(x).t), son: texte(obj(x).son), lacher: obj(x).lacher === true, siVide: obj(x).siVide === true, siReste: obj(x).siReste === true, geste: GESTES.includes(obj(x).geste) ? obj(x).geste : null }))
@@ -26,7 +26,14 @@ function lireRecharge(r, rechargement) {
 function lireManoeuvre(m) {
   const o = obj(m);
   if (!isNum(o.duree) || o.duree <= 0) return null;
-  return { debut: isNum(o.debut) && o.debut >= 0 ? o.debut : 0, duree: o.duree, son: texte(o.son) };
+  // cles (partie J) : [[secondes depuis le son, cible]] dans l'ordre (gestes calés sur le son).
+  const cles = (Array.isArray(o.cles) ? o.cles : []).filter((c) => Array.isArray(c) && isNum(c[0]) && typeof c[1] === 'string').map((c) => ({ t: c[0], cible: c[1] }));
+  return { debut: isNum(o.debut) && o.debut >= 0 ? o.debut : 0, duree: o.duree, son: texte(o.son), cles };
+}
+function lireLevier(l) {
+  const o = obj(l);
+  if (!Array.isArray(o.pos) || o.pos.length !== 3 || !o.pos.every(isNum)) return null;
+  return { main: o.main === 'droite' ? 'droite' : 'gauche', pos: [...o.pos], course: pos(o.course, 5) };
 }
 const lirePiece = (p) => (Array.isArray(p) && p.length === 3 && p.every((v) => isNum(v) && v > 0) ? [...p] : null);
 export const GESTES = Object.freeze(['retire', 'insere', 'culasse', 'couvercle']);
@@ -59,6 +66,7 @@ function lireEntree(id, e) {
     manoeuvre: lireManoeuvre(o.manoeuvre),
     dernierTir: o.dernierTir ? { son: texte(dt.son), lacher: dt.lacher === true } : null,
     piece: o.piece === true, // le chargeur lâché est celui du modèle de l'arme (maillageChargeur)
+    levier: lireLevier(o.levier),
     douille: lirePiece(o.douille),
   };
 }
@@ -71,7 +79,7 @@ export function lireTable(json) {
   const ids = Object.keys(armes);
   const actives = ids.filter((id) => armes[id].active);
   const depart = actives.includes(t.armeDepart) ? t.armeDepart : actives[0] ?? null;
-  return { armeDepart: depart, emplacementsAchetes: Number.isInteger(t.emplacementsAchetes) && t.emplacementsAchetes >= 0 ? t.emplacementsAchetes : 1, ids, actives, armes };
+  return { armeDepart: depart, emplacementsAchetes: Number.isInteger(t.emplacementsAchetes) && t.emplacementsAchetes >= 0 ? t.emplacementsAchetes : 1, echellePieces: pos(t.echellePieces, 1), ids, actives, armes };
 }
 
 // Arme au format du jeu (celui de data/game/weapons.json → pistol, lu par player-stats.js, combat.js, projectile.js) : la base commune de

@@ -31,7 +31,7 @@ import { aSec, armeActive, armeMontree, avancerInventaire, changerArme, creerInv
 import { boucheCanon, tenueArme } from '../core/armes/tenue-jeu.js';
 import { creerArmesEnMain } from '../armes/en-main.js';
 import { AU_SOL_DOUILLE, MAX_DOUILLES, creerArmesTombes, creerCartoucheMain } from './armes-tombes.js';
-import { choregraphieBalle, choregraphieChargeur, dans, entreCles, secousse, surCorps } from '../core/armes/geste.js';
+import { choregraphieBalle, choregraphieChargeur, dans, entreCles, entreClesManoeuvre, poidsMain, secousse, surCorps } from '../core/armes/geste.js';
 import { createArmesUi } from './armes-ui.js';
 import { armeParId, echelleJeu } from '../core/armes/armes.js';
 import { createFootsteps, stepFootsteps } from '../core/footsteps.js';
@@ -71,6 +71,7 @@ const STAIR_CRAWL_LIFT = 14; // unités dont un zombie rampant est relevé dans 
 const TAU = Math.PI * 2;
 // Pose de chaque allure (états de pose d'avant le lot 3j : « zombie » reste l'équivalent de « marche »).
 const GAIT_POSE = { lent: 'lent', marche: 'zombie', rampe: 'rampe', course: 'course' };
+const PAS_CHASSE = (50 * Math.PI) / 180; // au-delà de 50° entre la marche et la visée (et en deçà de 130°) : pas chassé
 // Surcharge temporaire de waves.json (hook de test) : les sections objet sont fusionnées, le reste est remplacé.
 const mergeParams = (base, patch) => Object.fromEntries(Object.entries({ ...base, ...patch }).map(([k, v]) => [k, v && typeof v === 'object' && !Array.isArray(v) && patch?.[k] && typeof patch[k] === 'object' && !Array.isArray(patch[k]) ? { ...base[k], ...patch[k] } : v]));
 const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a));
@@ -229,6 +230,7 @@ export function createGame(ctx) {
   let armeVue = null; // arme montrée sur le personnage (identifiant)
   let lastGun = null; // bout du canon dessiné à la dernière image (tests : getState().armes.canon)
   let gesteVu = null; // geste du rechargement à la dernière image (tests : getState().armes.geste)
+  const pasVu = { avant: 1, lateral: 0 }; // marche par rapport au corps à la dernière image (tests : pas chassé)
   // Pièces lâchées (chargeur vide, clip, tambour) en attente de la prochaine image (leur départ est le point de l'arme dessinée), avec le son
   // de leur chute au sol (retour du propriétaire après le lot 9e).
   const lachers = [];
@@ -1169,7 +1171,17 @@ export function createGame(ctx) {
       const enveloppe = Math.max(0, Math.min(1, p / 0.12, (1 - p) / 0.15));
       const objetVu = !reduced && dans(ch.objet, p);
       const objet = objetVu ? (entree.recharge?.type === 'balle' ? cartoucheMain?.mesh ?? null : armesKit.chargeur(a.id)?.enMain ?? null) : null;
+      // Main droite (levier à droite : MG42, Garand, verrou du Kar98k).
+      let droite = null;
+      let poidsDroite = 0;
+      if (ch.clesD && c && !reduced) {
+        const pd = entreCles(ch.clesD, p);
+        poidsDroite = poidsMain(pd);
+        droite = mix(c.droite[pd.de], c.droite[pd.vers], pd.k);
+      }
       return {
+        droite,
+        poidsDroite,
         baisse: reduced ? 0 : 0.45 * enveloppe,
         recharge: p,
         mainG: c ? { a: c[pos.de], aCorps: surCorps(pos.de), b: c[pos.vers], bCorps: surCorps(pos.vers), k: pos.k, de: pos.de, vers: pos.vers } : null,
@@ -1182,16 +1194,19 @@ export function createGame(ctx) {
     }
     const m = sim.manoeuvre;
     const def = m ? tableArmes?.armes?.[m.id]?.manoeuvre : null;
-    if (def && !reduced) {
-      // Retour du propriétaire après le lot 9e : verrou manœuvré à la main droite (fusil à verrou), pompe à la main gauche (fusil à pompe).
-      const u = Math.max(0, Math.min(1, m.t / Math.max(1e-6, def.debut + def.duree))); // son au début de la traction (u ≈ 0,2 à 0,3)
-      const poids = Math.max(0, Math.min(1, u / 0.2, (1 - u) / 0.2));
-      const geste = Math.sin(Math.max(0, Math.min(1, (u - 0.2) / 0.6)) * Math.PI);
-      const pt = pointManoeuvre(m.id);
-      if (pt) {
-        const at = pt.a.map((v, i) => v + (pt.b[i] - v) * geste);
-        return pt.main === 'droite' ? { baisse: 0, droite: at, poidsDroite: poids } : { baisse: 0, gauche: at, poidsGauche: poids };
-      }
+    const c = m ? ciblesDe(m.id) : null;
+    if (def && c && !reduced && def.cles.length) {
+      // Retour du propriétaire (partie J) : geste calé sur le son (clés en secondes depuis le son) ; verrou à la main droite (Kar98k), pompe à la
+      // main gauche, posée sur la pompe (poignet de la pose de tenue), tirée en arrière puis repoussée.
+      const pos = entreClesManoeuvre(def, m.t);
+      const droiteMain = tableArmes.armes[m.id].levier?.main === 'droite' && pos.de !== 'pompe';
+      const cs = droiteMain ? c.droite : c;
+      const at = mix(cs[pos.de], cs[pos.vers], pos.k);
+      const premier = def.debut + def.cles[0].t;
+      const dernier = def.debut + def.cles[def.cles.length - 1].t;
+      const dedans = m.t >= premier && m.t <= dernier;
+      const poids = droiteMain ? poidsMain(pos) : dedans ? 1 : 0;
+      return droiteMain ? { baisse: 0, droite: at, poidsDroite: poids } : { baisse: 0, mainG: { a: at, b: at, k: 0 }, poidsGauche: poids };
     }
     return { baisse: 0 };
   }
@@ -1207,52 +1222,52 @@ export function createGame(ctx) {
     }
     return chVal;
   }
-  // Cibles de la main gauche (repère de l'arme ; « poche » : repère du buste, hanche gauche, un peu devant).
+  // Cibles des mains (repère de l'arme ; « poche » : repère du buste, hanche gauche, un peu devant). Partie J : chaque cible est un poignet,
+  // décalé du point tenu comme dans la pose de tenue (sans cela le poignet entrait dans l'arme et la main paraissait au-dessus) ; leviers
+  // d'armement aux places du modèle (levier de la table, mm du modèle).
   const POCHE = [13, -12, 4]; // hors de la silhouette du buste : la main se voit de dessus quand elle y va
+  const mix = (a, b, k) => (a && b ? [a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k, a[2] + (b[2] - a[2]) * k] : a ?? b ?? null);
+  const plus = (a, b) => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
   const ciblesArmes = new Map();
   function ciblesDe(id) {
     if (ciblesArmes.has(id)) return ciblesArmes.get(id);
     const a = armesCfg ? armeParId(armesCfg.donnees, id) : null;
-    const cat = tableArmes?.armes?.[id]?.categorie ?? '';
+    const e = tableArmes?.armes?.[id];
+    const t = tenueDe(id);
     let c = null;
-    if (a?.prises?.droite) {
+    if (a?.prises?.droite && t?.poignets?.gauche && t.poignets.droit) {
       const sc = echelleJeu(armesCfg.donnees, a);
-      const d = a.prises.droite.map((v) => v * sc);
-      const gch = a.prises.gauche ? a.prises.gauche.map((v) => v * sc) : [d[0], d[1] - 5, d[2] + 1];
+      const sx = armesCfg.donnees.echelle?.largeur ?? 1;
+      const mm = (v) => [v[0] * sc * sx, v[1] * sc, v[2] * sc];
+      const d = mm(a.prises.droite);
+      const gch = a.prises.gauche ? mm(a.prises.gauche) : [d[0], d[1] - 5, d[2] + 1];
+      const pg = t.poignets.gauche;
+      const pd = t.poignets.droit;
+      const offG = [pg[0] - gch[0], pg[1] - gch[1], pg[2] - gch[2]];
+      const offD = [pd[0] - d[0], pd[1] - d[1], pd[2] - d[2]];
       const centre = armesKit?.chargeur(id)?.centre ?? [d[0], d[1] - 6, d[2] + 6];
-      const pistolet = cat === 'pistolet';
+      const lev = e?.levier ? mm(e.levier.pos) : [d[0] - 1, d[1] + 5, d[2] + 8];
+      const course = e?.levier?.course ?? 5;
+      const offL = e?.levier?.main === 'droite' ? offD : offG;
+      const culasse = plus(lev, offL);
+      const culasse2 = plus(culasse, [0, 0, -course]);
+      const port = plus(e?.categorie === 'fusil à pompe' ? [d[0], d[1] - 3, d[2] + 7] : [d[0] - 1, d[1] + 4, d[2] + 5], offG);
       c = {
-        prise: gch,
-        chargeur: [centre[0], centre[1] - (pistolet ? 1.5 : 0), centre[2]],
+        prise: [...pg],
+        chargeur: plus(centre, offG),
         poche: POCHE,
-        port: cat === 'fusil à pompe' ? [d[0], d[1] - 3, d[2] + 7] : [d[0] - 1, d[1] + 5, d[2] + 4],
-        culasse: pistolet ? [d[0], d[1] + 6, d[2] + 2] : [d[0] - 1, d[1] + 5, d[2] + 8],
-        culasse2: pistolet ? [d[0], d[1] + 6, d[2] - 3] : [d[0] - 1, d[1] + 5, d[2] + 2],
-        couvercle: [d[0], d[1] + 7, d[2] + 6],
-        pompe: [...gch],
-        pompe2: [gch[0], gch[1], gch[2] - 6],
+        port,
+        portHaut: plus(port, [0, 2, 0]),
+        culasse,
+        culasse2,
+        couvercle: plus([d[0], d[1] + 7, d[2] + 6], offG),
+        pompe: [...pg],
+        pompe2: plus(pg, [0, 0, -6]),
+        droite: { prise: [...pd], culasse, culasse2 },
       };
     }
     ciblesArmes.set(id, c);
     return c;
-  }
-  // Points de la manœuvre après le tir (repère de l'arme) : fusil à verrou, main droite de la prise au levier de culasse (a) puis tirée en
-  // arrière (b) ; fusil à pompe, main gauche de la pompe (a) vers l'arrière (b).
-  const pointsManoeuvre = new Map();
-  function pointManoeuvre(id) {
-    if (pointsManoeuvre.has(id)) return pointsManoeuvre.get(id);
-    const a = armesCfg ? armeParId(armesCfg.donnees, id) : null;
-    const cat = tableArmes?.armes?.[id]?.categorie ?? '';
-    let pt = null;
-    if (a?.prises?.droite) {
-      const sc = echelleJeu(armesCfg.donnees, a);
-      const d = a.prises.droite.map((v) => v * sc);
-      const gch = (a.prises.gauche ?? a.prises.droite).map((v) => v * sc);
-      if (cat === 'fusil à verrou') pt = { main: 'droite', a: [d[0] - 3, d[1] + 4, d[2] + 6], b: [d[0] - 3, d[1] + 4, d[2] + 1] };
-      else if (cat === 'fusil à pompe') pt = { main: 'gauche', a: [...gch], b: [gch[0], gch[1], gch[2] - 5] };
-    }
-    pointsManoeuvre.set(id, pt);
-    return pt;
   }
   // Fenêtre d'éjection (repère de l'arme) : au-dessus du boîtier, devant la main droite (pistolet : au-dessus de la glissière).
   function pointDouille(id) {
@@ -1268,7 +1283,7 @@ export function createGame(ctx) {
     if (vue !== armeVue) {
       armeVue = vue;
       const t = vue ? tenueDe(vue) : null;
-      playerChar.setArme(t ? { id: vue, mesh: armesKit.mesh(vue), angles: t.angles, local: t.local, pointe: armesKit.pointe(vue), pivot: t.pivot, sans: tableArmes?.armes?.[vue]?.piece ? armesKit.sansChargeur(vue) : null } : null);
+      playerChar.setArme(t ? { id: vue, mesh: armesKit.mesh(vue), angles: t.angles, local: t.local, pointe: armesKit.pointe(vue), pivot: t.pivot, poignets: t.poignets, sans: tableArmes?.armes?.[vue]?.piece ? armesKit.sansChargeur(vue) : null } : null);
     }
     const etat = etatVisibleArme();
     playerChar.setArmeEtat(etat);
@@ -1294,19 +1309,33 @@ export function createGame(ctx) {
     const aim = sim.aim.angle;
     let target = anim.facing;
     let dir = 1;
+    let moveAngle = null;
     if (moving) {
-      const moveAngle = Math.atan2(p.y - anim.y, p.x - anim.x);
-      dir = Math.abs(wrap(aim - moveAngle)) > Math.PI / 2 ? -1 : 1;
-      target = dir > 0 ? moveAngle : moveAngle + Math.PI;
+      // Retour du propriétaire (partie J : « si je regarde en haut et que j'avance vers la gauche, les jambes sont orientées vers la gauche ») :
+      // vers l'avant de la visée (± 50°), il marche ; vers l'arrière (± 50°), il recule ; entre les deux, pas chassé : le corps reste tourné vers
+      // la visée (un peu vers la marche), les jambes s'écartent sur le côté (character-v2.js).
+      moveAngle = Math.atan2(p.y - anim.y, p.x - anim.x);
+      const rel = wrap(moveAngle - aim);
+      if (Math.abs(rel) <= PAS_CHASSE) target = moveAngle;
+      else if (Math.abs(rel) >= Math.PI - PAS_CHASSE) {
+        dir = -1;
+        target = moveAngle + Math.PI;
+      } else target = aim + Math.sign(rel) * 0.3;
     } else if (Math.abs(wrap(aim - anim.facing)) > 0.9) {
       target = aim;
     }
     anim.facing = wrap(anim.facing + wrap(target - anim.facing) * Math.min(1, dt * 14));
+    // Marche par rapport au corps : avant (cos) et côté (vers la gauche du personnage, x de son repère : −sin).
+    const phi = moveAngle === null ? 0 : wrap(moveAngle - anim.facing);
+    const avant = moveAngle === null ? 1 : Math.cos(phi);
+    const lateral = moveAngle === null ? 0 : -Math.sin(phi);
+    pasVu.avant = avant;
+    pasVu.lateral = lateral;
     anim.phase += dir * speed * dt * STRIDE;
     anim.x = p.x;
     anim.y = p.y;
     const state = sim.down.state === 'terre' ? 'terre' : sim.time - lastFire < FIRE_POSE_TIME ? 'tir' : moving ? 'marche' : 'arret';
-    const poseIn = { phase: anim.phase, aim, facing: anim.facing, state, time: sim.time, seed: 0, amount: Math.min(1, speed / vitesseJoueur()), recoil: sim.recoil / RECOIL_TIME };
+    const poseIn = { phase: anim.phase, aim, facing: anim.facing, state, time: sim.time, seed: 0, amount: Math.min(1, speed / vitesseJoueur()), recoil: sim.recoil / RECOIL_TIME, avant, lateral };
     lastPose = computePose(poseIn);
     montrerArme(); // lot 9e : arme en main (modèle du lot 9c), abaissée pendant un changement ou un rechargement
     playerChar.setPose(lastPose, poseIn, pv?.playerCtx(sim, eff)); // lot 3j : les personnages v2 lisent l'entrée et le contexte
@@ -1330,7 +1359,7 @@ export function createGame(ctx) {
         const cx = -Math.sin(anim.facing);
         const cy = Math.cos(anim.facing); // côté de l'arme (x négatif du repère du personnage)
         const vitesse = l.sorte === 'clip' ? { x: cx * 45, y: cy * 45, z: 160 } : { x: cx * 12, y: cy * 12, z: 0 };
-        reserve.lacher({ depart: { x: at.x, y: at.y, z: at.z }, dims: c.dims, vitesse, sorte: l.sorte, lacet: Math.PI / 2 - anim.facing, t: l.t });
+        reserve.lacher({ depart: { x: at.x, y: at.y, z: at.z }, dims: c.dims, vitesse, sorte: l.sorte, lacet: Math.PI / 2 - anim.facing, t: l.t, echelle: tableArmes.echellePieces });
       }
       tombes.update(sim.time);
     }
@@ -1823,7 +1852,7 @@ export function createGame(ctx) {
       const cam = rig.camera.position;
       const meshStats = world.windowMeshes?.stats(rig.camera) ?? [];
       return {
-        player: { x: sim.player.x, y: sim.player.y, health: sim.player.health, maxHp: sim.player.maxHealth, spread: halfAngle(), speedRatio: sim.spread, down: { state: sim.down.state, chutes: sim.down.chutes, chutesMax: sim.down.chutesMax, timeLeft: sim.down.timeLeft, grace: sim.down.grace, invulnerable: isInvulnerable(sim.down) } },
+        player: { x: sim.player.x, y: sim.player.y, facing: anim.facing, pas: { ...pasVu }, health: sim.player.health, maxHp: sim.player.maxHealth, spread: halfAngle(), speedRatio: sim.spread, down: { state: sim.down.state, chutes: sim.down.chutes, chutesMax: sim.down.chutesMax, timeLeft: sim.down.timeLeft, grace: sim.down.grace, invulnerable: isInvulnerable(sim.down) } },
         save: bankState.save,
         economy: bankState.economy,
         stats: {

@@ -37,9 +37,10 @@ export function creerArmesTombes({ parent, palette = {}, reduit = false, max = M
   let suivant = 0;
 
   // depart : { x, y, z } (monde, z = hauteur Three.js y) ; dims : [largeur, hauteur, profondeur] ; vitesse : { x, y, z } (unités/s) ; t : temps de jeu.
-  function lacher({ depart, dims, vitesse = { x: 0, y: 0, z: 0 }, sorte = 'chargeur', lacet = 0, t }) {
-    const sol = dims[0] / 2; // couchée sur le flanc (quart de tour autour de sa profondeur) : sa largeur devient sa hauteur, sa grande face se voit de dessus
-    const p = { x: depart.x, h: depart.z, y: depart.y, vx: vitesse.x, vh: vitesse.z, vy: vitesse.y, dims, sol, t0: t, pose: null, lacet, sorte, n: suivant };
+  // echelle (partie J) : chargeur grossi au sol pour se voir de dessus (echellePieces de la table).
+  function lacher({ depart, dims, vitesse = { x: 0, y: 0, z: 0 }, sorte = 'chargeur', lacet = 0, t, echelle = 1 }) {
+    const sol = (dims[0] / 2) * echelle; // couchée sur le flanc (quart de tour autour de sa profondeur) : sa largeur devient sa hauteur, sa grande face se voit de dessus
+    const p = { x: depart.x, h: depart.z, y: depart.y, vx: vitesse.x, vh: vitesse.z, vy: vitesse.y, dims, sol, t0: t, pose: null, lacet, sorte, n: suivant, echelle };
     suivant += 1;
     if (reduit) p.pose = t;
     pieces = [...pieces, p].slice(-max);
@@ -82,7 +83,7 @@ export function creerArmesTombes({ parent, palette = {}, reduit = false, max = M
       e.set(0, p.lacet + p.n * (propre ? 1.9 : 0.35), (Math.PI / 2) * couche); // ordre XYZ : couchée d'abord, puis tournée
       q.setFromEuler(e);
       if (propre) sc.set(p.dims[0] * reste, p.dims[1] * reste, p.dims[2] * reste);
-      else sc.setScalar(reste); // géométrie du chargeur : déjà à sa taille
+      else sc.setScalar(reste * p.echelle); // géométrie du chargeur (grossie au sol)
       m.compose(v.set(x, h, y), q, sc);
       mesh.setMatrixAt(i, m);
       if (propre) mesh.setColorAt(i, p.couleur);
