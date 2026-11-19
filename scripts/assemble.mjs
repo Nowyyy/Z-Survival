@@ -67,6 +67,18 @@ export function ecrireCanalFichier(path, canal) {
   }
 }
 
+// Lot 9f (Docs/ref/cache.md) : version embarquée par scripts/build.mjs dans jeu.html (<meta name="zs-version">), comparée par la page à
+// build-info.json. Renvoie le hash court (7 caractères), ou null (balise absente ou vide : build d'avant le lot 9f, ou fichier illisible).
+export function versionEmbarquee(path) {
+  try {
+    const info = lstatSync(path);
+    if (!info.isFile() || info.size > CANAL_MAX_OCTETS) return null;
+    return /<meta name="zs-version" content="([0-9a-f]{7})">/.exec(readFileSync(path, 'latin1'))?.[1] ?? null;
+  } catch {
+    return null;
+  }
+}
+
 // Date ISO normalisée en UTC (seconde près), ou '' si invalide.
 export function utcDate(value) {
   const time = typeof value === 'string' && value ? Date.parse(value) : NaN;
@@ -261,6 +273,8 @@ export function assembleSite({ mainDir, devDir = null, archiveDir = null, versio
   for (const name of [...FOREIGN, ...versionDirs]) rmSync(join(recetteDir, name), { recursive: true, force: true });
   json(join(recetteDir, 'build-info.json'), buildInfo({ channel: 'release', version: label, branch: main.branch ?? 'main', sha: main.sha, date: main.date }));
   const canaux = { 'Recette/': ecrireCanalFichier(join(recetteDir, 'jeu.html'), 'release') };
+  // Lot 9f : accord entre la version embarquée de jeu.html et le sha de build-info.json (désaccord : la page se rechargerait une fois à l'ouverture).
+  const empreintes = { 'Recette/': { jeu: versionEmbarquee(join(recetteDir, 'jeu.html')), info: buildInfo({ channel: 'release', sha: main.sha }).sha } };
 
   // dev/ : build de dev (son accueil renvoie à la Recette), sinon un message.
   const devOut = join(out, 'dev');
@@ -272,6 +286,7 @@ export function assembleSite({ mainDir, devDir = null, archiveDir = null, versio
     canaux['dev/'] = ecrireCanalFichier(join(devOut, 'jeu.html'), 'dev');
     devInfo = buildInfo({ channel: 'dev', version: label, branch: versions.dev?.branch ?? 'dev', sha: dev.sha, date: dev.date });
     json(join(devOut, 'build-info.json'), devInfo);
+    empreintes['dev/'] = { jeu: versionEmbarquee(join(devOut, 'jeu.html')), info: devInfo.sha };
   } else {
     mkdirSync(devOut, { recursive: true });
     writeFileSync(join(devOut, 'index.html'), messagePage({ title: texts['site.dev.title'], message: texts['site.dev.none'], back: '../Recette/', backLabel: texts['site.dev.back'], icon }));
@@ -339,7 +354,7 @@ export function assembleSite({ mainDir, devDir = null, archiveDir = null, versio
 
   const stats = dirStats(out);
   if (stats.bytes > maxBytes) throw new AssembleError(`Site trop gros : ${(stats.bytes / 1024 / 1024).toFixed(1)} Mo pour un plafond de ${(maxBytes / 1024 / 1024).toFixed(0)} Mo (limite publiée : 1 Go)`);
-  return { out, ...stats, versions: report, dev: { ...devInfo, built: devBuilt, missing: devMissing }, siteInfo, published, noms: nomsReport, canaux };
+  return { out, ...stats, versions: report, dev: { ...devInfo, built: devBuilt, missing: devMissing }, siteInfo, published, noms: nomsReport, canaux, empreintes };
 }
 
 // Lecture des options (arguments, puis variables d'environnement).
@@ -399,6 +414,11 @@ async function main() {
     console.log(`  Recette/site-info.json : ${result.siteInfo.evolutions.length} évolutions, ${result.siteInfo.precedentes.length} versions précédentes`);
     console.log(`  versions : ${lines.join(' · ')}`);
     console.log(`  balise de canal réécrite : ${Object.entries(result.canaux).map(([dir, done]) => `${dir} ${done ? 'oui' : 'non (absente)'}`).join(' · ')}`);
+    for (const [dir, e] of Object.entries(result.empreintes)) {
+      if (e.jeu === null) console.log(`  ${dir}jeu.html : sans version embarquée (build d'avant le lot 9f)`);
+      else if (e.jeu === e.info) console.log(`  ${dir}jeu.html : version ${e.jeu} = build-info.json`);
+      else console.warn(`  Avertissement : ${dir}jeu.html embarque ${e.jeu}, build-info.json publie ${e.info || '(aucun sha)'} : la page se rechargera une fois à l'ouverture.`);
+    }
     const noms = result.noms;
     console.log(`  ${NOMS_FICHIER} : ${noms.source ? `build de ${noms.source}, ${noms.blocs} blocs, ${noms.erreurs.length} erreur${noms.erreurs.length > 1 ? 's' : ''} (lignes ignorées)` : 'absent (textes d\'origine)'}${noms.applique ? '' : ' ; NON appliqué (site-info.json invalide avec les noms)'}`);
     for (const message of noms.erreurs) console.warn(`  Avertissement : ${message}`);

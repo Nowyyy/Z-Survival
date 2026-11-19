@@ -73,7 +73,8 @@ const json = (path) => fetch(path).then((r) => (r.ok ? r.json() : null)).catch((
 // phase : 'menu' ou 'jeu' ; jouer(option) : appelé par « JOUER » du menu (demarrage.js charge alors le jeu ; lot 8b : option de démarrage).
 // son : { lire(), poser(réglages) } (lot 8c : son et volume des Options du menu, gardés en mémoire par demarrage.js), transmis au menu.
 // contexteAudio (lot 8i) : contexte audio de l'introduction, gardé pour les sons du menu (js/menu/sons/sons.js).
-export function creerChargement({ phase = 'menu', jouer = () => {}, son = null, contexteAudio = null, root = document.body, search = globalThis.location?.search ?? '' } = {}) {
+// info (lot 9f) : promesse de build-info.json déjà lu sans cache par la vérification de version (demarrage.js), sinon null : lecture ici comme avant.
+export function creerChargement({ phase = 'menu', jouer = () => {}, son = null, contexteAudio = null, root = document.body, search = globalThis.location?.search ?? '', info: infoLue = null } = {}) {
   ecouterGestes();
   adopter(contexteAudio);
   // Lot 8h : son et volumes gardés (zs.device.v1, relus par demarrage.js) : valent dès la chute du Z et pour la musique des menus.
@@ -163,7 +164,7 @@ export function creerChargement({ phase = 'menu', jouer = () => {}, son = null, 
     astuce.hidden = false;
   });
   // build-info.json n'est écrit avec certitude que sur source (dépôt), dev et release (assembleur) : ailleurs, aucune requête (ni erreur 404).
-  const info = CANAUX_DEBUG.includes(pageCanal()) ? json('build-info.json') : Promise.resolve(null);
+  const info = CANAUX_DEBUG.includes(pageCanal()) ? (infoLue ?? json('build-info.json')) : Promise.resolve(null);
   Promise.all([info, textes]).then(([build]) => {
     const v = texteVersion(build);
     if (v && dict[v.cle]) version.textContent = fmt(dict[v.cle], v.params);

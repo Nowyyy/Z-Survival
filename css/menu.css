@@ -5433,3 +5433,54 @@
     column-gap: 16px;
   }
 }
+
+/* Lot 9f (Docs/ref/cache.md) : bandeau « Nouvelle version disponible » (retour au menu, js/menu/bandeau-version.js). Discret, en haut au centre,
+   au-dessus du menu et de l'écran de chargement (E7, 51), sous l'introduction du studio (60) ; texte os sur surface sombre, bouton en zone pleine
+   rouge (texte posé sur le rouge : --color-on-action) ; cible de 44 px, focus visible ; aucune animation. Jetons existants seulement. */
+.maj-bandeau {
+  position: fixed;
+  top: max(var(--space-2), env(safe-area-inset-top));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 55;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  max-width: calc(100vw - 2 * var(--space-4));
+  padding: var(--space-1) var(--space-1) var(--space-1) var(--space-4);
+  box-sizing: border-box;
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  line-height: 1.3;
+}
+
+.maj-bandeau-texte {
+  margin: 0;
+}
+
+.maj-bandeau-bouton {
+  flex: none;
+  min-width: var(--touch-target);
+  min-height: var(--touch-target);
+  padding: 0 var(--space-4);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: var(--color-action);
+  color: var(--color-on-action);
+  font: inherit;
+  font-weight: var(--font-weight-bold);
+  cursor: pointer;
+}
+
+.maj-bandeau-bouton:hover {
+  background: var(--color-action-active);
+}
+
+.maj-bandeau-bouton:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}

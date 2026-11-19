@@ -143,6 +143,35 @@ describe('archiver : extraction et build', () => {
   });
 });
 
+// Lot 9f (Docs/ref/cache.md) : une version dont le build met ses adresses à l'empreinte (scripts/build.mjs du lot 9f) est archivée à l'empreinte de
+// son commit : l'archiveur passe ZS_BUILD_SHA (git archive n'a pas de .git) ; la version embarquée égale le sha de build-info.json.
+describe('archiver : empreinte du lot 9f', () => {
+  it('le build archivé porte la version du commit archivé (jeu.html, adresses, build-info.json)', () => {
+    const jeu = '<!doctype html><html><head><meta name="zs-version" content=""><link rel="stylesheet" href="css/a.css"><script type="module" src="js/m.js"></script></head><body>jeu</body></html>';
+    const fx = makeRepo({ script: 'node scripts/build.mjs', jeu, jeu2: jeu.replace('>jeu<', '>jeu 2<') });
+    mkdirSync(join(fx.repo, 'scripts/site'), { recursive: true });
+    mkdirSync(join(fx.repo, 'js'), { recursive: true });
+    writeFileSync(join(fx.repo, 'scripts/build.mjs'), readFileSync('scripts/build.mjs'));
+    writeFileSync(join(fx.repo, 'scripts/site/empreinte.mjs'), readFileSync('scripts/site/empreinte.mjs'));
+    writeFileSync(join(fx.repo, 'js/m.js'), "export const x = 1;\n");
+    git(fx.repo, 'add', '-A');
+    git(fx.repo, 'commit', '-q', '-m', 'v3 : build à l\'empreinte');
+    const ref = git(fx.repo, 'rev-parse', 'HEAD');
+    const report = archiveVersion({ id: 'v0.3', ref, branch: 'lot-3' }, opts(fx.repo, { dryRun: true, keep: true }));
+    try {
+      expect(report.status, report.note).toBe('archive');
+      const page = readFileSync(join(report.stage, 'v0.3/jeu.html'), 'utf8');
+      const sha = ref.slice(0, 7);
+      expect(page).toContain(`<meta name="zs-version" content="${sha}">`);
+      expect(page).toContain(`href="css/a.css?v=${sha}"`);
+      expect(page).toContain(`src="js/m.js?v=${sha}"`);
+      expect(JSON.parse(readFileSync(join(report.stage, 'v0.3/build-info.json'), 'utf8')).sha).toBe(sha);
+    } finally {
+      rmSync(report.tmp, { recursive: true, force: true });
+    }
+  });
+});
+
 describe('archiver : branche archive', () => {
   it('--dry-run construit et vérifie sans commit, sans branche, sans push', () => {
     const fx = makeRepo();

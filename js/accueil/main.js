@@ -3,8 +3,19 @@
 // puis versions précédentes). Une seule lecture : site-info.json, dans le dossier courant
 // (Recette/ du site assemblé). Contenu inséré par textContent seulement ; aucune requête externe, aucun stockage.
 import { startPage } from '../page.js';
-import { fill, formatDate, homeModel } from './home.js';
+import { adresseUnique, fill, formatDate, homeModel } from './home.js';
 import { poserLogo } from '../logo.js';
+
+// Lot 9f (Docs/ref/cache.md) : « Jouer » et « Dernier build de développement » (dont la version n'est pas connue à la construction de main) reçoivent
+// au clic, ou au clic du milieu, une adresse unique (r=<horodatage>) : jeu.html ne vient jamais du cache du navigateur. Posé avant la lecture de
+// site-info.json : les liens statiques en profitent aussi.
+for (const lien of [document.getElementById('play'), document.getElementById('dev-link')]) {
+  const unique = () => {
+    lien.href = adresseUnique(lien.getAttribute('href'), Date.now());
+  };
+  lien?.addEventListener('click', unique);
+  lien?.addEventListener('auxclick', unique);
+}
 
 async function fetchJson(url) {
   try {
