@@ -161,3 +161,6 @@ Rayon du grand aligné sur son dessin (×1,11) ; recharge cartouche par cartouch
 - **Délai après le rechargement** : `apresRecharge` (0,3 s pour toutes les armes ; une arme peut avoir le sien) : après la fin d'un rechargement, ni tir ni laser pendant ce délai (`attente` de l'inventaire, `enAttente`) ; un changement d'arme l'annule (la sortie le remplace).
 - **Cartouches remises une à une** (Kar98k, Winchester) : `arme-cartouche` devient un petit tintement métallique (déclic, partiels aigus inharmoniques brefs, second petit choc).
 - **Partie N** : `arme-cartouche` refait, métallique et froid (le tintement faisait « clochette ») : frottement aigu, choc sec, partiels serrés amortis en quelques millisecondes, rien dans le grave ; 0,04 s audible.
+
+## Fin du lot
+- Le propriétaire a jugé les parties H à N sur `/dev/` (« c'est tout bon ») ; bilan : `Docs/lots/lot-9e.md` (valeurs finales de la table, difficulté remesurée avec le délai après le rechargement, preuves, points ouverts).
