@@ -8,12 +8,38 @@ export const STATS = Object.freeze(['degats', 'cadence', 'portee', 'dispersion',
 const obj = (v) => (v !== null && typeof v === 'object' && !Array.isArray(v) ? v : {});
 const pos = (v, d) => (isNum(v) && v > 0 ? v : d);
 
+// Retour du propriétaire après le lot 9e : déroulé du rechargement, manœuvre après le tir, dernier tir, pièce qui tombe (voir le fichier).
+const texte = (v) => (typeof v === 'string' && v !== '' ? v : null);
+const part = (v) => (isNum(v) ? Math.min(1, Math.max(0, v)) : null);
+function lireRecharge(r, rechargement) {
+  const o = obj(r);
+  if (o.type === 'balle') {
+    const sons = obj(o.sons);
+    return { type: 'balle', debut: isNum(o.debut) && o.debut >= 0 ? o.debut : 0, parBalle: pos(o.parBalle, 0.4), fin: isNum(o.fin) && o.fin >= 0 ? o.fin : 0, sons: { debut: texte(sons.debut), balle: texte(sons.balle), fin: texte(sons.fin) } };
+  }
+  const etapes = (Array.isArray(o.etapes) ? o.etapes : [])
+    .map((x) => ({ t: part(obj(x).t), son: texte(obj(x).son), lacher: obj(x).lacher === true, siVide: obj(x).siVide === true, siReste: obj(x).siReste === true }))
+    .filter((x) => x.t !== null && x.t > 0)
+    .sort((a, b) => a.t - b.t);
+  return { type: 'chargeur', etapes, duree: rechargement };
+}
+function lireManoeuvre(m) {
+  const o = obj(m);
+  if (!isNum(o.duree) || o.duree <= 0) return null;
+  return { debut: isNum(o.debut) && o.debut >= 0 ? o.debut : 0, duree: o.duree, son: texte(o.son) };
+}
+const lirePiece = (p) => (Array.isArray(p) && p.length === 3 && p.every((v) => isNum(v) && v > 0) ? [...p] : null);
+
 // Une entrée lue : { id, categorie, palier, active, masse, prix, degats, cadence, portee, dispersion, dispersionMouvement, vitesse, chargeur,
-// reserve (Infinity si null), rechargement, sortie, plombs } ; une arme spéciale (active faux) garde seulement id, categorie, palier, prix.
+// reserve (Infinity si null), rechargement, sortie, plombs, recharge, manoeuvre, dernierTir, piece, douille } ; une arme spéciale (active faux) garde
+// seulement id, categorie, palier, prix.
 function lireEntree(id, e) {
   const o = obj(e);
   const base = { id, categorie: typeof o.categorie === 'string' ? o.categorie : 'arme', palier: Number.isInteger(o.palier) && o.palier >= 0 ? o.palier : 0, active: o.active !== false, masse: pos(o.masse, 1), prix: isNum(o.prix) && o.prix >= 0 ? o.prix : null };
   if (!base.active) return base;
+  const chargeur = Number.isInteger(o.chargeur) && o.chargeur >= 1 ? o.chargeur : 1;
+  const recharge = lireRecharge(o.recharge, pos(o.rechargement, 1));
+  const dt = obj(o.dernierTir);
   return {
     ...base,
     degats: pos(o.degats, 1),
@@ -22,11 +48,17 @@ function lireEntree(id, e) {
     dispersion: isNum(o.dispersion) && o.dispersion >= 0 ? o.dispersion : 4,
     dispersionMouvement: isNum(o.dispersionMouvement) && o.dispersionMouvement >= 0 ? o.dispersionMouvement : 8,
     vitesse: pos(o.vitesse, 1),
-    chargeur: Number.isInteger(o.chargeur) && o.chargeur >= 1 ? o.chargeur : 1,
+    chargeur,
     reserve: o.reserve === null ? Infinity : Number.isInteger(o.reserve) && o.reserve >= 0 ? o.reserve : 0,
-    rechargement: pos(o.rechargement, 1),
+    // Balle par balle : le temps de rechargement (chargeur plein) découle du déroulé.
+    rechargement: recharge.type === 'balle' ? recharge.debut + chargeur * recharge.parBalle + recharge.fin : pos(o.rechargement, 1),
     sortie: pos(o.sortie, 0.5),
     plombs: Number.isInteger(o.plombs) && o.plombs >= 1 ? o.plombs : 1,
+    recharge,
+    manoeuvre: lireManoeuvre(o.manoeuvre),
+    dernierTir: o.dernierTir ? { son: texte(dt.son), lacher: dt.lacher === true } : null,
+    piece: lirePiece(o.piece),
+    douille: lirePiece(o.douille),
   };
 }
 
@@ -43,11 +75,12 @@ export function lireTable(json) {
 
 // Arme au format du jeu (celui de data/game/weapons.json → pistol, lu par player-stats.js, combat.js, projectile.js) : la base commune de
 // weapons.json (vitesse et rayon de balle, éclair, laser, balles en vol, marge de visée) et les valeurs de l'entrée ; bouche : distance de la
-// bouche du canon devant le centre du joueur (pose de l'arme), sinon celle de la base.
-export function armeJeu(entree, base, bouche = null) {
+// bouche du canon devant le centre du joueur (pose de l'arme), sinon celle de la base ; cote : décalage de la bouche sur le côté du joueur
+// (muzzleSide, retour du propriétaire : les balles partent du bout du canon dessiné ; 0 sans pose).
+export function armeJeu(entree, base, bouche = null, cote = 0) {
   const b = obj(base);
   const e = obj(entree);
-  return { ...b, id: e.id, damage: e.degats, fireDelay: e.cadence, fireRange: e.portee, muzzleOffset: isNum(bouche) && bouche > 0 ? bouche : num(b.muzzleOffset, 26), plombs: e.plombs ?? 1, vitesse: e.vitesse ?? 1 };
+  return { ...b, id: e.id, damage: e.degats, fireDelay: e.cadence, fireRange: e.portee, muzzleOffset: isNum(bouche) && bouche > 0 ? bouche : num(b.muzzleOffset, 26), muzzleSide: isNum(bouche) && bouche > 0 ? num(cote) : 0, plombs: e.plombs ?? 1, vitesse: e.vitesse ?? 1 };
 }
 
 // Paramètres des statistiques du joueur (player-stats.json) avec le cône de l'arme : demi-angle à l'arrêt (dispersion) et surcroît en mouvement
@@ -86,7 +119,7 @@ export function paletteArmes(css) {
   return out;
 }
 
-// Sons des armes (data/game/sons-armes.json) : recettes jouées en partie (la variante choisie de chaque arme, le rechargement et le changement)
+// Sons des armes (data/game/sons-armes.json) : recettes jouées en partie (la variante choisie de chaque arme et tous les sons qui ne sont pas un tir)
 // et son de tir de chaque arme. Arme sans recette ni choix (le Colt) : le son « tir » de la partie. → { recettes, tir: { id: identifiant du son } }.
 export function sonsChoisis(json, ids = []) {
   const o = obj(json);
@@ -100,6 +133,7 @@ export function sonsChoisis(json, ids = []) {
     tir[id] = r ? r.id : 'tir';
     if (r) garde.push(r);
   }
-  for (const id of ['arme-recharge', 'arme-change']) if (par.has(id)) garde.push(par.get(id));
+  // Rechargement, changement, culasses, pompe, chargeurs, ping… : toutes les recettes qui ne sont pas un tir (retour du propriétaire).
+  for (const r of recettes) if (!r.id.startsWith('tir-')) garde.push(r);
   return { recettes: garde, tir };
 }

@@ -354,7 +354,7 @@ export function createV2Kit(options) {
     let arme = null;
     const armeMat = new THREE.Matrix4();
     const armeTmp = new THREE.Matrix4();
-    const armeEtat = { recul: 0, baisse: 0, gauche: null, poidsGauche: 0 };
+    const armeEtat = { recul: 0, baisse: 0, gauche: null, poidsGauche: 0, droite: null, poidsDroite: 0 };
     const armeRot = new THREE.Matrix4();
     const armeRot2 = new THREE.Matrix4();
     const BAISSE = 0.45; // radians au plus fort : arme abaissée
@@ -403,6 +403,16 @@ export function createV2Kit(options) {
         epaule.rotation.set(epaule.rotation.x + (sh[0] - epaule.rotation.x) * w, epaule.rotation.y + (sh[1] - epaule.rotation.y) * w, epaule.rotation.z * (1 - w));
         coude.rotation.set(coude.rotation.x + (el[0] - coude.rotation.x) * w, 0, 0);
       }
+      // Retour du propriétaire après le lot 9e : main droite vers la culasse (fusil à verrou manœuvré après le tir), même cinématique inverse.
+      const wd = Math.max(0, Math.min(1, num(armeEtat.poidsDroite)));
+      const epauleD = rig.bones.get('shoulderR');
+      const coudeD = rig.bones.get('elbowR');
+      if (wd > 0 && armeEtat.droite && epauleD && coudeD) {
+        pointGauche.set(armeEtat.droite[0], armeEtat.droite[1], armeEtat.droite[2]).applyMatrix4(armeMat);
+        const [sh, el] = armIK(gait.upper, gait.fore, [pointGauche.x - epauleD.position.x, pointGauche.y - epauleD.position.y, pointGauche.z - epauleD.position.z]);
+        epauleD.rotation.set(epauleD.rotation.x + (sh[0] - epauleD.rotation.x) * wd, epauleD.rotation.y + (sh[1] - epauleD.rotation.y) * wd, epauleD.rotation.z * (1 - wd));
+        coudeD.rotation.set(coudeD.rotation.x + (el[0] - coudeD.rotation.x) * wd, 0, 0);
+      }
     }
     const cycle = (anim, extra) => cycleSeconds(gait, anim, params(extra), poses) ?? 1;
     // Bout du canon (avant de la glissière, repère de l'articulation « prop ») : le laser, l'éclair et les balles en partent à l'image.
@@ -445,6 +455,18 @@ export function createV2Kit(options) {
         armeEtat.baisse = num(etat.baisse);
         armeEtat.gauche = Array.isArray(etat.gauche) ? etat.gauche : null;
         armeEtat.poidsGauche = num(etat.poidsGauche);
+        armeEtat.droite = Array.isArray(etat.droite) ? etat.droite : null;
+        armeEtat.poidsDroite = num(etat.poidsDroite);
+      },
+      // Joueur : point [x, y, z] du repère de l'arme tenue → monde ({ x, y } du plan de jeu, z : hauteur), dans out ; null sans arme (pièce lâchée).
+      pointArme(p, out) {
+        if (kind !== 'player' || !arme || !arme.mesh.visible) return null;
+        root.updateMatrixWorld(true);
+        muzzleAt.set(p[0], p[1], p[2]).applyMatrix4(arme.mesh.matrixWorld);
+        out.x = muzzleAt.x;
+        out.y = muzzleAt.z;
+        out.z = muzzleAt.y;
+        return out;
       },
       get arme() {
         return arme ? { id: arme.id ?? null, visible: arme.mesh.visible } : null;

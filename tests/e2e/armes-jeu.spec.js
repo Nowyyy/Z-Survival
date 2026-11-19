@@ -215,7 +215,7 @@ test.describe('chargeurs et rechargement (partie D)', () => {
 });
 
 test.describe('emplacements et changement d\'arme (partie E)', () => {
-  test('Colt permanent + un emplacement acheté ; molette, touche E, 1 et 2 ; sortie animée de la durée de l\'arme ; rechargement interrompu repris à la sortie suivante', async ({ page }) => {
+  test('Colt permanent + un emplacement acheté ; molette, touche E, 1 et 2 ; ranger au rythme de l\'arme rangée, sortir au rythme de la nouvelle ; rechargement interrompu repris à la sortie suivante', async ({ page }) => {
     await page.addInitScript(espion);
     await page.goto('/jeu.html?test=1&seed=2&nospawn=1&map=salle&lum=off&vhs=0');
     await waitReady(page);
@@ -233,15 +233,16 @@ test.describe('emplacements et changement d\'arme (partie E)', () => {
     });
     a = (await S(page)).armes;
     expect(a.emplacements.map((e) => e.id)).toEqual(['m1911', 'garand']);
-    // Touche E : vers le Colt ; sortie du Colt (0,38 s) sans tir.
+    // Touche E : vers le Colt ; ranger le Garand (0,30 s, son rythme) puis sortir le Colt (0,19 s, le sien), sans tir (retour du propriétaire).
     await page.mouse.move(400, 300);
     await page.keyboard.press('KeyE');
     await page.evaluate(() => window.__zs.step(0.05));
     a = (await S(page)).armes;
     expect(a.actif).toBe('m1911');
-    expect(a.sortie.total).toBeCloseTo(0.38, 9);
+    expect(a.sortie.ranger).toBeCloseTo(0.3, 9);
+    expect(a.sortie.total).toBeCloseTo(0.49, 9);
     expect(a.peutTirer).toBe(false);
-    await page.evaluate(() => { for (let i = 0; i < 8; i += 1) window.__zs.step(0.05); });
+    await page.evaluate(() => { for (let i = 0; i < 10; i += 1) window.__zs.step(0.05); });
     expect((await S(page)).armes.sortie).toBeNull();
     // 2 : l'arme achetée ; 1 : le Colt ; molette : l'autre.
     await page.keyboard.press('Digit2');
@@ -318,6 +319,128 @@ test.describe('bouton de changement sur téléphone (partie E)', () => {
     await expect(changer).toHaveAttribute('aria-label', /Thompson/);
     const r = await new AxeBuilder({ page }).include('#armes-boutons').include('#hud-ammo').analyze();
     expect(r.violations.map((v) => v.id)).toEqual([]);
+    expect(await page.evaluate(() => window.__ecritures.length)).toBe(0);
+  });
+});
+
+// Retours du propriétaire après le lot 9e : les balles partent du bout du canon ; chaque étape du rechargement a son son, la pièce lâchée tombe
+// au sol puis disparaît ; fusil à pompe et Kar98k se rechargent balle par balle (« ching » du Kar98k) ; verrou et pompe manœuvrés après le
+// tir ; clip du Garand éjecté au dernier tir (« ping »).
+test.describe('retours du propriétaire après le lot 9e', () => {
+  test('balles du bout du canon dessiné (les huit armes, deux directions)', async ({ page }) => {
+    await page.goto('/jeu.html?test=1&seed=2&nospawn=1&map=salle&lum=off&vhs=0');
+    await waitReady(page);
+    const r = await page.evaluate((ids) => {
+      const zs = window.__zs;
+      const out = [];
+      for (const id of ids) {
+        if (id !== 'm1911') zs.donnerArme(id);
+        for (const angle of [0.7, -2.2]) {
+          zs.setInput({ aim: { angle } });
+          for (let i = 0; i < 30; i += 1) zs.step(0.05);
+          const c = zs.getState().armes.canon;
+          const n = zs.getState().bullets.length;
+          zs.fire(angle);
+          const b = zs.getState().bullets[n];
+          out.push({ id, ecart: Math.hypot(c.logique.x - c.rendu.x, c.logique.y - c.rendu.y), balle: Math.hypot(b.x - c.logique.x, b.y - c.logique.y) });
+          zs.killAll();
+          for (let i = 0; i < 20; i += 1) zs.step(0.05);
+        }
+      }
+      return out;
+    }, UTILES);
+    for (const x of r) {
+      expect(x.ecart, x.id).toBeLessThan(1);
+      expect(x.balle, x.id).toBeLessThan(0.01);
+    }
+  });
+
+  test('rechargement par étapes : sons, chargeur qui tombe et disparaît ; douilles éjectées ; Kar98k balle par balle, verrou après le tir ; Garand : ping au dernier tir', async ({ page }) => {
+    test.setTimeout(90_000);
+    const w = watch(page);
+    await page.addInitScript(espion);
+    await page.goto('/jeu.html?test=1&seed=2&nospawn=1&map=salle&lum=off&vhs=0');
+    await waitReady(page);
+    await page.mouse.click(300, 200); // premier geste : le son démarre
+    const r = await page.evaluate(() => {
+      const zs = window.__zs;
+      const sons = (from) => zs.getState().audio.log.filter((e) => e.gameTime >= from).map((e) => e.sound);
+      const out = {};
+      // Colt : sept tirs, rechargement automatique : chargeur retiré (il tombe), remis, glissière (chargeur vide).
+      zs.setWaveParams({ hp: { hpLinearPerRound: 1000, hpExpStartRound: 1000, hpExpFactor: 1, hpCap: 1e9 }, damage: { factor: 1, cap: 0.0001 } });
+      let p = zs.getState().player;
+      zs.spawnEnemy(p.x + 150, p.y, { type: 'marcheur', gait: 'lent', wave: 3 });
+      let t0 = zs.getState().time;
+      for (let i = 0; i < 80 && zs.getState().armes.emplacements[0].chargeur > 0; i += 1) {
+        zs.setInput({ aim: { angle: 0 } });
+        zs.step(0.05);
+      }
+      out.coltDouilles = zs.getState().armes.douilles;
+      zs.killAll();
+      for (let i = 0; i < 12; i += 1) zs.step(0.05);
+      out.coltPieces = zs.getState().armes.pieces;
+      for (let i = 0; i < 30; i += 1) zs.step(0.05);
+      out.coltSons = sons(t0);
+      for (let i = 0; i < 100; i += 1) zs.step(0.05); // plus de 4 s au sol
+      out.coltApres = zs.getState().armes.pieces;
+      // Kar98k : un tir, verrou manœuvré (son) ; rechargement balle par balle.
+      zs.donnerArme('kar98k');
+      for (let i = 0; i < 30; i += 1) zs.step(0.05);
+      p = zs.getState().player;
+      zs.spawnEnemy(p.x + 150, p.y, { type: 'marcheur', gait: 'lent', wave: 3 });
+      t0 = zs.getState().time;
+      let vu = null;
+      for (let i = 0; i < 40 && zs.getState().armes.emplacements[1].chargeur === 5; i += 1) {
+        zs.setInput({ aim: { angle: 0 } });
+        zs.step(0.05);
+      }
+      out.karDouillesTir = zs.getState().armes.douilles.ejectees;
+      zs.killAll();
+      for (let i = 0; i < 6; i += 1) {
+        zs.step(0.05);
+        vu = vu ?? zs.getState().armes.manoeuvre;
+      }
+      out.manoeuvre = vu;
+      out.karDouillesVerrou = zs.getState().armes.douilles.ejectees;
+      for (let i = 0; i < 20; i += 1) zs.step(0.05);
+      zs.recharger();
+      const charges = [];
+      for (let i = 0; i < 30; i += 1) {
+        zs.step(0.05);
+        charges.push(zs.getState().armes.emplacements[1].chargeur);
+      }
+      out.karCharges = [...new Set(charges)];
+      out.karSons = sons(t0);
+      // Garand : huit tirs, le dernier éjecte le clip (ping, il tombe).
+      zs.donnerArme('garand');
+      for (let i = 0; i < 30; i += 1) zs.step(0.05);
+      p = zs.getState().player;
+      zs.spawnEnemy(p.x + 150, p.y, { type: 'marcheur', gait: 'lent', wave: 3 });
+      t0 = zs.getState().time;
+      const lachees = zs.getState().armes.pieces.lachees;
+      for (let i = 0; i < 80 && zs.getState().armes.emplacements[1].chargeur > 0; i += 1) {
+        zs.setInput({ aim: { angle: 0 } });
+        zs.step(0.05);
+      }
+      zs.killAll();
+      zs.step(0.05);
+      out.garandSons = sons(t0);
+      out.garandLachees = zs.getState().armes.pieces.lachees - lachees;
+      out.appels = zs.getState().render.calls;
+      return out;
+    });
+    expect(r.coltDouilles.ejectees).toBe(7); // une douille par tir (retour du propriétaire : petites particules jaunes)
+    expect(r.coltDouilles.visibles).toBeGreaterThan(0);
+    expect(r.karDouillesVerrou - r.karDouillesTir).toBe(1); // Kar98k : la douille sort quand on tire le verrou, pas au coup de feu
+    expect(r.coltPieces.auSol).toBe(1);
+    for (const n of ['arme-chargeur-sort', 'arme-chargeur-entre', 'arme-glissiere', 'arme-tombe']) expect(r.coltSons, n).toContain(n);
+    expect(r.coltApres.auSol).toBe(0);
+    expect(r.manoeuvre?.id).toBe('kar98k');
+    expect(r.karCharges).toEqual([4, 5]); // une cartouche à la fois (un seul tir : une seule à remettre)
+    for (const n of ['tir-kar98k-a', 'arme-verrou', 'arme-verrou-ouvre', 'arme-cartouche', 'arme-verrou-ching']) expect(r.karSons, n).toContain(n);
+    expect(r.garandSons).toContain('arme-ping');
+    expect(r.garandLachees).toBe(1);
+    expect(w.problems).toEqual([]);
     expect(await page.evaluate(() => window.__ecritures.length)).toBe(0);
   });
 });
