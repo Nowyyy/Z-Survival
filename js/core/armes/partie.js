@@ -36,7 +36,7 @@ function lireLevier(l) {
   return { main: o.main === 'droite' ? 'droite' : 'gauche', pos: [...o.pos], course: pos(o.course, 5) };
 }
 const lirePiece = (p) => (Array.isArray(p) && p.length === 3 && p.every((v) => isNum(v) && v > 0) ? [...p] : null);
-export const GESTES = Object.freeze(['retire', 'insere', 'culasse', 'couvercle']);
+export const GESTES = Object.freeze(['retire', 'insere', 'pousse', 'degage', 'culasse', 'couvercle']);
 
 // Une entrée lue : { id, categorie, palier, active, masse, prix, degats, cadence, portee, dispersion, dispersionMouvement, vitesse, chargeur,
 // reserve (Infinity si null), rechargement, sortie, plombs, recharge, manoeuvre, dernierTir, piece, douille } ; une arme spéciale (active faux) garde

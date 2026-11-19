@@ -6,7 +6,7 @@
 import * as THREE from 'three';
 import { expandParts, jointMatrices, jointsOf, mergeParts } from '../core/character-parts.js';
 import { createRng, nextFloat } from '../core/rng.js';
-import { DEATHS, addPoseInto, armIK, blendPosesInto, copyPoseInto, createPose, createPoseWork, cycleSeconds, poseAtInto, rigOf, toucheInto } from '../core/pose-v2.js';
+import { DEATHS, addPoseInto, armIK, blendPosesInto, copyPoseInto, createPose, createPoseWork, cycleSeconds, poseAt, poseAtInto, rigOf, toucheInto } from '../core/pose-v2.js';
 import { partRgb, pickOutfit, resolveVariant, wearTier } from '../core/persos-variants.js';
 import { PALETTE_REGION, createPersoTexture, persoRegionRect, persoSpec, regionFactor } from '../core/texgen-persos.js';
 import { EPAULE_REFERENCE, echellesCorps, lireCorps, rigCorps, varianteCorps } from '../core/gabarit.js';
@@ -471,16 +471,31 @@ export function createV2Kit(options) {
     // Retour du propriétaire (partie J) : pas chassé. input.avant, input.lateral : marche par rapport au corps (avant : cos, côté vers la gauche
     // du personnage : −sin). La foulée avant / arrière des hanches (rotation x) se réduit avec l'avant et passe sur le côté (rotation z) :
     // le pied qui avancerait part vers le côté de la marche, l'autre revient (de dessus : les jambes s'écartent et se croisent, sans tourner).
+    // Partie K (« les jambes ont l'air inclinées vers l'arrière ») : seule l'oscillation de la foulée autour de sa position moyenne (cuisse
+    // levée vers l'avant, genou plié) passe sur le côté ; la cuisse garde sa levée moyenne, sinon le genou plié pointait le tibia en arrière.
+    let milieuHanche = null;
     function pasChasse(input) {
       const lat = num(input.lateral);
       if (Math.abs(lat) < 0.05) return;
+      if (milieuHanche === null) {
+        let lo = Infinity;
+        let hi = -Infinity;
+        for (let i = 0; i < 16; i += 1) {
+          const a = poseAt(gait, 'marche', i / 16, NO_PARAMS, poses).angles.hipL;
+          if (a) {
+            lo = Math.min(lo, a[0]);
+            hi = Math.max(hi, a[0]);
+          }
+        }
+        milieuHanche = Number.isFinite(lo) ? (lo + hi) / 2 : 0;
+      }
       const av = Number.isFinite(input.avant) ? Math.abs(input.avant) : 1;
       for (const id of ['hipL', 'hipR']) {
         const b = rig.bones.get(id);
         if (!b) continue;
-        const x = b.rotation.x;
-        b.rotation.x = x * av;
-        b.rotation.z += -x * lat;
+        const osc = b.rotation.x - milieuHanche;
+        b.rotation.x = milieuHanche + osc * av;
+        b.rotation.z += -osc * lat;
       }
     }
     const cycle = (anim, extra) => cycleSeconds(gait, anim, params(extra), poses) ?? 1;
