@@ -1,0 +1,32 @@
+# Personnages et zombies d'époque (lot 9g, V0.9)
+Apparence seulement : gabarits, collisions, coups, vitesses, animations et poses inchangés (`corps`, `gabarit.js`, `poses-v2.json`, `data/armes/` intacts).
+
+## Structure actuelle (relevé sur `origin/dev` 622df2c)
+- Kit `js/game/character-v2.js` (« os rigides ») : pièces d'une variante (`characters-v2.json` → `slots[].variants[]`) fusionnées en **une géométrie** (`character-parts.js` : `box`, `taper`, `capsule`, `sphere`, `wedge`, `quad`), un os par sommet ; couleur = palette de la variante et de la tenue (jetons `--perso-*` de `css/tokens.css`), × atlas gris de détail (`texgen-persos.js` : 9 régions sur une grille 4 × 4 ; zombies 256 px en 4 tuiles de blessure, joueur 128 px), × usure (salissure, déchirures par triangle selon la manche).
+- Appels : corps 1 + proxy d'ombre 1 (passe principale, sans couleur) + ombre 1 = **3** (4 avec la lampe émissive du joueur B). Tenues (`outfits`, 6 par zombie, 3 pour le joueur) : palette et pièces facultatives (`parts[].outfits`), tirées à chaque apparition, jamais deux fois de suite (`pickOutfit`).
+- Emplacements : `joueur`, `marcheur`, `petit`, `voute`, `grand` (types visuels ; les allures lent, marche, **course** et **rampe** s'appliquent à chaque type : « coureur » et « rampant » sont des allures, pas des types). Variantes A, B, C, riche. Jeu : **riche** à l'Élevé (`persos-choix.json`), **A** à Moyen et Faible (option « Personnages : simples »).
+- Triangles (maximum sur les tenues) — complet (riche) / simple (A) : joueur 2 244 / 844 ; marcheur 2 048 / 736 ; petit 2 144 / 744 ; voûté 2 032 / 720 ; grand 2 040 / 728. Ombre : 60 triangles.
+
+## Ce qui peut changer sans toucher aux gabarits
+- Pièces **portées** (casques, coiffures, capotes, équipement), palettes, régions de texture, tessellation des pièces cachées, pièces retirées (oreilles sous le casque). **Gardés identiques à la variante d'origine** : squelette, `joints`, `scale`, `posture`, `style`, `sole`, `contacts`, `shadow`, `anchors` (sang) : animations, pas, gabarits et ombre inchangés.
+- Une variante d'époque = variante d'origine du type (riche pour le niveau complet, A pour le niveau simple) + recette (`data/game/persos-epoque.json`) construite par une fonction pure (`persos-variants.js`). Couleurs **dérivées des jetons existants** (mélange et ombre de deux jetons `--perso-*`) : aucun jeton nouveau, aucune couleur en dur. Quatre régions de texture d'époque (laine, chevrons, filet, camouflage) dans les cases libres de l'atlas, générées seulement pour les variantes d'époque (textures actuelles identiques au bit près), tailles inchangées.
+
+## Plan des tenues
+- **Survivant (personnage 1)** — fantassin ou Marine américain de 1942 : casque M1 à jugulaire (avec ou sans filet), treillis à chevrons olive ou veste M41 sable, guêtres de toile claires, ceinturon M1923 à cartouchières, bretelles, gourde au flanc, brodequins ; musette au dos.
+- **Personnage 2** — **parachutiste** (proposition) : veste M42 sable à grandes poches de poitrine inclinées, pantalon à **poches de cuisse**, bottes de saut hautes, casque à **filet**, harnais et musette de cuisse. Nettement distinct du premier : couleur plus claire, poches de cuisse, pas de guêtres ni de musette au dos. Variante C : Marine du Pacifique au couvre-casque camouflé, gardée en option.
+- **Zombies — uniquement des soldats du camp adverse** (gris-vert, gris pierre, cuir noir), usés, salis, déchirés. Six sous-variantes (tenues) par type, tirées à chaque apparition : (1) soldat, casque modèle 1935, veste, bretelles en Y, cartouchières ; (2) soldat au calot ; (3) soldat en **capote** casqué ; (4) sous-officier à casquette souple, jumelles et porte-cartes ; (5) **officier à casquette** à visière, ceinture et baudrier, culotte, bottes, étui ; (6) tête nue, capote ouverte. Par type : **marcheur** équilibré ; **petit** (adulte de petite taille, proportions adultes vérifiées) équipement léger ; **voûté** capote et havresac ; **grand** capote, boîte de masque à gaz, équipement lourd. Bottes de cuir (tibias couleur botte), cheveux sombres sous les têtes nues.
+- **Trois variantes à comparer** pour chaque personnage : **A « lisible »** (couleurs claires, peu de pièces, casque très marqué) ; **B « équipé »** (équipement complet : gamelle, pelle, masque à gaz, musette) ; **C « délabré »** (plus de lambeaux, casque de travers, capote ouverte, teintes boueuses).
+
+## Règles de contenu
+- **Aucun insigne ni symbole** : ni croix gammée, ni runes, ni aigle, ni cocarde, ni écusson, ni galon dessiné ; grades par la coiffure et l'équipement seulement. Revue : liste des pièces et des régions de texture (motifs géométriques) dans le bilan.
+- Petit : adulte (tête entre 1/8,5 et 1/6,5 de la hauteur, test existant) ; aucun démembrement, organe ni os ; sang (atlas des blessures) et usure par manche inchangés dans leur principe.
+
+## Budgets
+- 3 appels par personnage (aucune matière nouvelle) ; triangles par type ≤ +10 % (complet et simple, maximum sur les tenues) ; ombre inchangée ; textures aux tailles actuelles ; scène ≤ 400 appels et 45 000 triangles.
+
+## Atelier (partie B)
+- Section « Époque (lot 9g) » ajoutée à `atelier-personnages.html` (module `js/atelier-personnages/epoque.js`) : choix du personnage, de la variante, de la tenue, du niveau ; gros plan qui tourne (immobile en mouvement réduit) ; vues du jeu 667 × 375 et 1920 × 1080 (sol de la carte, lampe, lune) avec l'apparence actuelle, A, B et C côte à côte ; marche, course, rampe, attaque, arme tenue (Colt, Thompson, Garand, poses du lot 9e) ; planche des six tenues ; horde de vingt zombies mélangés ; tableau des budgets ; texte du fichier de choix à copier (rien n'est enregistré).
+- Fichier de choix `data/game/persos-epoque-choix.json` (variante retenue par personnage et par type ; absente ou invalide : A), lu par une fonction pure testée. Le jeu ne lit rien de neuf avant le GO.
+
+## Tests prévus
+- Nouveau `tests/unit/persos-epoque.test.js` : construction pure et déterministe, gabarit identique (squelette, articulations, échelle, posture, ancres, ombre), budgets (appels, triangles par type et par niveau, ombre), contraste ≥ 3:1 sur chaque sol, emprise, hauteur, pièces non flottantes, petit adulte, aucun jeton inconnu ni couleur en dur, régions de texture (actuelles identiques), lecture du fichier de choix. E2E de l'atelier (section chargée, budgets affichés, aucune requête externe, aucune écriture). Garantie 1 : `trace-logique.mjs` 6 × 600 identique à `origin/dev` à chaque pas.
