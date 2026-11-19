@@ -27,6 +27,18 @@ export function choregraphieChargeur(entree, vide) {
     if (e.geste === 'retire') {
       cles.push({ t: Math.max(avant, e.t - Math.min(0.12, d * 0.7)), cible: 'chargeur' }, { t: e.t, cible: 'chargeur' });
       retire = e.t;
+    } else if (e.geste === 'pousse') {
+      // Partie K (Garand) : le clip est pris dans la poche, présenté au-dessus du boîtier, puis enfoncé par le dessus (le pouce pousse).
+      const arrive = avant + d * 0.32;
+      const prend = avant + d * 0.45;
+      cles.push({ t: arrive, cible: 'poche' }, { t: prend, cible: 'poche' }, { t: avant + d * 0.75, cible: 'dessus' }, { t: e.t, cible: 'chargeur' });
+      objet.push([arrive, e.t]);
+      secousses.push(e.t);
+      retire = null;
+    } else if (e.geste === 'degage') {
+      // Le pouce se retire d'un coup vers le haut, la culasse claque en avant.
+      cles.push({ t: Math.max(avant, e.t - Math.min(0.06, d * 0.5)), cible: 'chargeur' }, { t: e.t, cible: 'dessus' });
+      secousses.push(e.t);
     } else if (e.geste === 'insere') {
       // Vers la poche, une pause (il prend le chargeur), retour à l'arme : le chargeur neuf est dans la main jusqu'à ce qu'il entre.
       const arrive = avant + d * 0.42;
@@ -73,14 +85,24 @@ export function choregraphieBalle(entree, prevu) {
   const f = r.debut + n * r.parBalle;
   const objet = [];
   const secousses = [];
+  const verrou = entree.categorie === 'fusil à verrou';
   if (r.poche === 'une') {
-    const cles = [{ t: 0, cible: 'prise' }, { t: T(0.2), cible: 'prise' }, { t: T(0.6), cible: 'poche' }, { t: T(0.75), cible: 'poche' }, { t: T(r.debut), cible: 'port' }];
+    // Une seule fois à la poche (les cartouches restent dans la main), puis chacune est enfoncée : par le dessus (Kar98k), par la trappe
+    // sous le boîtier (Winchester, partie K).
+    const poche0 = Math.min(r.debut * 0.6, 0.45);
+    const poche1 = Math.min(r.debut * 0.78, poche0 + 0.15);
+    const cles = [{ t: 0, cible: 'prise' }, { t: T(poche0 * 0.35), cible: 'prise' }, { t: T(poche0), cible: 'poche' }, { t: T(poche1), cible: 'poche' }, { t: T(r.debut), cible: 'port' }];
     for (let i = 0; i < n; i += 1) {
       const ti = r.debut + (i + 1) * r.parBalle;
-      cles.push({ t: T(ti - r.parBalle * 0.45), cible: 'portHaut' }, { t: T(ti - r.parBalle * 0.1), cible: 'port' });
+      cles.push({ t: T(ti - r.parBalle * 0.45), cible: 'portApproche' }, { t: T(ti - r.parBalle * 0.1), cible: 'port' });
+    }
+    objet.push([T(poche0), T(f)]);
+    if (!verrou) {
+      cles.push({ t: T(f), cible: 'pompe' }, { t: T(f + 0.06), cible: 'pompe2' }, { t: T(f + 0.21), cible: 'pompe' }, { t: 1, cible: 'prise' });
+      secousses.push(T(f + 0.21));
+      return { cles, clesD: null, objet, sans: [], secousses };
     }
     cles.push({ t: T(f + r.fin * 0.5), cible: 'prise' }, { t: 1, cible: 'prise' });
-    objet.push([T(0.6), T(f)]);
     const clesD = [
       { t: 0, cible: 'prise' }, { t: T(0.05), cible: 'culasse' }, { t: T(0.17), cible: 'culasse2' },
       { t: T(f), cible: 'culasse2' }, { t: T(f + 0.08), cible: 'culasse' }, { t: T(f + 0.16), cible: 'culasse' }, { t: T(f + 0.35), cible: 'prise' }, { t: 1, cible: 'prise' },

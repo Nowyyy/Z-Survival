@@ -87,9 +87,14 @@ describe('table des armes', () => {
 describe('calibrage (calculé depuis waves.json et enemies.json)', () => {
   const REF = tempsPourTuer(table.armes.m1911, vie(1)); // Colt en manche 1 : 2 tirs × 0,4 s
   it('référence : Colt en manche 1 = 0,8 s par marcheur', () => expect(REF).toBeCloseTo(0.8, 9));
-  it.each([['kar98k', 11], ['winchester1897', 11], ['thompson', 21], ['garand', 21], ['stg44', 31], ['bar', 31]])('%s : à la manche %i (ouverture du palier), un marcheur tombe en 0,8 s ± 15 %', (id, w) => {
+  it.each([['winchester1897', 11], ['thompson', 21], ['garand', 21], ['stg44', 31], ['bar', 31]])('%s : à la manche %i (ouverture du palier), un marcheur tombe en 0,8 s ± 15 %', (id, w) => {
     expect(tempsPourTuer(table.armes[id], vie(w)) / REF).toBeGreaterThan(0.85);
     expect(tempsPourTuer(table.armes[id], vie(w)) / REF).toBeLessThan(1.15);
+  });
+  it('kar98k : un tir tue un marcheur à la manche 11 ; décision du propriétaire (partie K) : une pause après le verrou, cadence 1,05 s (temps pour tuer 1,05 s, au-dessus de la règle de 0,8 ± 15 %)', () => {
+    expect(Math.ceil(vie(11) / table.armes.kar98k.degats - 1e-9)).toBe(1);
+    expect(table.armes.kar98k.cadence).toBeGreaterThan(table.armes.kar98k.manoeuvre.debut + table.armes.kar98k.manoeuvre.duree + 0.15);
+    expect(tempsPourTuer(table.armes.kar98k, vie(11))).toBeCloseTo(1.05, 9);
   });
   it('MG42 (palier 4, fin de monde) : vie plafonnée de la manche 31 à 40, calibrée sur le nombre de zombies (150 / 98) ± 15 %', () => {
     expect(vie(40)).toBe(vie(31));
@@ -99,7 +104,7 @@ describe('calibrage (calculé depuis waves.json et enemies.json)', () => {
     expect(t * k / REF).toBeLessThan(1.15);
   });
   it('chaque arme s\'essouffle : à la manche d\'ouverture du palier suivant, au moins 1,8 fois plus lente qu\'à la sienne', () => {
-    for (const [id, a, b] of [['m1911', 1, 11], ['kar98k', 11, 21], ['winchester1897', 11, 21], ['thompson', 21, 31], ['garand', 21, 31]]) {
+    for (const [id, a, b] of [['m1911', 1, 11], ['kar98k', 11, 21], ['winchester1897', 11, 21], ['thompson', 21, 31], ['garand', 21, 31]]) { // kar98k : même rapport avec la cadence de la partie K
       expect(tempsPourTuer(table.armes[id], vie(b)), id).toBeGreaterThanOrEqual(1.8 * tempsPourTuer(table.armes[id], vie(a)) - 1e-9);
     }
   });
@@ -199,8 +204,8 @@ describe('inventaire : emplacements, chargeurs, rechargement, changement', () =>
     for (let i = 0; i < 6; i += 1) s = tirer(s);
     let r = run(s, 0.05, 1); // départ automatique : chargeur vide
     expect(armeActive(r.st).prevu).toBe(6);
-    expect(table.armes.winchester1897.rechargement).toBeCloseTo(0.25 + 6 * 0.42 + 0.4, 9);
-    r = run(r.st, 0.05, 15); // 0,75 s : une cartouche (0,25 + 0,42 = 0,67)
+    expect(table.armes.winchester1897.rechargement).toBeCloseTo(0.75 + 6 * 0.36 + 0.4, 9); // partie K : une seule fois à la poche
+    r = run(r.st, 0.05, 23); // 1,15 s : une cartouche (0,75 + 0,36 = 1,11)
     expect(armeActive(r.st).chargeur).toBe(1);
     expect(armeActive(r.st).reserve).toBe(29);
     expect(gesteRecharge(r.st, table).balle).toBe(true);
@@ -445,19 +450,27 @@ describe('rechargement animé et chargeurs des modèles (partie I)', () => {
     // Chaque arme à chargeur a un geste à chaque étape qui compte (retirer, insérer).
     for (const id of ['m1911', 'thompson', 'garand', 'stg44', 'bar', 'mg42']) {
       expect(table.armes[id].piece, id).toBe(true);
-      expect(table.armes[id].recharge.etapes.some((e) => e.geste === 'insere'), id).toBe(true);
+      expect(table.armes[id].recharge.etapes.some((e) => e.geste === 'insere' || e.geste === 'pousse'), id).toBe(true); // Garand : clip poussé par le dessus (partie K)
     }
   });
-  it('chorégraphie « balle » : Winchester, une cartouche prise dans la poche à chaque fois, pompe à la fin ; Kar98k : une fois à la poche, verrou à droite', async () => {
+  it('chorégraphie « balle » : Winchester et Kar98k, une seule fois à la poche, cartouches enfoncées une à une (par-dessous, par le dessus) ; pompe ou verrou à la fin', async () => {
     const { choregraphieBalle } = await import('../../js/core/armes/geste.js');
     // Partie J : Kar98k, une seule fois à la poche, puis les cartouches enfoncées une à une ; verrou à la main droite.
     const k = choregraphieBalle(table.armes.kar98k, 3);
     expect(k.cles.filter((c) => c.cible === 'poche').length).toBe(2);
-    expect(k.cles.filter((c) => c.cible === 'portHaut').length).toBe(3);
+    expect(k.cles.filter((c) => c.cible === 'portApproche').length).toBe(3);
     expect(k.objet.length).toBe(1);
     expect(k.clesD.map((c) => c.cible)).toContain('culasse2');
     const w = choregraphieBalle(table.armes.winchester1897, 2);
     expect(w.cles.map((c) => c.cible)).toContain('pompe2');
+    expect(w.cles.filter((c) => c.cible === 'poche').length).toBe(2); // partie K : une seule fois à la poche
+    expect(w.objet.length).toBe(1);
+    expect(w.cles.filter((c) => c.cible === 'portApproche').length).toBe(2);
+    // Garand (partie K) : le clip est présenté au-dessus du boîtier puis enfoncé ; le pouce se retire vers le haut.
+    const { choregraphieChargeur } = await import('../../js/core/armes/geste.js');
+    const g = choregraphieChargeur(table.armes.garand, true).cles.map((c) => c.cible);
+    expect(g.slice(g.indexOf('poche'))).toEqual(['poche', 'poche', 'dessus', 'chargeur', 'chargeur', 'dessus', 'prise', 'prise']);
+    expect(table.armes.garand.rechargement).toBeCloseTo(2.8, 9);
     expect(w.cles.at(-1)).toEqual({ t: 1, cible: 'prise' });
   });
   it('chargeur au sol = pièces du chargeur du modèle (forme, taille, matière de l\'arme) ; pièces cachées (Colt, Garand) jamais sur l\'arme tenue', async () => {

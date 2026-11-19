@@ -1257,7 +1257,9 @@ export function createGame(ctx) {
         chargeur: plus(centre, offG),
         poche: POCHE,
         port,
-        portHaut: plus(port, [0, 2, 0]),
+        // Approche de la cartouche : par le dessus (Kar98k), par-dessous, la trappe sous le boîtier (fusil à pompe, partie K).
+        portApproche: plus(port, e?.categorie === 'fusil à pompe' ? [0, -2.5, 0] : [0, 2, 0]),
+        dessus: plus(centre, [0, 4, 0]).map((v, i) => v + offG[i]), // au-dessus du boîtier (clip du Garand présenté puis enfoncé)
         culasse,
         culasse2,
         couvercle: plus([d[0], d[1] + 7, d[2] + 6], offG),

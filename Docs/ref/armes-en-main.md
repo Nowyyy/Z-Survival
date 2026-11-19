@@ -141,3 +141,10 @@ Rayon du grand aligné sur son dessin (×1,11) ; recharge cartouche par cartouch
 - **Rampants** : la reptation garde le corps d'avant (épaules 11,5, bras ×1) : les bras s'écartent et tirent à tour de rôle comme avant le lot ; debout, le corps long.
 - **Pas chassé** : entre 50° et 130° d'écart entre la marche et la visée, le joueur reste tourné vers la visée (0,3 rad vers la marche) et les hanches passent leur foulée sur le côté (les jambes s'écartent au lieu d'avancer) ; en deçà il marche, au-delà il recule.
 - **Trace de référence** (`corps=avant&munitions=illimitees`) : toute la logique est identique à `origin/dev` (6 scénarios × 600 pas, tous les champs sauf `pose`) ; seul `pose` (phase de l'animation de marche du joueur) change, par le pas chassé : les six empreintes de `origin/dev` ne sont plus retrouvées pour cette seule raison. État de test : `getState().anim` ({ facing, pas }) hors des champs logiques.
+
+## Retours du propriétaire (partie K)
+- **Kar98k** : cadence 1,05 s (au lieu de 0,85) : le verrou finit à 0,82 s, puis une pause avant le tir suivant ; un tir tue toujours un marcheur à la manche 11, en 1,05 s (au-dessus de la règle de 0,8 ± 15 % : décision du propriétaire).
+- **Winchester** : une seule fois à la poche (`recharge.poche: "une"`), cartouches enfoncées une à une par la trappe sous le boîtier (`portApproche` par-dessous), pompe à la fin ; 0,75 + 0,36 par cartouche + 0,4 (3,31 s pour 6). Son de la pompe plus mécanique : déclic, cliquetis métalliques pendant la course, chocs aux butées (partiels inharmoniques), élévateur.
+- **Garand** : clip pris dans la poche, présenté au-dessus du boîtier puis enfoncé par le dessus (geste `pousse`), le pouce se retire d'un coup et la culasse claque (geste `degage`) ; rechargement 2,8 s (au lieu de 2).
+- **MG42** : cadence 0,1 s (deux fois plus lente) ; dégâts 280 (au lieu de 140 : même puissance qu'avant) et réserve 1 150 (règle des munitions).
+- **Jambes** : au pas chassé, seule l'oscillation de la foulée autour de sa position moyenne passe sur le côté (la cuisse garde sa levée moyenne ; avant, le genou plié pointait le tibia vers l'arrière).
