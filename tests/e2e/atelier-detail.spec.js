@@ -74,9 +74,10 @@ test.describe('budgets de rendu avec le détail (27 300 triangles et 84 appels a
       // Lot 8l : &tirtraverse=0 (règle des tirs d'avant le lot 8j, ?test=1 seulement) : les références datent d'avant le lot 8j ; depuis, le laser visé
       // à l'ouest passe par-dessus le comptoir P6 (Q6 à l'étage) et son point (sphère de 140 triangles, 1 appel) sort de la vue : R2 et U4 mesuraient
       // 140 triangles et 1 appel de moins que leur référence (au lot 8i : écart nul ; vérifié avec et sans le paramètre). Budgets inchangés.
-      await open(page, `${sc.url}&shadows=1&detail=0&perso=A&sang=0&lum=off&gfx=eleve&tirtraverse=0`); // lot 5e : référence mesurée avec la variante A ; lot 5q : Élevé imposé
+      // Lot 9h : &decor=avant (décor extérieur d'avant le lot, ?test=1 seulement) : ces références datent d'avant le décor d'époque, dont le budget est vérifié par decor-epoque-jeu.spec.js.
+      await open(page, `${sc.url}&shadows=1&detail=0&perso=A&sang=0&lum=off&gfx=eleve&tirtraverse=0&decor=avant`); // lot 5e : référence mesurée avec la variante A ; lot 5q : Élevé imposé
       const off = await measure(page, sc);
-      await open(page, `${sc.url}&shadows=1&perso=A&sang=0&lum=off&gfx=eleve&tirtraverse=0`); // même variante, même préréglage et même règle des tirs que la mesure sans le détail
+      await open(page, `${sc.url}&shadows=1&perso=A&sang=0&lum=off&gfx=eleve&tirtraverse=0&decor=avant`); // même variante, même préréglage et même règle des tirs que la mesure sans le détail
       const on = await measure(page, sc);
       const note = `${id} : detail=0 ${off.calls} appels / ${off.triangles} triangles ; detail=1 ${on.calls} / ${on.triangles} (référence ${ref.join(' / ')})`;
       testInfo.annotations.push({ type: 'rendu', description: note });

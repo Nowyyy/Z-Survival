@@ -16,7 +16,8 @@ import { parseZones, zonesToWorld } from '../js/core/zones.js';
 import { buildLayouts, windowsWithGaps } from '../js/core/layout.js';
 import { windowGeometries } from '../js/core/windows.js';
 import { tirsMonde } from '../js/core/tir-traverse.js';
-import { controlePlan } from '../js/core/decor-epoque.js';
+import { controlePlan, sectionEpoque } from '../js/core/decor-epoque.js';
+import { groundScarBoxes } from '../js/core/epaves.js';
 
 const ROOT = new URL('../data/game/maps/', import.meta.url);
 const isPrimitive = (v) => v === null || typeof v !== 'object';
@@ -53,6 +54,19 @@ export function generateMapFiles(id = 'rez-de-chaussee') {
   const epaves = existsSync(epavesUrl) ? JSON.parse(readFileSync(epavesUrl, 'utf8')) : null;
   const out = planToWorld(plan, params, { doors: zones.doors.filter((d) => !d.planned), epaves });
   if (!out.world) throw new Error(`plan invalide : ${out.report.errors.join(' ; ')}`);
+  // Lot 9h : décor extérieur d'époque (decor-epoque.json de la carte, unités du jeu ; choix : data/game/decor-epoque-choix.json ; couleurs :
+  // data/game/decor-epoque.json) : contrôlé sur le décor d'avant (couloirs, apparitions, bâtiment, fenêtres, décor gardé, chemins des zombies), puis écrit
+  // dans decor.json (clé epoque : objets, rectangles, remplacements, cicatrices de l'avion), que la partie lit (js/core/decor.js).
+  let ctlEpoque = null;
+  const epoqueUrl = new URL(`${id}/decor-epoque.json`, ROOT);
+  if (existsSync(epoqueUrl)) {
+    const lireData = (nom) => {
+      const url = new URL(`../${nom}`, ROOT);
+      return existsSync(url) ? JSON.parse(readFileSync(url, 'utf8')) : null;
+    };
+    ctlEpoque = controlePlan({ world: out.world, decorCfg: out.decor, doc: JSON.parse(readFileSync(epoqueUrl, 'utf8')), choixJson: lireData('decor-epoque-choix.json'), geometries: (layout) => windowGeometries(windowsWithGaps(layout), lireData('windows.json')), navCfg: lireData('nav.json') });
+    out.decor.epoque = sectionEpoque(ctlEpoque, { couleurs: lireData('decor-epoque.json')?.couleurs ?? {}, footprint: polygonRects(out.world.contour), scars: groundScarBoxes });
+  }
   const result = { world: `${formatJson(out.world)}\n`, decor: `${formatJson(out.decor)}\n`, etage: null, report: out.report, etageReport: null, problems: [], decorInterieur: null, decorReport: null, mobilier: null, mobilierReport: null, wrecksReport: null };
   // Lot 5a : décor extérieur généré (graine) avec ses épaves : règles du décor (decorProblems) et voiture en flammes (existe, à 160 du bâtiment au moins).
   if (out.decor.wrecks) result.wrecksReport = wrecksCheck(out.world, out.decor, params);
@@ -173,19 +187,12 @@ export function generateMapFiles(id = 'rez-de-chaussee') {
     result.tirsReport = { counts: Object.fromEntries(Object.entries(conv.doc).map(([f, d]) => [f, `${d.ids.length} objets, ${d.grilles.length} grilles`])), problems: conv.problems };
     result.problems.push(...conv.problems.map((v) => `tirs : ${v}`));
   }
-  // Lot 9h : décor extérieur d'époque (decor-epoque.json de la carte, unités du jeu ; choix : data/game/decor-epoque-choix.json). Contrôle seulement :
-  // aucun fichier écrit (la partie ne le lit pas avant le « GO 9h »). Problème : couloir, point d'apparition, bâtiment, fenêtre, décor gardé, chemin coupé.
+  // Lot 9h : rapport et problèmes du décor d'époque (contrôle fait avant l'écriture de decor.json).
   result.decorEpoqueReport = null;
-  const epoqueUrl = new URL(`${id}/decor-epoque.json`, ROOT);
-  if (existsSync(epoqueUrl)) {
-    const lireData = (nom) => {
-      const url = new URL(`../${nom}`, ROOT);
-      return existsSync(url) ? JSON.parse(readFileSync(url, 'utf8')) : null;
-    };
-    const ctl = controlePlan({ world: out.world, decorCfg: out.decor, doc: JSON.parse(readFileSync(epoqueUrl, 'utf8')), choixJson: lireData('decor-epoque-choix.json'), geometries: (layout) => windowGeometries(windowsWithGaps(layout), lireData('windows.json')), navCfg: lireData('nav.json') });
-    const allonges = ctl.chemins.filter((c) => c.avant && c.apres && c.apres.longueur !== c.avant.longueur).length;
-    result.decorEpoqueReport = { objets: ctl.objets.length, solides: ctl.objets.filter((o) => o.collision).length, triangles: ctl.objets.reduce((n, o) => n + o.compte, 0), chemins: ctl.chemins.length, allonges, problems: ctl.problemes };
-    result.problems.push(...ctl.problemes.map((v) => `décor d'époque : ${v}`));
+  if (ctlEpoque) {
+    const allonges = ctlEpoque.chemins.filter((c) => c.avant && c.apres && c.apres.longueur > c.avant.longueur).length;
+    result.decorEpoqueReport = { objets: ctlEpoque.objets.length, solides: ctlEpoque.objets.filter((o) => o.collision).length, triangles: out.decor.epoque.triangles, chemins: ctlEpoque.chemins.length, allonges, problems: ctlEpoque.problemes };
+    result.problems.push(...ctlEpoque.problemes.map((v) => `décor d'époque : ${v}`));
   }
   return result;
 }
@@ -246,7 +253,7 @@ if (isMain) {
     for (const w of lampesReport.warnings) console.log(`Lampes : ${w}`);
   }
   if (tirsReport) console.log(`Tirs : ${Object.entries(tirsReport.counts).map(([f, t]) => `${f} ${t}`).join(' ; ')} traversables.`);
-  if (decorEpoqueReport) console.log(`Décor d'époque (atelier, non branché) : ${decorEpoqueReport.objets} objets dont ${decorEpoqueReport.solides} solides, ${decorEpoqueReport.triangles} triangles ; ${decorEpoqueReport.chemins} chemins de zombies, ${decorEpoqueReport.allonges} allongés, ${decorEpoqueReport.problems.length} problème(s).`);
+  if (decorEpoqueReport) console.log(`Décor d'époque : ${decorEpoqueReport.objets} objets dont ${decorEpoqueReport.solides} solides, ${decorEpoqueReport.triangles} triangles ; ${decorEpoqueReport.chemins} chemins de zombies, ${decorEpoqueReport.allonges} allongés, ${decorEpoqueReport.problems.length} problème(s).`);
   if (wrecksReport) {
     const { car, helicopter: h } = wrecksReport;
     if (car) console.log(`Épaves : voiture en flammes ${car.id} (${car.x}, ${car.y}), à ${car.gap} du bâtiment.`);

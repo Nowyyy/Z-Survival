@@ -226,7 +226,10 @@ describe('fichiers versionnés = sortie du script (aucune retouche à la main)',
     const solides = lu.obstacles.filter((o) => o.kind === 'sacs');
     expect(solides.map((o) => o.id)).toEqual(['sacs-1', 'sacs-2']);
     expect({ ...lu, obstacles: lu.obstacles.filter((o) => o.kind !== 'sacs') }).toEqual(JSON.parse(JSON.stringify(out.world)));
-    expect(JSON.parse(files.decor)).toEqual(JSON.parse(JSON.stringify(out.decor)));
+    // Lot 9h : plus la clé epoque (décor d'époque contrôlé et écrit par npm run carte : js/core/decor-epoque.js, tests/unit/decor-epoque.test.js).
+    const { epoque, ...decorLu } = JSON.parse(files.decor);
+    expect(decorLu).toEqual(JSON.parse(JSON.stringify(out.decor)));
+    expect(epoque.objets.length).toBeGreaterThan(0);
   });
 
   it('formatJson : objets simples sur une ligne, tableaux de nombres aussi, résultat toujours du JSON valide', () => {

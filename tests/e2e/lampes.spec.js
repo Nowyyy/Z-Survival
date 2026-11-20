@@ -107,11 +107,11 @@ test.describe('lampes à huile', () => {
     const errors = watch(page);
     for (const gfx of ['eleve', 'moyen', 'faible']) {
       for (const [id, sc] of Object.entries(SCENES)) {
-        await open(page, `&perf=1&gfx=${gfx}&lum=off${sc.url}`);
+        await open(page, `&perf=1&gfx=${gfx}&lum=off${sc.url}&decor=avant`); // lot 9h : ORIGINE mesurée avant le décor d'époque (budget de celui-ci : decor-epoque-jeu.spec.js)
         const off = await budget(page, sc);
         expect([off.calls, off.triangles, off.programs], `${gfx} ${id} off`).toEqual(ORIGINE[gfx][id]);
         expect(off.lamps).toMatchObject({ mode: 'off', meshes: [], lamps: 0 }); // rien de créé ni de chargé
-        await open(page, `&perf=1&gfx=${gfx}&lum=decor${sc.url}`);
+        await open(page, `&perf=1&gfx=${gfx}&lum=decor${sc.url}&decor=avant`);
         const decor = await budget(page, sc);
         expect(decor.lamps).toMatchObject({ mode: 'decor', ready: true, lamps: 16, error: null });
         expect(decor.calls - off.calls, `${gfx} ${id} appels`).toBeGreaterThanOrEqual(0);

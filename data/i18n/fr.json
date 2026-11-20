@@ -208,6 +208,7 @@
   "dev.carte.legend.apparition": "Point d'apparition",
   "dev.carte.legend.helicoptere": "Hélicoptère écrasé : collisions (plein) et emprise avec les pales (pointillés), lot 5a",
   "dev.carte.legend.voitureFeu": "Voiture en flammes (lot 5a)",
+  "dev.carte.legend.epoque": "Décor d'époque (rouge : arrête les tirs ; jaune : tirs par-dessus ; bleu : sans collision)",
   "dev.carte.legend.lampe": "Lampe à huile (lot 5k), son sens et la portée de sa lumière (pointillés)",
   "dev.carte.legend.coin": "Sommet rentrant du contour (plein : angle du L choisi pour l'hélicoptère)",
   "dev.carte.svg.title": "Plan de la carte : {name}",

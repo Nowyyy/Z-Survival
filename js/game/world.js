@@ -15,6 +15,7 @@ import { generateLivelyDecor } from '../core/decor-vivant.js';
 import { createTokenLookup } from './palette.js';
 import { parseColor } from '../core/color.js';
 import { angleRotor, burntCarParts, carFireSpots, craterTriangles, helicopterRotor, placeHelicopter, reglagesRotor, ROTOR_PIECES, teinteAcier, toleHelicoptere, trailTriangles, uvTole } from '../core/epaves.js';
+import { MATIERES, atlasEpoque, couleursEpoque, filsTelegraphe, objetsDeSection, specCratere, trianglesFils } from '../core/decor-epoque.js';
 import { plankSettings } from '../core/plank-layout.js';
 import { plankSheet } from '../core/texgen.js';
 import { createDebrisMeshes, createWindowMeshes } from './windows-mesh.js';
@@ -303,6 +304,7 @@ function addDecor(b, region, decor, outdoorSoil, tint) {
   const wheelR = 8;
   const wheelW = 7;
   decor.cars.forEach((c, i) => {
+    if (c.epoque) return; // lot 9h : véhicule d'époque, dessiné par addEpoque
     if (c.burning === true) {
       addBurntCar(b.scenery, region, c, tint, i);
       return;
@@ -783,7 +785,7 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
   if (layout.decor) addDecor(ex, region, layout.decor, outdoorSoil, tintOf);
   // Lot 5a : hélicoptère écrasé (maillage du décor de l'atlas) et feu groupé de la voiture en flammes (deux foyers, capot et habitacle ; flammes et fumée, sans
   // lueur au sol : deux appels de dessin, aucune lumière ; absent avec ?detail=0, comme les autres feux). Créés une fois, dans le groupe extérieur.
-  const wrecks = { helicopter: null, burningCar: null };
+  const wrecks = { helicopter: null, burningCar: null, epoque: null };
   // Lot 9a : rotor de queue de l'hélicoptère ({ pivot, axe, triangles, mesh }) et son temps de jeu cumulé (world.frame : dt = 0 en pause).
   let rotor = null;
   let rotorT = 0;
@@ -807,10 +809,13 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
       wrecks.helicopter.smoke = smoke.group.name;
     }
   }
+  // Lot 9h : décor extérieur d'époque (layout.decor.epoque, npm run carte) : objets reconstruits une fois (js/core/decor-epoque.js, déterministe).
+  const epoqueObjets = layout.decor?.epoque ? objetsDeSection(layout.decor.epoque) : [];
   const burning = layout.decor?.cars?.find((c) => c.burning === true);
   if (burning) wrecks.burningCar = { id: burning.id, fire: null, spots: [] };
   if (burning && render.detailDoors !== false) {
-    const spots = carFireSpots(burning);
+    const vf = burning.epoque ? epoqueObjets.find((o) => o.id === burning.epoque) : null;
+    const spots = vf?.feux?.length ? vf.feux.map((f) => ({ id: f.id, x: f.x, z: f.z, y: f.y, w: f.w, d: f.d })) : carFireSpots(burning); // lot 9h : foyers du véhicule d'époque
     const fire = createFire({ id: `feu-${burning.id}`, x: burning.x + burning.w / 2, z: burning.y + burning.h / 2, y: Math.max(...spots.map((q) => q.y)), w: burning.w, d: burning.h, spots }, palette, { reduced: render.reducedMotion === true, glow: false });
     fire.group.userData.floor = 'exterieur';
     groups.exterieur.add(fire.group);
@@ -821,8 +826,10 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
   // Lot 3g (retour du propriétaire) : extérieur plus vivant (js/core/decor-vivant.js : non solide, provisoire) dans les maillages du décor extérieur (aucun appel de
   // plus), sauf les bidons en feu (feu de fire.js, plus petit). Absent avec ?detail=0.
   const lively = layout.decor && layout.segmented && render.detailDoors !== false ? generateLivelyDecor({ size, footprint: layout.floor, decor: layout.decor }) : null;
+  // Lot 9h : les poteaux télégraphiques d'époque remplacent les poteaux électriques du décor vivant (mêmes pieds) et leurs câbles.
+  const sansPoteaux = epoqueObjets.some((o) => o.type === 'poteau');
   if (lively) {
-    addLively(ex, region, lively);
+    addLively(ex, region, sansPoteaux ? { ...lively, poles: [], cables: [] } : lively);
     for (const b of lively.barrels) {
       const fire = createFire({ id: b.id, x: b.x, z: b.y, y: b.hauteur, w: b.r * 2, d: b.r * 2 }, palette, { reduced: render.reducedMotion === true, scale: 0.55 });
       fire.group.userData.floor = 'exterieur';
@@ -830,6 +837,46 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
       fire.kind = 'decor'; // lot 5b
       fires.push(fire);
     }
+  }
+
+  // Lot 9h : décor d'époque. Un maillage pour tous les objets (atlas d'époque généré, aucune image ; sans ombre portée, réception des ombres, mur percé)
+  // et un pour les véhicules aux places des voitures (même matière, avec ombre portée comme les voitures d'avant) ; trous d'obus, cratère et traînée de
+  // l'avion dans le sol extérieur (teintes de sommet : aucun appel de plus) ; fumée légère de l'avion comme celle de l'hélicoptère.
+  const epB = epoqueObjets.length ? { decor: new Builder(), vehicules: new Builder() } : null;
+  let epoqueStats = null;
+  if (epB) {
+    const lookup = typeof document !== 'undefined' ? createTokenLookup() : () => null;
+    const couleurs = couleursEpoque(layout.decor.epoque.couleurs, lookup);
+    const lin = (rgb) => {
+      const c = new THREE.Color().setRGB(rgb[0] / 255, rgb[1] / 255, rgb[2] / 255, THREE.SRGBColorSpace);
+      return [c.r, c.g, c.b];
+    };
+    const teinte = (mat) => {
+      const cle = MATIERES[mat]?.teinte;
+      return cle && cle !== 'neutre' && couleurs[cle] ? lin(couleurs[cle]) : [1, 1, 1];
+    };
+    const poser = (b, tris) => {
+      for (const t of tris) {
+        if (MATIERES[t.mat]?.sol) ex.soil.tinted(teinte(t.mat), () => ex.soil.triangles([{ p: t.p, n: t.n, uv: t.p.map((q) => [q[0] / outdoorSoil, q[2] / outdoorSoil]) }]));
+        else b.tinted(teinte(t.mat), () => b.triangles([t]));
+      }
+    };
+    for (const o of epoqueObjets) poser(o.type === 'vehicule' ? epB.vehicules : epB.decor, o.triangles);
+    poser(epB.decor, trianglesFils(filsTelegraphe(epoqueObjets)));
+    const avion = epoqueObjets.find((o) => o.type === 'avion' && o.cratere);
+    if (avion) {
+      const h = specCratere(avion);
+      const scars = [...craterTriangles(h, layout.floor ?? []), ...trailTriangles(h, layout.floor ?? [])];
+      for (const t of scars) ex.soil.tinted(tintOf(t.tint), () => ex.soil.triangles([{ p: t.p, n: t.n, uv: t.p.map((q) => [q[0] / outdoorSoil, q[2] / outdoorSoil]) }]));
+      if (avion.fumee && render.detailDoors !== false) {
+        const smoke = createFire({ id: 'fumee-avion', x: h.x, z: h.y, y: 34, w: 90, d: 60 }, palette, { reduced: render.reducedMotion === true, glow: false, flames: false, smoke: { alpha: 0.16, color: palette.smokeLight, rise: 0.7 } });
+        smoke.group.userData.floor = 'exterieur';
+        groups.exterieur.add(smoke.group);
+        smoke.kind = 'helico'; // lot 5b : même réglage que la fumée de l'hélicoptère
+        fires.push(smoke);
+      }
+    }
+    epoqueStats = { objets: epoqueObjets.length, couleurs };
   }
 
   const tag = (mesh, name) => {
@@ -843,6 +890,22 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
   const tinted = ex.props.colored || ex.scenery.colored ? seeThrough.apply(new THREE.MeshLambertMaterial({ map: textures.texture(ATLAS), vertexColors: true })) : null;
   const exScenery = tag(ex.scenery.mesh(groups.exterieur, ex.scenery.colored ? tinted : atlasMaterial, { receive: true }), 'exterieur');
   const exProps = tag(ex.props.mesh(groups.exterieur, ex.props.colored ? tinted : atlasMaterial, { cast: true, receive: true }), 'exterieur');
+  // Lot 9h : maillages du décor d'époque (texture de js/core/decor-epoque.js, 256 px comme la tôle de l'hélicoptère).
+  if (epB) {
+    const img = atlasEpoque({ couleurs: epoqueStats.couleurs });
+    const tex = new THREE.DataTexture(new Uint8Array(img.data.buffer), img.width, img.height, THREE.RGBAFormat);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    tex.generateMipmaps = true;
+    tex.minFilter = THREE.LinearMipmapLinearFilter;
+    tex.magFilter = THREE.LinearFilter;
+    tex.needsUpdate = true;
+    const matEpoque = seeThrough.apply(new THREE.MeshLambertMaterial({ map: tex, vertexColors: true }));
+    const md = tag(epB.decor.mesh(groups.exterieur, matEpoque, { receive: true }), 'exterieur');
+    if (md) md.name = 'decor-epoque';
+    const mv = tag(epB.vehicules.mesh(groups.exterieur, matEpoque, { cast: true, receive: true }), 'exterieur');
+    if (mv) mv.name = 'vehicules-epoque';
+    wrecks.epoque = { objets: epoqueStats.objets, triangles: md ? md.geometry.attributes.position.count / 3 : 0, vehicules: mv ? mv.geometry.attributes.position.count / 3 : 0, atlas: img.width };
+  }
   // Lot 9a : hélicoptère en tôle de métal peinte (texture de js/core/epaves.js, couleur de base --game-metal comme l'ancienne région « tole », aucune
   // image) et rotor de queue qui tourne en temps de jeu (immobile sous mouvement réduit). Deux maillages coupés hors du champ : deux appels de dessin
   // de plus seulement quand l'épave est visible ; sans ombre portée (comme le décor de l'atlas), réception des ombres comme lui ; même mur percé.
@@ -1288,7 +1351,7 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
     },
     // Lot 5a : épaves dessinées (hélicoptère : triangles, rectangles de collision ; voiture en flammes : feu et foyers) ; feu actif = dans la liste des feux mis à jour.
     // Lot 9a : rotor de queue (temps de jeu cumulé, angle, vitesse, triangles) dans l'état des épaves, pour les tests.
-    wreckStats: () => ({ ...wrecks, rotor: rotor ? { t: rotorT, angle: angleRotor(rotorT, rotorReglages.degParSeconde, render.reducedMotion === true), degParSeconde: rotorReglages.degParSeconde, triangles: rotor.triangles } : null, fires: fires.filter((f) => f.group.name === wrecks.burningCar?.fire).map((f) => f.stats()), heliSmoke: fires.filter((f) => f.group.name === wrecks.helicopter?.smoke).map((f) => f.stats()), propsTriangles: exProps ? exProps.geometry.attributes.position.count / 3 : 0, sceneryTriangles: exScenery ? exScenery.geometry.attributes.position.count / 3 : 0, exteriorVisible: groups.exterieur.visible }),
+    wreckStats: () => ({ ...wrecks, rotor: rotor ? { t: rotorT, angle: angleRotor(rotorT, rotorReglages.degParSeconde, render.reducedMotion === true), degParSeconde: rotorReglages.degParSeconde, triangles: rotor.triangles } : null, fires: fires.filter((f) => f.group.name === wrecks.burningCar?.fire).map((f) => f.stats()), heliSmoke: fires.filter((f) => f.group.name === wrecks.helicopter?.smoke || f.group.name === 'feu-fumee-avion').map((f) => f.stats()), propsTriangles: exProps ? exProps.geometry.attributes.position.count / 3 : 0, sceneryTriangles: exScenery ? exScenery.geometry.attributes.position.count / 3 : 0, exteriorVisible: groups.exterieur.visible }),
     seeThroughState: () => seeThrough.state(),
     showFloor(floor) {
       this.setElevation(floor === 'etage' ? lift : 0, floor);

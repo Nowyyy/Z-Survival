@@ -6,7 +6,14 @@ import { generateLivelyDecor } from '../../js/core/decor-vivant.js';
 import { planToWorld } from '../../js/core/maps.js';
 import { rectGap } from '../../js/core/collision.js';
 import { polygonRects } from '../../js/core/shape.js';
-import { decorCfg, layout, params, plan, world } from './helpers/carte.js';
+import { buildLayout } from '../../js/core/layout.js';
+import { decorCfg as decorJeu, params, plan, world } from './helpers/carte.js';
+
+// Lot 9h : le décor du jeu (decor.json → epoque) remplace l'hélicoptère par l'avion et la voiture en flammes par un véhicule d'époque ; les épaves du lot 5a
+// restent le décor d'avant (?test=1&decor=avant, référence de la trace logique) : ces tests le vérifient sur decor.json sans sa clé epoque.
+const decorCfg = { ...decorJeu };
+delete decorCfg.epoque;
+const layout = buildLayout(world, decorCfg);
 
 // Lot 5a : voiture en flammes et hélicoptère écrasé (js/core/epaves.js, epaves.json -> decor.json par npm run carte).
 const MAP = 'data/game/maps/rez-de-chaussee';

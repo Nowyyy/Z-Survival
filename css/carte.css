@@ -104,6 +104,7 @@
 .sw-declencheur { background: var(--game-stairs-mark); }
 .sw-porte { background: var(--game-metal); }
 .sw-helicoptere { background: var(--game-wreck-hull); }
+.sw-epoque { background: var(--color-danger); }
 .sw-voiture-feu { background: var(--game-fire-edge); }
 .sw-coin { background: var(--color-text); border-radius: 50%; }
 .sw-lampe { background: var(--game-lamp-core); border-radius: 50%; }
@@ -142,6 +143,9 @@
 .echelle-trait,
 .echelle-bout { stroke: var(--color-text); stroke-width: 8; }
 /* Lot 5a : épaves (hélicoptère écrasé, voiture en flammes) et sommets rentrants du contour (angle du L plein). */
+.epoque-arrete { fill: var(--color-danger); fill-opacity: 0.55; stroke: var(--color-bg); stroke-width: 3; }
+.epoque-passe { fill: var(--color-warning); fill-opacity: 0.45; stroke: var(--color-bg); stroke-width: 3; }
+.epoque-libre { fill: none; stroke: var(--color-focus); stroke-width: 5; stroke-dasharray: 14 10; }
 .epave-helicoptere { fill: var(--game-wreck-hull); stroke: var(--color-bg); stroke-width: 4; }
 .epave-emprise { fill: none; stroke: var(--game-wreck-metal); stroke-width: 5; stroke-dasharray: 16 10; }
 .epave-voiture { fill: var(--game-fire-edge); stroke: var(--game-fire); stroke-width: 5; }

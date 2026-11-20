@@ -916,13 +916,14 @@ test.describe('budget et performance', () => {
   for (const [name, extra, where] of [['R1', '&nospawn=1', 'start'], ['U1', '&wave=21&floor=1&nospawn=1', 'start']]) {
     test(`${name} : sans le détail de l'atelier, la référence (à la brume près) ; avec, 27 300 triangles et 84 appels au plus`, async ({ page }) => {
       // Lot 5k : références d'avant les lampes : lampes « off » (le préréglage Élevé d'un ordinateur les allume ; budget avec les lampes : lampes.spec.js).
-      await open(page, `/jeu.html?test=1&seed=1&shadows=1&perso=A&sang=0${extra}&detail=0&lum=off`);
+      // Lot 9h : &decor=avant (décor extérieur d'avant le lot, ?test=1 seulement) : ces références datent d'avant le décor d'époque, dont le budget est vérifié par decor-epoque-jeu.spec.js.
+      await open(page, `/jeu.html?test=1&seed=1&shadows=1&perso=A&sang=0${extra}&detail=0&lum=off&decor=avant`);
       const off = await measure(page, where);
       expect(off.calls).toBeGreaterThanOrEqual(REF[name][0] - 1);
       expect(off.calls).toBeLessThanOrEqual(REF[name][0] + 3);
       // Lot 9a : la tôle et le rotor de l'hélicoptère (HELI_TOLE) ne sont plus dans le décor dessiné partout : comptés seulement s'il est dans le champ.
       expect(Math.min(Math.abs(off.triangles - EPOQUE_SIMPLE - EPAVES - REF[name][1]), Math.abs(off.triangles - EPOQUE_SIMPLE - (EPAVES - HELI_TOLE) - REF[name][1]))).toBeLessThanOrEqual(120); // lot 5a : + les triangles des épaves ; lot 9g : + EPOQUE_SIMPLE
-      await open(page, `/jeu.html?test=1&seed=1&shadows=1&perso=A&sang=0${extra}&lum=off`);
+      await open(page, `/jeu.html?test=1&seed=1&shadows=1&perso=A&sang=0${extra}&lum=off&decor=avant`);
       const on = await measure(page, where);
       console.log(`BUDGET lot 4 / 3g ${name} : detail=0 ${off.calls} / ${off.triangles} ; detail=1 ${on.calls} / ${on.triangles} (référence ${REF[name].join(' / ')})`);
       expect(on.triangles).toBeLessThanOrEqual(27300);

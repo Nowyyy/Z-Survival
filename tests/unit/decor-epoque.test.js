@@ -6,8 +6,10 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync, readdirSync } from 'node:fs';
 import {
   ATLAS_TAILLE, CATALOGUE, HAUTEUR_ARME, MATIERES, PLAFONDS, REGIONS, TEXTES, TYPES, atlasEpoque, budgetPlan, controlePlan, couleursEpoque, filsTelegraphe,
-  lireChoix, modeleVehicule, objet, objetsPlaces, trianglesFils,
+  lireChoix, modeleVehicule, objet, objetsDeSection, objetsPlaces, sectionEpoque, trianglesFils,
 } from '../../js/core/decor-epoque.js';
+import { groundScarBoxes } from '../../js/core/epaves.js';
+import { buildLayout } from '../../js/core/layout.js';
 import { generateDecor } from '../../js/core/decor.js';
 import { generateLivelyDecor } from '../../js/core/decor-vivant.js';
 import { polygonRects } from '../../js/core/shape.js';
@@ -20,7 +22,10 @@ const donnees = lire('data/game/decor-epoque.json');
 const choixJson = lire('data/game/decor-epoque-choix.json');
 const placement = lire(`${D}decor-epoque.json`);
 const world = lire(`${D}world.json`);
-const decorCfg = lire(`${D}decor.json`);
+const decorJeu = lire(`${D}decor.json`);
+// Décor d'avant (decor.json sans sa clé epoque, ?test=1&decor=avant) : le plan se place et se compare sur lui.
+const decorCfg = { ...decorJeu };
+delete decorCfg.epoque;
 const code = (f) => readFileSync(f, 'utf8').split('\n').filter((l) => !l.trim().startsWith('//')).join('\n').replace(/\s\/\/.*$/gm, '');
 const tokens = Object.fromEntries([...readFileSync('css/tokens.css', 'utf8').matchAll(/(--[a-z0-9-]+):\s*(#[0-9a-fA-F]{6})/g)].map((m) => [m[1], m[2]]));
 const couleurs = couleursEpoque(donnees.couleurs, (j) => tokens[j] ?? null);
@@ -200,8 +205,25 @@ describe('décor d\'époque : placement sur la carte', () => {
     expect(trianglesFils(ctl.fils).length).toBeGreaterThan(0);
   });
 
-  it('avant le « GO 9h » : la partie ne charge pas ce décor (aucun module du jeu ni jeu.html ne le cite)', () => {
-    const walk = (dir) => readdirSync(dir, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(`${dir}/${e.name}`) : [`${dir}/${e.name}`]));
-    for (const f of [...walk('js/game'), ...walk('js/menu'), 'js/main.js', 'jeu.html', 'index.html']) expect(readFileSync(f, 'utf8'), f).not.toMatch(/decor-epoque/);
+  // Lot 9h-C (après le « GO 9h ») : ce test remplace « la partie ne charge pas ce décor » de la partie B : la partie le charge maintenant, depuis decor.json.
+  it('decor.json → epoque est la sortie du contrôle ; la partie reconstruit les mêmes objets et les mêmes rectangles', () => {
+    const attendu = sectionEpoque(ctl, { couleurs: donnees.couleurs, footprint: polygonRects(world.contour), scars: groundScarBoxes });
+    expect(decorJeu.epoque).toEqual(JSON.parse(JSON.stringify(attendu)));
+    const reconstruits = objetsDeSection(decorJeu.epoque);
+    expect(reconstruits.map((o) => o.rects)).toEqual(decorJeu.epoque.objets.map((o) => o.rects));
+  });
+
+  it('décor du jeu : l\'avion remplace l\'hélicoptère, véhicules aux rectangles des voitures, objets solides ajoutés ; sans epoque : décor d\'avant', () => {
+    const jeu = buildLayout(world, decorJeu).decor;
+    const avant = buildLayout(world, decorCfg).decor;
+    expect(jeu.helicopter).toBeNull();
+    expect(avant.helicopter?.id).toBe('helicoptere');
+    expect(jeu.solids.some((q) => q.kind === 'helicoptere')).toBe(false);
+    expect(jeu.cars.map((c) => c.id)).toEqual(avant.cars.map((c) => c.id));
+    for (const c of jeu.cars.filter((q) => !q.burning)) expect(c.epoque).toMatch(/^vehicule-/);
+    const ajoutes = jeu.solids.filter((q) => q.kind === 'epoque');
+    const attendus = decorJeu.epoque.objets.filter((o) => !['voitures', 'voiture-en-flammes'].includes(o.remplace) && !/^voiture/.test(o.remplace ?? '')).flatMap((o) => o.rects.map((r) => r.id));
+    expect(ajoutes.map((q) => q.id).sort()).toEqual(attendus.sort());
+    expect(avant.solids.some((q) => q.kind === 'epoque')).toBe(false);
   });
 });

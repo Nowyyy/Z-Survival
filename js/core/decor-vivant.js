@@ -26,7 +26,7 @@ export function generateLivelyDecor(input, opts = {}) {
   const ground = list(decor.ground).filter(okRect);
   // Lot 5a : les épaves ne changent pas le tirage (même suite qu'avant) ; ce qui les touche est retiré à la fin.
   const wrecks = [...list(decor.keepOut), ...list(decor.wreckSolids)].filter(okRect);
-  const isWreck = (s) => s.kind === 'helicoptere' || s.burning === true;
+  const isWreck = (s) => s.kind === 'helicoptere' || s.burning === true || s.kind === 'epoque'; // lot 9h : objets d'époque traités comme les épaves
   const solids = list(decor.solids).filter(okRect).filter((s) => !isWreck(s));
   const lamps = list(decor.lamps).filter((p) => p && isNum(p.x) && isNum(p.y));
   if (W <= 0 || H <= 0 || footprint.length === 0) return { deadTrees: [], fence: { posts: [], wires: [] }, poles: [], cables: [], puddles: [], tufts: [], rubble: [], barrels: [] };

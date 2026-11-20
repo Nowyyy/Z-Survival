@@ -88,7 +88,8 @@ test.describe('zones jouables sur la nouvelle géométrie', () => {
 test.describe('budgets de rendu après la partie B (≤ référence + 300 triangles, sans le détail de la partie C)', () => {
   for (const [id, sc] of Object.entries(SCENES)) {
     test(`${id} : appels et triangles`, async ({ page }, testInfo) => {
-      await open(page, `${sc.url}&shadows=1&detail=0&perso=A&sang=0`); // lot 5e : référence mesurée avec la variante A
+      // Lot 9h : &decor=avant (décor extérieur d'avant le lot, ?test=1 seulement) : ces références datent d'avant le décor d'époque, dont le budget est vérifié par decor-epoque-jeu.spec.js.
+      await open(page, `${sc.url}&shadows=1&detail=0&perso=A&sang=0&decor=avant`); // lot 5e : référence mesurée avec la variante A
       const r = await page.evaluate(({ at, floor, wave }) => {
         const zs = window.__zs;
         zs.setPlayer(at[0], at[1]);

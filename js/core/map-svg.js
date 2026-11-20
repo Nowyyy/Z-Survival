@@ -72,8 +72,17 @@ export function mapToSvg(world, decor, options = {}) {
   const burning = (layout.decor?.cars ?? []).filter((c) => c.burning === true);
   if (heli || burning.length > 0) {
     const corners = Array.isArray(world.contour) ? concaveCorners(world.contour) : [];
-    const chosen = (c) => heli?.corner && c.x === heli.corner.x && c.y === heli.corner.y;
+    const coinL = heli?.corner ?? decor?.wrecks?.helicopter?.corner; // lot 9h : l'avion a pris l'angle de l'hélicoptère
+    const chosen = (c) => coinL && c.x === coinL.x && c.y === coinL.y;
     parts.push(`<g class="epaves">${corners.map((c) => `<circle class="${chosen(c) ? 'coin-l' : 'coin-rentrant'}" cx="${n(c.x)}" cy="${n(c.y)}" r="${n(unit * 0.7)}" data-id="coin-${n(c.x)}-${n(c.y)}"/>`).join('')}${heli?.visual ? rectTag(heli.visual, 'epave-emprise', ' data-id="helicoptere-emprise"') : ''}${(heli?.rects ?? []).map((r) => rectTag(r, 'epave-helicoptere', ` data-id="${escapeXml(r.id)}"`)).join('')}${burning.map((c) => rectTag(c, 'epave-voiture', ` data-id="${escapeXml(c.id)}"`)).join('')}</g>`);
+  }
+
+  // Lot 9h : décor extérieur d'époque (decor.json → epoque) : rectangles solides (tirs arrêtés ou par-dessus) et emprise des objets sans collision.
+  const epoque = Array.isArray(layout.decor?.epoque?.objets) ? layout.decor.epoque.objets : [];
+  if (epoque.length > 0) {
+    const solides = epoque.flatMap((o) => (Array.isArray(o.rects) ? o.rects : []).map((r) => rectTag(r, r.tirs === 'passent' ? 'epoque-passe' : 'epoque-arrete', ` data-id="${escapeXml(r.id)}"`)));
+    const libres = epoque.filter((o) => !o.collision && isObject(o.emprise)).map((o) => rectTag(o.emprise, 'epoque-libre', ` data-id="${escapeXml(o.id)}"`));
+    parts.push(`<g class="decor-epoque">${[...solides, ...libres].join('')}</g>`);
   }
 
   // Départ du joueur et zone libre.

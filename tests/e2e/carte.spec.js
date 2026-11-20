@@ -69,16 +69,20 @@ test.describe('épaves (lot 5a)', () => {
   const fuselage = heli.rects[0];
   const openGame = async (page, extra = '') => {
     await page.setViewportSize(SIZES[0]);
-    await page.goto(`/jeu.html?test=1&seed=1&nospawn=1&vhs=0${extra}`);
+    // Lot 9h : épaves du lot 5a = décor d'avant (?test=1&decor=avant) ; l'avion et le véhicule en flammes d'époque : decor-epoque-jeu.spec.js.
+    await page.goto(`/jeu.html?test=1&seed=1&nospawn=1&vhs=0${extra}&decor=avant`);
     await waitReady(page);
     await page.evaluate(() => { window.requestAnimationFrame = () => 0; });
     await page.evaluate(() => window.__zs.step(0.05));
   };
 
-  test('carte.html montre les épaves : 3 rectangles de l\'hélicoptère, son emprise, la voiture en flammes, l\'angle du L parmi 4 sommets rentrants', async ({ page }) => {
+  test('carte.html montre l\'angle du L parmi 4 sommets rentrants, les rectangles du décor d\'époque (avion à la place de l\'hélicoptère) et la voiture en flammes', async ({ page }) => {
     await open(page);
-    await expect(page.locator('rect.epave-helicoptere')).toHaveCount(heli.rects.length);
-    await expect(page.locator('rect.epave-emprise')).toHaveCount(1);
+    // Lot 9h : decor.json porte le décor d'époque (clé epoque) : l'avion a pris l'angle du L ; le plan montre ses rectangles et ceux des autres objets.
+    await expect(page.locator('rect.epave-helicoptere')).toHaveCount(0);
+    const rectsEpoque = decor.epoque.objets.flatMap((o) => o.rects);
+    await expect(page.locator('g.decor-epoque rect.epoque-arrete, g.decor-epoque rect.epoque-passe')).toHaveCount(rectsEpoque.length);
+    await expect(page.locator('rect[data-id="avion-fuselage"]')).toHaveCount(1);
     await expect(page.locator('rect.epave-voiture')).toHaveAttribute('data-id', decor.wrecks.burningCar.id);
     await expect(page.locator('circle.coin-l')).toHaveAttribute('data-id', `coin-${heli.corner.x}-${heli.corner.y}`);
     await expect(page.locator('circle.coin-rentrant')).toHaveCount(3);
