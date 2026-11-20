@@ -9,7 +9,8 @@ import { castRay } from '../../js/core/ray.js';
 import { moveWithCollision } from '../../js/core/collision.js';
 import { createRng, nextFloat } from '../../js/core/rng.js';
 import { generateMapFiles } from '../../scripts/plan-vers-monde.mjs';
-import { lireTirs, longueursCone, obstaclesTirs, preparerTirs, tirsMonde, trousGrilles } from '../../js/core/tir-traverse.js';
+import { hautsEscaliers, lireTirs, longueursCone, obstaclesTirs, preparerTirs, TIRS_ESCALIER_DEPUIS, tirsMonde, trousGrilles } from '../../js/core/tir-traverse.js';
+import { SWAP_UP } from '../../js/core/stair-walk.js';
 
 const json = (p) => JSON.parse(readFileSync(p, 'utf8'));
 const D = 'data/game/maps/rez-de-chaussee/';
@@ -44,7 +45,7 @@ describe('données : liste du propriétaire et fichier dérivé', () => {
     expect(gen.tirsReport.problems).toEqual([]);
     const liste = json('data/game/tirs-traversables.json').cartes['rez-de-chaussee'];
     expect([...TIRS.rdc.ids, ...TIRS.rdc.grilles.map((g) => g.id)].sort()).toEqual([...liste.rdc].sort());
-    expect(TIRS.rdc.ids).toHaveLength(28); // lot 9h (retours) : + bidon-salle, bidon-poche (28 de haut) ; lot 9a-I : + sacs-1, sacs-2 (18 de haut) ; lot 9h : + 13 objets d'époque dessinés sous l'arme (véhicules aux places des voitures, voiture en flammes, ailes et débris de l'avion, hérissons, barbelés, jerrycans, caisses)
+    expect(TIRS.rdc.ids).toHaveLength(30); // lot 9h (retours) : + bidon-salle, bidon-poche (28 de haut), P3 (gravats, 35) et M29 (caisses, 37), pièces basses de meubles fusionnés ; lot 9a-I : + sacs-1, sacs-2 (18 de haut) ; lot 9h : + 13 objets d'époque dessinés sous l'arme (véhicules aux places des voitures, voiture en flammes, ailes et débris de l'avion, hérissons, barbelés, jerrycans, caisses)
     expect(TIRS.rdc.grilles.map((g) => g.id)).toEqual(['grille-F7', 'grille-F8']);
     expect(TIRS.etage.ids).toHaveLength(6); // lot 9h (retours) : + bidon-etage
     // Chaque meuble listé est DESSINÉ plus bas que l'arme (mobilier.world.json, render.json → gunHeight 43) ; aucun pilier ni escalier.
@@ -65,9 +66,10 @@ describe('données : liste du propriétaire et fichier dérivé', () => {
     const couche = { obstacles: [...rdc.furniture, { id: 'haut', kind: 'armoire', hauteur: 120 }], solids: rdc.decor.solids, grilles: [{ id: 'g-hors', a: { x: 0, y: 0 }, b: { x: 10, y: 0 }, n: { x: 0, y: 1 } }], walls: rdc.walls, thick: 40 };
     const { doc, problems } = tirsMonde({ rdc: ['M4', 'M4', 'X1', 'pilier-1', 'escalier-aile', 'haut', 'g-hors', 'voiture-1'] }, { rdc: couche });
     // Avec la hauteur de l'arme (43) et les hauteurs dessinées : une étagère (70) et un comptoir dessiné à 48 sont refusés, un comptoir dessiné à 9 passe.
-    const arme = tirsMonde({ rdc: ['M26+M28+M29+M31', 'M4', 'M22'] }, { rdc: { ...couche, hauteurs: new Map([['M4', 48], ['M22', 9.3]]) } }, { hauteurMax: 43 });
+    // Lot 9h (retours) : le meuble fusionné M26+M28+M29+M31 est découpé en ses pièces (js/core/collisions-dessin.js) : l'étagère M26 (70).
+    const arme = tirsMonde({ rdc: ['M26', 'M4', 'M22'] }, { rdc: { ...couche, hauteurs: new Map([['M4', 48], ['M22', 9.3]]) } }, { hauteurMax: 43 });
     expect(arme.doc.rdc.ids).toEqual(['M22']);
-    expect(arme.problems).toEqual(['rdc : M26+M28+M29+M31 (70 de haut, arme à 43) arrête toujours les tirs', 'rdc : M4 (48 de haut, arme à 43) arrête toujours les tirs']);
+    expect(arme.problems).toEqual(['rdc : M26 (70 de haut, arme à 43) arrête toujours les tirs', 'rdc : M4 (48 de haut, arme à 43) arrête toujours les tirs']);
     expect(doc.rdc.ids).toEqual(['M4', 'voiture-1']);
     expect(problems).toEqual(['rdc : M4 en double', 'rdc : identifiant inconnu X1', 'rdc : pilier-1 (pilier) arrête toujours les tirs', 'rdc : escalier-aile (escalier) arrête toujours les tirs', 'rdc : haut (120 de haut, arme à 100) arrête toujours les tirs', 'rdc : grille g-hors hors de tout mur']);
     expect(tirsMonde({ etage: ['E1'] }, { rdc: couche }).problems).toEqual(['etage : étage absent de la carte']);
@@ -97,10 +99,10 @@ describe('balles et laser', () => {
     const xc = c.x + c.w / 2;
     const zc = [{ id: 8, x: xc, y: c.y + c.h + 60, r: 20 }];
     expect(vol(xc, c.y - 50, Math.PI / 2, zc, AVEC).impact).toMatchObject({ enemyId: 8 });
-    const e = meuble('M26+M28+M29+M31');
+    const e = meuble('M26'); // lot 9h (retours) : pièce M26 (étagère, 70) du meuble fusionné
     const xe = e.x + e.w / 2;
     const ze = [{ id: 9, x: xe, y: e.y + e.h + 60, r: 20 }];
-    expect(vol(xe, e.y - 50, Math.PI / 2, ze, AVEC).gone).toMatchObject({ obstacleId: 'M26+M28+M29+M31' });
+    expect(vol(xe, e.y - 50, Math.PI / 2, ze, AVEC).gone).toMatchObject({ obstacleId: 'M26' });
   });
 
   it('s\'arrête toujours sur un objet haut, un mur, un pilier, une porte fermée ; une fenêtre (planches comprises) se traverse comme avant le lot', () => {
@@ -216,5 +218,32 @@ describe('joueur et zombies : toujours bloqués', () => {
     expect(apres.y).toBeLessThanOrEqual(2540 - 18 + 0.01);
     expect(rdc.walls.find((w) => w.id === 'mur-20').w).toBe(678);
     expect(rdc.playerObstacles.some((o) => o.id === 'mur-20' && o.w === 678)).toBe(true);
+  });
+});
+
+describe('lot 9h (retour du propriétaire : « le laser traverse les escaliers ») : partie haute des escaliers', () => {
+  const ESC = zonesToWorld(parseZones(json(`${D}zones.json`)), world.transform).stairs;
+  const HAUTS = hautsEscaliers(ESC);
+  const AVEC_HAUT = [...AVEC, ...HAUTS];
+  it('les marches à partir de 0,6 de la montée (dessinées à 108 et plus) ; l\'escalier de l\'aile : un rectangle jusqu\'au bout de sa dernière marche', () => {
+    expect(TIRS_ESCALIER_DEPUIS).toBeGreaterThan(SWAP_UP);
+    expect(TIRS_ESCALIER_DEPUIS * json('data/game/render.json').floorLift).toBeGreaterThanOrEqual(json('data/game/render.json').gunHeight);
+    const aile = HAUTS.filter((r) => r.id.startsWith('escalier-aile-haut'));
+    expect(aile).toEqual([{ id: 'escalier-aile-haut', x: 930, y: 2207.5, w: 120, h: 109, kind: 'escalier-haut' }]);
+    const col = meuble('escalier-aile');
+    expect(aile[0].y + aile[0].h).toBe(col.y + col.h); // même bout sud que la collision (dessin)
+    expect(HAUTS.filter((r) => r.id.startsWith('escalier-depart-haut'))).toHaveLength(16); // escalier courbe : 4 marches × 4 tranches
+    expect(hautsEscaliers(null)).toEqual([]);
+  });
+  it('laser et balles : arrêtés par le haut de l\'escalier de l\'aile (de l\'est, du sud) ; ils passent toujours sur le bas, où un zombie de l\'escalier reste touchable', () => {
+    const tir = (x, y, a, obs) => castRay({ x, y }, a, 700, [], BORNES, obs, 'rdc');
+    expect(tir(1080, 2260, Math.PI, AVEC).stoppedBy?.id).not.toMatch(/escalier/); // avant : le mur ouest, derrière l'escalier
+    expect(tir(1080, 2260, Math.PI, AVEC_HAUT).stoppedBy).toMatchObject({ id: 'escalier-aile-haut', distance: 30 });
+    expect(vol(990, 2400, -Math.PI / 2, [{ id: 1, x: 990, y: 2100, r: 20 }], AVEC).impact).toMatchObject({ enemyId: 1 }); // avant : à travers tout l'escalier
+    expect(vol(990, 2400, -Math.PI / 2, [{ id: 1, x: 990, y: 2100, r: 20 }], AVEC_HAUT).gone).toMatchObject({ obstacleId: 'escalier-aile-haut' });
+    // Zombie de l'escalier au rez-de-chaussée (0,5 de la montée : y = 2085 + 0,5 × 205) : touché depuis le pied (porte-2 ouverte) et depuis l'est.
+    const z = { id: 2, x: 990, y: 2187.5, r: 21.4, floor: 'rdc', mode: 'escalier' };
+    expect(vol(990, 2050, Math.PI / 2, [z], AVEC_HAUT.filter((o) => o.id !== 'porte-2')).impact).toMatchObject({ enemyId: 2 });
+    expect(vol(1090, 2180, Math.PI, [z], AVEC_HAUT).impact).toMatchObject({ enemyId: 2 });
   });
 });

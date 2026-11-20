@@ -29,7 +29,9 @@
       "caisses-camion-caisses",
       "caisses-artillerie-caisses",
       "bidon-salle",
-      "bidon-poche"
+      "bidon-poche",
+      "P3",
+      "M29"
     ],
     "grilles": [
       {

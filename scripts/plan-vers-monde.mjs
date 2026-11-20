@@ -147,7 +147,6 @@ export function generateMapFiles(id = 'rez-de-chaussee') {
         triangles += boxTriangles(boxes);
       }
     }
-    result.mobilier = `${formatJson({ _provisoire: 'Aspect du mobilier généré par npm run carte (scripts/plan-vers-monde.mjs) d\'après plan.json, etage.json et releve.json (objets du modèle associés à chaque pièce) : ne jamais éditer à la main. Dessin seulement (unités du jeu ; y = hauteur, z = y du jeu) : les collisions gardent les rectangles de world.json. Valeurs provisoires.', triangles, pieces })}\n`;
     result.mobilierReport = { count: Object.keys(pieces).length, triangles };
     // Lot 9h (retours du propriétaire, intérieur) : collisions recalées sur le dessin : meubles (rectangle des boîtes dessinées, plus de mur invisible) et
     // marches des escaliers physiques du rez-de-chaussée (js/core/collisions-dessin.js) ; world.json et etage.world.json réécrits.
@@ -160,10 +159,13 @@ export function generateMapFiles(id = 'rez-de-chaussee') {
     result.collisionsReport = [];
     for (const [floor, w] of [['rdc', out.world], ['etage', etageWorldOut]]) {
       if (!w) continue;
-      const r = recalerObstacles(w.obstacles, { pieces: Object.values(pieces).filter((p) => p.floor === floor), escaliers: floor === 'rdc' ? escaliers : [], murs: segmentRects(w.walls, params.wallThickness), min: w.minCorridor ?? 50 });
+      const r = recalerObstacles(w.obstacles, { pieces: Object.entries(pieces).map(([pid, p]) => ({ id: pid, ...p })).filter((p) => p.floor === floor), escaliers: floor === 'rdc' ? escaliers : [], murs: segmentRects(w.walls, params.wallThickness), min: w.minCorridor ?? 50 });
       w.obstacles = r.obstacles;
+      // Pièces d'un meuble fusionné devenues des obstacles : leur dessin pointe vers leur propre obstacle (hauteur des tirs, mobilier.world.json).
+      for (const o of r.obstacles) if (o.fusion && pieces[o.id]) pieces[o.id].obstacle = o.id;
       result.collisionsReport.push(...r.rapport.map((x) => ({ floor, ...x })));
     }
+    result.mobilier = `${formatJson({ _provisoire: 'Aspect du mobilier généré par npm run carte (scripts/plan-vers-monde.mjs) d\'après plan.json, etage.json et releve.json (objets du modèle associés à chaque pièce) : ne jamais éditer à la main. Dessin seulement (unités du jeu ; y = hauteur, z = y du jeu) : les collisions gardent les rectangles de world.json. Valeurs provisoires.', triangles, pieces })}\n`;
     result.world = `${formatJson(out.world)}\n`;
     if (etageWorldOut) result.etage = `${formatJson(etageWorldOut)}\n`;
   }
