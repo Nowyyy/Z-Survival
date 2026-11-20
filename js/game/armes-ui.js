@@ -1,7 +1,9 @@
-// Lot 9e — Interface des armes en partie : munitions « chargeur / réserve » (#hud-ammo, bloc du HUD en bas à droite, au-dessus des boutons sur
-// téléphone ; à l'échelle de l'interface --ui-k), états « Recharge » et « À sec » ; sur téléphone, deux boutons près du stick droit (#btn-recharger ; #btn-changer, qui
-// montre le visuel 2D de l'autre arme, js/core/armes/visuel.js) ; annonces sobres aux lecteurs d'écran (arme sortie, début et fin d'un
+// Lot 9e — Interface des armes en partie : munitions « chargeur / réserve » (#hud-ammo, en bas à droite ; sur téléphone, collées au bouton de
+// rechargement #btn-recharger près du stick droit ; à l'échelle de l'interface --ui-k), états « Recharge » et « À sec » ; deux emplacements
+// d'armes centrés en bas (#armes-slots : le pistolet et l'arme achetée, visuels 2D de js/core/armes/visuel.js ; toucher ou cliquer l'autre
+// emplacement change d'arme ; touches 1 et 2 rappelées sur ordinateur) ; annonces sobres aux lecteurs d'écran (arme sortie, début et fin d'un
 // rechargement, arme à sec ; jamais chaque tir). Éléments créés ici (aucun bloc ajouté à jeu.html) et retirés par dispose() (lot 9d).
+// Retour du propriétaire (partie Q) : icône de rechargement « balle et flèche », nombre de balles collé au bouton, emplacements au centre.
 import { armeParId, varianteDe } from '../core/armes/armes.js';
 import { visuelArme } from '../core/armes/visuel.js';
 import { fmt } from './texts.js';
@@ -9,8 +11,8 @@ import { fmt } from './texts.js';
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
 // dict : textes (fr.json) ; root : conteneur du jeu (#game) ; col : colonne du HUD où placer les munitions ; donnees : lireArmes() ; choix :
-// armes-choix.json ; annonce(texte) : région polie ; onRecharger(), onChanger() : actions des boutons.
-export function createArmesUi({ dict, root, col, donnees, choix, annonce = () => {}, onRecharger = () => {}, onChanger = () => {} }) {
+// armes-choix.json ; annonce(texte) : région polie ; onRecharger() : bouton de rechargement ; onChoisir(i) : emplacement i choisi.
+export function createArmesUi({ dict, root, col, donnees, choix, annonce = () => {}, onRecharger = () => {}, onChoisir = () => {} }) {
   const t = (k) => dict[k] ?? k;
   const ammo = document.createElement('p');
   ammo.id = 'hud-ammo';
@@ -46,26 +48,50 @@ export function createArmesUi({ dict, root, col, donnees, choix, annonce = () =>
   ri.setAttribute('viewBox', '0 0 16 16');
   ri.setAttribute('aria-hidden', 'true');
   ri.setAttribute('focusable', 'false');
-  const rp = document.createElementNS(SVG_NS, 'path');
-  rp.setAttribute('d', 'M13 8a5 5 0 1 1-1.5-3.6M13 2.5v3h-3');
-  ri.append(rp);
+  // Icône (partie Q) : une balle au centre d'une flèche de rechargement.
+  ri.setAttribute('viewBox', '0 0 24 24');
+  const fleche = document.createElementNS(SVG_NS, 'path');
+  fleche.setAttribute('d', 'M19.5 12a7.5 7.5 0 1 1-2.2-5.3M19.5 3.5v4h-4');
+  const balleR = document.createElementNS(SVG_NS, 'path');
+  balleR.setAttribute('d', 'M10.5 16.5v-5.5l1.5-3.5 1.5 3.5v5.5zM10.5 14h3');
+  ri.append(fleche, balleR);
   recharger.append(ri);
-  const changer = document.createElement('button');
-  changer.type = 'button';
-  changer.id = 'btn-changer';
-  changer.classList.add('button', 'button-quiet', 'armes-bouton', 'armes-bouton-visuel');
-  changer.hidden = true;
-  boutons.append(changer, recharger);
+  boutons.append(recharger);
   root?.append(boutons);
+
+  // Emplacements d'armes (partie Q) : deux cases centrées en bas, le pistolet (1) et l'arme achetée (2).
+  const slots = document.createElement('div');
+  slots.id = 'armes-slots';
+  slots.classList.add('armes-slots');
+  slots.setAttribute('role', 'group');
+  slots.setAttribute('aria-label', t('game.armes.slots'));
+  const cases = [0, 1].map((i) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.id = `arme-slot-${i + 1}`;
+    b.classList.add('button', 'button-quiet', 'arme-slot');
+    const touche = document.createElement('span');
+    touche.classList.add('arme-slot-touche');
+    touche.setAttribute('aria-hidden', 'true');
+    touche.textContent = String(i + 1);
+    const vis = document.createElement('span');
+    vis.classList.add('arme-slot-visuel');
+    b.append(vis, touche);
+    slots.append(b);
+    return { b, vis };
+  });
+  root?.append(slots);
   const stop = (fn) => (event) => {
     event.preventDefault();
     event.stopPropagation();
     fn();
   };
   const onR = stop(onRecharger);
-  const onC = stop(onChanger);
   recharger.addEventListener('click', onR);
-  changer.addEventListener('click', onC);
+  const onS = cases.map((c, i) => stop(() => {
+    if (c.b.getAttribute('aria-pressed') !== 'true' && !c.b.disabled) onChoisir(i);
+  }));
+  cases.forEach((c, i) => c.b.addEventListener('click', onS[i]));
 
   // Visuels 2D : un SVG par arme, analysé une fois (généré par le jeu, sans entrée extérieure).
   const visuels = new Map();
@@ -89,7 +115,8 @@ export function createArmesUi({ dict, root, col, donnees, choix, annonce = () =>
     return true;
   };
   return {
-    // e : { active (id), texte (« 5 / 42 »), recharge (vrai pendant un rechargement), aSec, autre (id de l'autre arme ou null), visible }.
+    // e : { active (id), texte (« 5 / 42 »), recharge (vrai pendant un rechargement), aSec, slots ([id | null] : emplacements), actif (indice
+    // de l'emplacement tenu), visible }.
     update(e) {
       if (!e) return;
       if (fois('visible', e.visible !== false)) ammo.hidden = e.visible === false;
@@ -101,14 +128,20 @@ export function createArmesUi({ dict, root, col, donnees, choix, annonce = () =>
         etat.hidden = st === '';
         ammo.dataset.etat = st;
       }
-      if (fois('autre', e.autre ?? null)) {
-        changer.hidden = !e.autre;
-        changer.replaceChildren();
-        if (e.autre) {
-          const v = visuel(e.autre);
-          if (v) changer.append(v);
-          changer.setAttribute('aria-label', fmt(t('game.armes.changer'), { arme: t(`game.armes.${e.autre}`) }));
-        }
+      if (fois('slotsVus', e.visible !== false)) slots.hidden = e.visible === false;
+      const ids = Array.isArray(e.slots) ? e.slots : [];
+      if (fois('slots', `${ids.join('|')}#${e.actif}`)) {
+        cases.forEach((c, i) => {
+          const id = ids[i] ?? null;
+          c.vis.replaceChildren();
+          const v = id ? visuel(id) : null;
+          if (v) c.vis.append(v);
+          const tenu = id !== null && i === e.actif;
+          c.b.disabled = id === null;
+          c.b.setAttribute('aria-pressed', tenu ? 'true' : 'false');
+          c.b.dataset.vide = id === null ? 'oui' : 'non';
+          c.b.setAttribute('aria-label', id === null ? t('game.armes.slot.vide') : fmt(t(tenu ? 'game.armes.slot.tenue' : 'game.armes.slot.prendre'), { arme: t(`game.armes.${id}`) }));
+        });
       }
     },
     // Annonces : 'sortie' (arme), 'rechargeDebut', 'rechargeFin', 'aSec'.
@@ -118,9 +151,10 @@ export function createArmesUi({ dict, root, col, donnees, choix, annonce = () =>
     },
     dispose() {
       recharger.removeEventListener('click', onR);
-      changer.removeEventListener('click', onC);
+      cases.forEach((c, i) => c.b.removeEventListener('click', onS[i]));
       ammo.remove();
       boutons.remove();
+      slots.remove();
       visuels.clear();
     },
   };
