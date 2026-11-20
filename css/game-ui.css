@@ -993,6 +993,14 @@
   display: none;
 }
 
+/* Largeur fixe du nombre de balles (partie R : « la zone change de taille selon les balles affichées ») : celle du texte le plus long de
+   l'arme tenue (--ammo-largeur, en ch, posée par js/game/armes-ui.js), chiffres de même largeur ; elle ne change qu'avec l'arme. */
+.hud-ammo .hud-value {
+  display: inline-block;
+  min-width: var(--ammo-largeur, auto);
+  text-align: right;
+}
+
 .hud-ammo-state {
   margin-left: auto;
   font-family: var(--font-label);
@@ -1111,7 +1119,14 @@
   color: var(--color-text);
 }
 
+/* Rappels des touches 1 et 2 : jamais sur un écran tactile (partie R : ils restaient affichés jusqu'au premier toucher). */
 #game-root[data-input="touch"] .arme-slot-touche {
   display: none;
+}
+
+@media (hover: none) and (pointer: coarse) {
+  .arme-slot-touche {
+    display: none;
+  }
 }
 

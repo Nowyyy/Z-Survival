@@ -1322,7 +1322,10 @@ export function createGame(ctx) {
     if (armesUi) {
       // Emplacements (partie Q) : le pistolet puis l'arme achetée ; un emplacement libre reste vide (maxEmplacements de la table).
       const slots = Array.from({ length: maxEmplacements(tableArmes) }, (_, i) => sim.inv.emplacements[i]?.id ?? null);
-      armesUi.update({ active: armeActive(sim.inv)?.id, texte: texteMunitions(sim.inv), recharge: enRecharge(sim.inv), aSec: aSec(sim.inv), slots, actif: sim.inv.actif, visible: !sim.dead });
+      // Largeur du nombre de balles (partie R) : chargeur plein et réserve pleine de l'arme tenue (réserve illimitée : « ∞ »).
+      const en = entreeActive();
+      const largeur = en ? `${en.chargeur} / ${sim.inv.illimite || en.reserve === Infinity ? '∞' : en.reserve}`.length : null;
+      armesUi.update({ active: armeActive(sim.inv)?.id, texte: texteMunitions(sim.inv), largeur, recharge: enRecharge(sim.inv), aSec: aSec(sim.inv), slots, actif: sim.inv.actif, visible: !sim.dead });
     }
   }
 

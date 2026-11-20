@@ -304,6 +304,8 @@ test.describe('emplacements d\'armes et rechargement sur téléphone (parties E,
     await page.addInitScript(espion);
     await page.goto('/jeu.html?test=1&seed=2&nospawn=1&map=salle&lum=off&vhs=0');
     await waitReady(page);
+    // Partie R : sur un écran tactile, les rappels des touches 1 et 2 ne s'affichent jamais, même avant le premier toucher.
+    await expect(page.locator('#arme-slot-1 .arme-slot-touche')).toBeHidden();
     // Passage au toucher : un doigt posé puis levé sur la zone de jeu.
     await page.touchscreen.tap(200, 300);
     await expect(page.locator('#game-root')).toHaveAttribute('data-input', 'touch');
@@ -319,6 +321,31 @@ test.describe('emplacements d\'armes et rechargement sur téléphone (parties E,
     });
     await expect(slot2).toHaveAttribute('aria-pressed', 'true');
     await expect(slot2).toHaveAttribute('aria-label', '2 : Thompson M1928, en main');
+    // Partie R : la zone du nombre de balles garde sa largeur pendant les tirs (30 / 660 puis 9 / 660 ou moins).
+    const largeurs = await page.evaluate(async () => {
+      const zs = window.__zs;
+      const l = () => document.querySelector('#hud-ammo').getBoundingClientRect().width;
+      const image = () => new Promise((ok) => requestAnimationFrame(() => requestAnimationFrame(ok)));
+      await image();
+      const plein = [document.querySelector('#hud-ammo-text').textContent, l()];
+      zs.setWaveParams({ hp: { hpLinearPerRound: 1000, hpExpStartRound: 1000, hpExpFactor: 1, hpCap: 1e9 }, damage: { factor: 1, cap: 0.0001 } });
+      const p = zs.getState().player;
+      zs.spawnEnemy(p.x + 150, p.y, { type: 'marcheur', gait: 'lent', wave: 3 });
+      for (let i = 0; i < 200 && zs.getState().armes.emplacements[1].chargeur > 9; i += 1) {
+        zs.setInput({ aim: { angle: 0 } });
+        zs.step(0.05);
+      }
+      zs.killAll();
+      await image();
+      return { plein, entame: [document.querySelector('#hud-ammo-text').textContent, l()] };
+    });
+    expect(largeurs.plein[0]).toBe('30 / 660');
+    expect(largeurs.entame[0]).toMatch(/^\d \/ 660$/);
+    expect(Math.abs(largeurs.entame[1] - largeurs.plein[1])).toBeLessThan(0.5);
+    await page.evaluate(() => {
+      window.__zs.remplirMunitions();
+      for (let i = 0; i < 2; i += 1) window.__zs.step(0.05);
+    });
     await expect(slot1).toHaveAttribute('aria-label', '1 : prendre Colt M1911');
     for (const sl of [slot1, slot2]) await expect(sl.locator('svg.arm-svg')).toHaveCount(1);
     for (const id of ['#arme-slot-1', '#arme-slot-2', '#btn-recharger']) {
