@@ -982,9 +982,11 @@
   pointer-events: none;
 }
 
-/* Téléphone : sur la ligne des boutons, à leur gauche (sous l'anneau du stick droit au repos, jamais dessus). */
+/* Téléphone : sur la ligne des boutons, à leur gauche (sous l'anneau du stick droit au repos, jamais dessus). Même bord de référence que les
+   boutons (marge + zone de sécurité) : sur iPhone en paysage, la zone de sécurité droite (≈ 50 px) décalait les boutons sur les munitions
+   (retour du propriétaire). Boutons : « Changer » (2 cibles) + écart + « Recharger » (1 cible) ; puis 2 écarts avant le texte. */
 #game-root[data-input="touch"] .hud-ammo {
-  right: calc(var(--edge-right) + var(--hud-target) * 3 + var(--hud-gap) * 6);
+  right: calc(var(--game-margin) + var(--safe-right) + var(--hud-target) * 3 + var(--hud-gap) * 6);
   bottom: calc(var(--game-margin) + var(--safe-bottom) + var(--hud-target) / 2 - 0.8em);
 }
 
