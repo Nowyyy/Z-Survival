@@ -1,0 +1,42 @@
+{
+  "_provisoire": "Lot 9h (atelier, provisoire jusqu'au « GO 9h » du propriétaire) : décor extérieur d'époque (1942), rien n'est branché sur la partie. couleurs : teintes des matières et couleurs de l'atlas d'époque, dérivées de jetons existants de css/tokens.css (jeton, vers, part : mélange linéaire) ; aucune couleur en dur, aucun jeton nouveau. Modèles, variantes et règles : js/core/decor-epoque.js ; noms affichés : data/i18n/atelier-decor.json ; choix : data/game/decor-epoque-choix.json ; positions : data/game/maps/rez-de-chaussee/decor-epoque.json ; fiche : Docs/ref/decor-epoque.md. reel : dimensions réelles (mètres : longueur, largeur, hauteur) des objets dont s'inspirent les variantes ; retires : triangles du décor actuel que le plan remplace (mesurés sur origin/dev : hélicoptère, voitures abandonnées, voiture en flammes, poteaux électriques et câbles). Marquages : étoile américaine et numéros inventés seulement ; aucun symbole nazi ni politique, aucune marque.",
+  "couleurs": {
+    "olive": { "jeton": "--game-tree", "vers": "--game-paint-3", "part": 0.35 },
+    "feldgrau": { "jeton": "--game-wall", "vers": "--game-wreck-hull", "part": 0.25 },
+    "avion": { "jeton": "--game-tree", "vers": "--game-wreck-hull", "part": 0.45 },
+    "jerrycan": { "jeton": "--game-tree", "vers": "--game-paint-3", "part": 0.2 },
+    "toile": { "jeton": "--game-wreck-hull", "vers": "--game-tree", "part": 0.45 },
+    "pneu": { "jeton": "--game-boot", "vers": "--game-asphalt", "part": 0.6 },
+    "acier": { "jeton": "--game-metal", "vers": "--game-wall", "part": 0.35 },
+    "rouille": { "jeton": "--game-rust", "vers": "--game-wall", "part": 0.35 },
+    "bois": { "jeton": "--game-wood-dark", "vers": "--game-bark", "part": 0.5 },
+    "verre": { "jeton": "--game-wreck-glass", "vers": "--game-glass", "part": 0.25 },
+    "soie": { "jeton": "--game-wreck-metal", "vers": "--game-fog", "part": 0.35 },
+    "brule": { "jeton": "--game-car-burnt", "vers": "--game-car-soot", "part": 0.3 },
+    "suie": { "jeton": "--game-car-soot", "vers": "--game-boot", "part": 0.2 },
+    "cratere-brule": { "jeton": "--game-crater-burnt", "part": 0 },
+    "cratere-terre": { "jeton": "--game-crater-earth", "vers": "--game-soil", "part": 0.3 },
+    "bois-caisse": { "jeton": "--game-tree", "vers": "--game-paint-3", "part": 0.3 },
+    "pochoir": { "jeton": "--game-line", "vers": "--game-wreck-metal", "part": 0.2 },
+    "panneau-bois": { "jeton": "--game-wood", "vers": "--game-wood-dark", "part": 0.35 },
+    "panneau-texte": { "jeton": "--game-wreck-metal", "vers": "--game-player", "part": 0.4 },
+    "etoile-fond": { "jeton": "--game-paint-2", "vers": "--game-void", "part": 0.35 },
+    "etoile": { "jeton": "--game-wreck-metal", "vers": "--game-player", "part": 0.5 }
+  },
+  "reel": {
+    "vehicule": { "jeep": [3.36, 1.58, 1.32], "kubel": [3.74, 1.6, 1.35], "melange": [3.74, 1.6, 1.35] },
+    "camion": { "dodge": [4.24, 2.1, 2.07], "blitz": [6.02, 2.27, 2.18] },
+    "vehiculeFeu": { "jeep": [3.36, 1.58, 1.0], "kubel": [3.74, 1.6, 1.0], "dodge": [4.24, 2.1, 1.25] },
+    "avion": { "p51": [9.83, 11.28, 2.7], "p47": [11.0, 12.4, 2.9], "p40": [9.66, 11.38, 2.6] },
+    "parachute": { "deploye": [7.3, 7.3, 3.1], "pendu": [2.2, 2.2, 3.0], "sol": [3.9, 3.0, 3.0] },
+    "barbeles": { "rouleaux": [4.3, 1.2, 1.0], "piquets": [4.1, 0.1, 1.1], "simple": [4.4, 0.6, 0.8] },
+    "herissons": { "seul": [1.5, 1.5, 1.4], "rangee": [5.8, 1.7, 1.4], "rouille": [1.6, 1.5, 1.4] },
+    "jerrycans": { "pile": [1.0, 0.5, 1.07], "rangee": [2.0, 0.5, 0.53], "renverses": [1.25, 1.2, 0.53] },
+    "caisses": { "pile": [1.1, 1.1, 0.7], "rangee": [4.3, 0.75, 0.35], "ouverte": [2.3, 1.5, 0.35] },
+    "trouObus": { "petit": [2.6, 2.6, 0.2], "moyen": [4.0, 4.1, 0.15], "double": [3.6, 2.5, 0.2] },
+    "poteau": { "simple": [0.35, 1.85, 7.0], "double": [0.35, 1.85, 7.0], "penche": [1.0, 1.85, 7.0] },
+    "panneau": { "deux": [2.4, 0.5, 2.0], "trois": [2.4, 1.5, 2.0], "tombe": [1.8, 1.9, 0.5] },
+    "artillerie": { "projecteur": [3.7, 1.8, 2.15], "obusier": [5.1, 2.1, 1.8], "antichar": [5.0, 1.9, 1.3] }
+  },
+  "retires": { "helicoptere": 310, "voitures": 632, "voitureEnFlammes": 158, "poteauxElectriques": 222 }
+}

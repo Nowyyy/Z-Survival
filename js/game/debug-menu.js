@@ -276,6 +276,12 @@ export function createDebugMenu({ dict, search = '', planksMax = PLANKS_MAX, arm
   aArmes.textContent = t('game.debug.armes.lien');
   lienArmes.append(aArmes);
   row(sections.mesure, 'atelier-armes', 'game.debug.armes', lienArmes);
+  // Lot 9h : lien vers l'atelier du décor extérieur d'époque (page technique ; quitter la partie : la page est rechargée au retour).
+  const lienDecor = el('div', ['options-values']);
+  const aDecor = el('a', ['button', 'button-quiet', 'options-value'], { href: 'atelier-decor.html', id: 'debug-atelier-decor' });
+  aDecor.textContent = t('game.debug.decor.lien');
+  lienDecor.append(aDecor);
+  row(sections.mesure, 'atelier-decor', 'game.debug.decor', lienDecor);
 
   // Lot 9e : section « Armes » : chaque bouton agit tout de suite sur la partie en cours (débogage, mode essai inutile : rien n'est écrit).
   if (armes) {

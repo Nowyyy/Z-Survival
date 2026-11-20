@@ -1,0 +1,33 @@
+{
+  "_provisoire": "Lot 9h : choix du propriétaire pour le décor extérieur d'époque (atelier-decor.html, section « Choix » : la proposition s'y recopie). variantes : variante retenue par objet ; gardes : objet gardé (true) ou retiré du plan (false). Toute entrée invalide ou absente = la variante par défaut de js/core/decor-epoque.js (CATALOGUE), objet gardé. Valeurs provisoires jusqu'au « GO 9h ».",
+  "variantes": {
+    "vehicule": "melange",
+    "camion": "dodge",
+    "vehiculeFeu": "jeep",
+    "avion": "p51",
+    "parachute": "deploye",
+    "barbeles": "rouleaux",
+    "herissons": "rangee",
+    "jerrycans": "pile",
+    "caisses": "pile",
+    "trouObus": "moyen",
+    "poteau": "simple",
+    "panneau": "deux",
+    "artillerie": "projecteur"
+  },
+  "gardes": {
+    "vehicule": true,
+    "camion": true,
+    "vehiculeFeu": true,
+    "avion": true,
+    "parachute": true,
+    "barbeles": true,
+    "herissons": true,
+    "jerrycans": true,
+    "caisses": true,
+    "trouObus": true,
+    "poteau": true,
+    "panneau": true,
+    "artillerie": true
+  }
+}

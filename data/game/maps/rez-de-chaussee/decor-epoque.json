@@ -1,0 +1,25 @@
+{
+  "_provisoire": "Lot 9h (atelier, provisoire jusqu'au « GO 9h » du propriétaire) : positions du décor extérieur d'époque, en UNITÉS DU JEU (centre x, y ; cap en degrés : 0 = est, 90 = sud), vérifiées par npm run carte (couloirs d'approche, points d'apparition, bâtiment, fenêtres, décor gardé) ; la partie ne lit pas encore ce fichier. remplace : voitures (les quatre voitures abandonnées, mêmes rectangles), voiture-en-flammes (même centre ; feu, fumée et lumière gardés), helicoptere (l'avion prend l'angle du L ; cratère et traînée en unités comme decor.json, fumée légère), poteaux-electriques (mêmes pieds que le décor vivant, fils entre poteaux voisins). Variante de chaque objet : data/game/decor-epoque-choix.json. Valeurs provisoires.",
+  "objets": [
+    { "id": "vehicule", "type": "vehicule", "remplace": "voitures" },
+    { "id": "vehicule-en-flammes", "type": "vehiculeFeu", "remplace": "voiture-en-flammes" },
+    { "id": "avion", "type": "avion", "remplace": "helicoptere", "x": 1690, "y": 1665, "cap": 165, "cratere": { "rx": 170, "ry": 120 }, "trainee": { "longueur": 380, "largeur": 60 }, "fumee": true },
+    { "id": "parachute", "type": "parachute", "x": 1850, "y": 1200, "cap": 0 },
+    { "id": "camion", "type": "camion", "x": 3800, "y": 2850, "cap": 180 },
+    { "id": "herissons-route", "type": "herissons", "x": 3330, "y": 2830, "cap": 0 },
+    { "id": "barbeles-route", "type": "barbeles", "x": 3570, "y": 2880, "cap": 0 },
+    { "id": "panneau-route", "type": "panneau", "x": 3480, "y": 2745, "cap": 0 },
+    { "id": "jerrycans-camion", "type": "jerrycans", "x": 3720, "y": 2905, "cap": 90 },
+    { "id": "caisses-camion", "type": "caisses", "x": 3935, "y": 2925, "cap": 0 },
+    { "id": "artillerie", "type": "artillerie", "x": 3050, "y": 1000, "cap": 210 },
+    { "id": "caisses-artillerie", "type": "caisses", "x": 3170, "y": 1080, "cap": 20 },
+    { "id": "barbeles-nord", "type": "barbeles", "x": 700, "y": 760, "cap": 0 },
+    { "id": "trou-1", "type": "trouObus", "x": 1700, "y": 380 },
+    { "id": "trou-2", "type": "trouObus", "x": 2950, "y": 330 },
+    { "id": "trou-3", "type": "trouObus", "x": 3650, "y": 1150 },
+    { "id": "trou-4", "type": "trouObus", "x": 480, "y": 1150 },
+    { "id": "trou-5", "type": "trouObus", "x": 3600, "y": 3220 },
+    { "id": "trou-6", "type": "trouObus", "x": 650, "y": 3250 },
+    { "id": "poteau", "type": "poteau", "remplace": "poteaux-electriques" }
+  ]
+}

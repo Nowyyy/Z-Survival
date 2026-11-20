@@ -1,0 +1,85 @@
+/* Lot 9h — Atelier du décor extérieur d'époque (page technique) : jetons de tokens.css seulement (aucune couleur ici). Mobile d'abord ; les vues
+   « taille réelle » défilent si l'écran est plus petit que l'image ; le plan de la carte reprend les classes de carte.css. */
+.decor-canvas {
+  display: block;
+  width: 100%;
+  max-width: 45rem;
+  height: auto;
+}
+
+.decor-fiche {
+  font-variant-numeric: tabular-nums;
+}
+
+.decor-planche {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
+  gap: var(--space-3);
+}
+
+.decor-vignette {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: 0;
+  padding: var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+}
+
+.decor-vignette canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.decor-vignette figcaption {
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.decor-vignette[data-retenue="oui"] {
+  border-color: var(--color-focus);
+  outline: 2px solid var(--color-focus);
+}
+
+.decor-plan .carte-svg {
+  width: 100%;
+  height: auto;
+}
+
+.decor-liste {
+  margin: 0;
+  padding-left: var(--space-4);
+}
+
+.decor-json {
+  max-width: 100%;
+  overflow-x: auto;
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: var(--text-sm);
+}
+
+.decor-json:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+/* Plan : objets (rectangle de collision ou emprise), étiquettes, chemins des zombies avant (pointillés) et après (trait plein). */
+.sw-arrete { background: var(--color-danger); }
+.sw-passe { background: var(--color-warning); }
+.sw-libre { background: var(--color-focus); }
+.sw-chemin { background: var(--color-success); }
+.ep-arrete { fill: var(--color-danger); fill-opacity: 0.55; stroke: var(--color-danger); stroke-width: 4; }
+.ep-passe { fill: var(--color-warning); fill-opacity: 0.45; stroke: var(--color-warning); stroke-width: 4; }
+.ep-libre { fill: none; stroke: var(--color-focus); stroke-width: 5; stroke-dasharray: 14 10; }
+.ep-emprise { fill: none; stroke: var(--color-text-muted); stroke-width: 2; stroke-dasharray: 6 6; }
+.ep-etiquette { fill: var(--color-text); font-family: var(--font-sans); font-weight: var(--font-weight-bold); paint-order: stroke; stroke: var(--color-bg); stroke-width: 6px; }
+.ch-avant { fill: none; stroke: var(--color-text-muted); stroke-width: 10; stroke-dasharray: 20 16; opacity: 0.7; }
+.ch-apres { fill: none; stroke: var(--color-success); stroke-width: 5; }
+.ep-arbre { fill: var(--game-tree); stroke: var(--game-leaf); stroke-width: 4; opacity: 0.9; }
