@@ -169,11 +169,36 @@ describe('textures d\'époque', () => {
 });
 
 describe('fichier de choix (data/game/persos-epoque-choix.json)', () => {
-  it('fichier livré : une variante valide pour chaque personnage et chaque type', () => {
+  it('fichier livré : variantes valides ; retour du propriétaire : Survivant A, zombies A et B mélangés (C gardé pour la carte 3)', () => {
     const c = lireChoixEpoque(choixJson, epoque, PERSOS, SLOT);
     expect(Object.keys(c)).toEqual(PERSOS);
-    for (const [k, v] of Object.entries(c)) expect(epoque.variantes.some((r) => r.id === v && r.slot === SLOT(k)), k).toBe(true);
+    for (const [k, v] of Object.entries(c)) for (const id of [v].flat()) expect(epoque.variantes.some((r) => r.id === id && r.slot === SLOT(k)), k).toBe(true);
     expect(choixJson.choix).toEqual(c);
+    expect(c.survivant).toBe('epoque-A');
+    for (const z of ['marcheur', 'petit', 'voute', 'grand']) expect(c[z]).toEqual(['epoque-A', 'epoque-B']);
+    expect(epoque.variantes.filter((r) => r.id === 'epoque-C' && r.slot !== 'joueur')).toHaveLength(4);
+  });
+  it('listes : ids valides gardés dans l\'ordre, sans doublon ; un seul id valide : cet id ; liste vide ou invalide : défaut', () => {
+    const r = (v) => lireChoixEpoque({ choix: { grand: v } }, epoque, ['grand']).grand;
+    expect(r(['epoque-B', 'epoque-A', 'epoque-B'])).toEqual(['epoque-B', 'epoque-A']);
+    expect(r(['epoque-C', 'riche', 3])).toBe('epoque-C');
+    expect(r([])).toBe('epoque-A');
+    expect(r(['x', null])).toBe('epoque-A');
+    expect(lireChoixEpoque({ choix: { 'personnage-2': ['para-B', 'epoque-A'] } }, epoque, ['personnage-2'], SLOT)['personnage-2']).toBe('para-B');
+  });
+  it('personnage 2 distinct du Survivant : couleurs inversées (veste verte, pantalon clair), accessoires propres (branchages, radio, camouflage)', () => {
+    const p1 = slotOf('joueur').variants.find((v) => v.id === 'epoque-A');
+    const ids = (v) => new Set(resolve(v).parts.map((p) => p.id));
+    for (const id of ['para-A', 'para-B', 'para-C']) {
+      const v = slotOf('joueur').variants.find((x) => x.id === id);
+      const diff = [...ids(v)].filter((x) => !ids(p1).has(x));
+      expect(diff.length, id).toBeGreaterThanOrEqual(3);
+      expect(JSON.stringify(v.palette.tenue)).not.toBe(JSON.stringify(p1.palette.tenue));
+    }
+    expect([...ids(slotOf('joueur').variants.find((x) => x.id === 'para-A'))].some((x) => x.startsWith('feuille'))).toBe(true);
+    expect([...ids(slotOf('joueur').variants.find((x) => x.id === 'para-B'))]).toContain('radioBoite');
+    expect(resolve(slotOf('joueur').variants.find((x) => x.id === 'para-C')).parts.find((p) => p.id === 'chest').palette).toBe('camo');
+    expect(p1.palette.casque.jeton).toBe('--perso-tissu-gris');
   });
   it('absent, invalide ou inconnu : la première variante (A) ; le personnage 2 ne prend que ses variantes', () => {
     const def = { survivant: 'epoque-A', 'personnage-2': 'para-A', marcheur: 'epoque-A', petit: 'epoque-A', voute: 'epoque-A', grand: 'epoque-A' };
