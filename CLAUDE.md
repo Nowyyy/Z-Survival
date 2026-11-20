@@ -45,12 +45,13 @@ Avant de modifier une page, lis `Docs/ref/conventions.md` (arborescence, pages, 
 - Tests : ?test=1 expose window.__zs (getState, step, skipWave…) ; 667×375, step() et le journal, jamais une durée réelle ; Math.random interdit ; helpers e2e : map=salle.
 - Monde : decor.json (extérieur, apparitions hors de la vue) ; collision.js, nav.js ; meubles et portes fermées bloquent tout (tirs : voir Tir) ; hauteurs : murs 60, meubles ≤ 70, voitures 55.
 - Textures : texgen.js (pur) d'après textures.json, aucune image ; contraste ≥ 3:1 personnages / sol, laser et balle ≥ 4,5:1.
-- Personnages : v2 ; ≤ 4 appels, ≤ 1 600 triangles (riche 2 600) ; vue ≤ 45 000 triangles et 400 appels.
+- Personnages : v2 ; ≤ 4 appels, ≤ 1 600 triangles (riche 2 600) ; vue ≤ 45 000 triangles et 400 appels ; 1942 : Docs/ref/personnages-epoque.md.
 - Sang : blood.js ; ?sang=0|reduit|1 ; ≤ 3 appels, ≤ 1 200 triangles, 2 cadavres, sans effet de jeu ; jamais de démembrement.
+- Armes (lot 9e) : armes-partie.json, js/core/armes/ ; Docs/ref/armes-en-main.md.
 - Tir et réparation : jamais en même temps (viser un zombie interrompt la réparation, la planche garde sa progression) ; pas de laser pendant la réparation.
 - Sons : synth.js, synth2.js (sounds.json) ; seul fichier audio : MP3 du logo ; jamais de son dans js/core/ ; sons.html, atelier-sons-menu.html à retirer au lot 13.
 - Chargement : textures et sons essentiels derrière l'écran de préparation ; aucun son avant le premier geste.
-- Zombies : 4 types × 4 allures (enemies.json, gaits.json) ; vitesse ≤ 190 ; la rampe est visuelle, sans effet sur la hitbox.
+- Zombies : 4 types × 4 allures (enemies.json, gaits.json) ; vitesse ≤ 190 ; rampants en capsule (balles, laser, coups).
 - Fenêtres : windows.js (4 planches, arrachage 2,2 s, réparation 1,8 s) ; les planches ne bloquent que les zombies (closedRects).
 - Siège : siege.js ; 2 emplacements, file de 6, 2 grimpeurs ; jamais d'entrée sans fenêtre ouverte ni active ; ?empty=1 : zombies libres.
 - Effet VHS : #vhs (vhs.js, horloge réelle) ; interdits : mix-blend-mode, filter, backdrop-filter, post-traitement 3D ; ?vhs=0|1 ; coupé en mouvement réduit.
