@@ -27,7 +27,7 @@ import { createRng } from '../core/rng.js';
 import { shotAngle, speedRatio, spreadHalfAngle, stepSpreadRatio, toRadians } from '../core/spread.js';
 import { zoneZombie } from '../core/gabarit.js';
 import { armeJeu, statsAvecArme } from '../core/armes/partie.js';
-import { aSec, armeActive, armeMontree, avancerInventaire, changerArme, creerInventaire, donnerArme, enAttente, enRecharge, gesteRecharge, munitionsIllimitees, peutTirer, progressionRecharge, recharger, remplirMunitions, texteMunitions, tirer, RANGER } from '../core/armes/inventaire.js';
+import { aSec, armeActive, armeMontree, avancerInventaire, changerArme, creerInventaire, donnerArme, enAttente, enRecharge, gesteRecharge, maxEmplacements, munitionsIllimitees, peutTirer, progressionRecharge, recharger, remplirMunitions, texteMunitions, tirer, RANGER } from '../core/armes/inventaire.js';
 import { boucheCanon, tenueArme } from '../core/armes/tenue-jeu.js';
 import { creerArmesEnMain } from '../armes/en-main.js';
 import { AU_SOL_DOUILLE, MAX_DOUILLES, creerArmesTombes, creerCartoucheMain } from './armes-tombes.js';
@@ -257,7 +257,7 @@ export function createGame(ctx) {
   let armesApi = null; // méthodes de la partie (recharger, changerArme), pour les boutons de l'interface des armes
   let etaitASec = false;
   // Lot 9e : munitions du HUD, boutons tactiles près du stick droit, annonces (js/game/armes-ui.js).
-  const armesUi = tableArmes && armesCfg ? createArmesUi({ dict: ctx.dict, root: document.getElementById('game-root'), col: document.querySelector('.hud-tl'), donnees: armesCfg.donnees, choix: armesCfg.choix, annonce: (t) => ctx.ui?.setLive?.(t), onRecharger: () => armesApi?.recharger(), onChanger: () => armesApi?.changerArme() }) : null;
+  const armesUi = tableArmes && armesCfg ? createArmesUi({ dict: ctx.dict, root: document.getElementById('game-root'), col: document.querySelector('.hud-tl'), donnees: armesCfg.donnees, choix: armesCfg.choix, annonce: (t) => ctx.ui?.setLive?.(t), onRecharger: () => armesApi?.recharger(), onChoisir: (i) => armesApi?.changerArme(i) }) : null;
   // Hauteur d'un étage (render.json) : le joueur reste à y = 0, c'est le monde qui descend quand il monte (world.setElevation).
   const LIFT = Number.isFinite(render.floorLift) ? render.floorLift : 0;
   const liftOf = (f) => (f === 'etage' ? LIFT : 0);
@@ -1320,8 +1320,9 @@ export function createGame(ctx) {
     // Tests : geste visible (objet dans la main, arme sans chargeur, cible de la main gauche).
     gesteVu = { verrou: etat.verrouBack ?? 0, objetCote: etat.objetCote ?? null, objet: etat.objet ? etat.objet.name : null, sansChargeur: etat.sansChargeur === true, cible: etat.mainG ? (etat.mainG.k < 0.5 ? etat.mainG.de : etat.mainG.vers) : null, cant: etat.cant ?? 0 };
     if (armesUi) {
-      const autre = sim.inv.emplacements.find((e, i) => i !== sim.inv.actif)?.id ?? null;
-      armesUi.update({ active: armeActive(sim.inv)?.id, texte: texteMunitions(sim.inv), recharge: enRecharge(sim.inv), aSec: aSec(sim.inv), autre, visible: !sim.dead });
+      // Emplacements (partie Q) : le pistolet puis l'arme achetée ; un emplacement libre reste vide (maxEmplacements de la table).
+      const slots = Array.from({ length: maxEmplacements(tableArmes) }, (_, i) => sim.inv.emplacements[i]?.id ?? null);
+      armesUi.update({ active: armeActive(sim.inv)?.id, texte: texteMunitions(sim.inv), recharge: enRecharge(sim.inv), aSec: aSec(sim.inv), slots, actif: sim.inv.actif, visible: !sim.dead });
     }
   }
 
@@ -1964,6 +1965,6 @@ export function createGame(ctx) {
       };
     },
   };
-  armesApi = api; // lot 9e : boutons « Recharger » et « Changer » (js/game/armes-ui.js)
+  armesApi = api; // lot 9e : bouton « Recharger » et emplacements d'armes (js/game/armes-ui.js)
   return api;
 }
