@@ -1,5 +1,5 @@
 {
-  "_provisoire": "Décor léger intérieur généré par npm run carte (scripts/plan-vers-monde.mjs) d'après decor-interieur.json : ne jamais éditer à la main. Unités du jeu ; non solide (aucune collision, aucun effet sur le chemin, les tirs ni les règles). Les genres solides (sacs de sable, lot 9a-I) n'y sont pas : ils sont écrits dans world.json comme obstacles. Valeurs provisoires.",
+  "_provisoire": "Décor léger intérieur généré par npm run carte (scripts/plan-vers-monde.mjs) d'après decor-interieur.json : ne jamais éditer à la main. Unités du jeu ; non solide (aucune collision, aucun effet sur le chemin, les tirs ni les règles). Les genres solides (sacs de sable, lot 9a-I) n'y sont pas : ils sont écrits dans world.json comme obstacles ; les bidons (lot 9h) sont aussi des obstacles de world.json mais restent dessinés ici. Valeurs provisoires.",
   "triangles": 456,
   "items": [
     {
@@ -1215,7 +1215,7 @@
       "z1": 28,
       "provisional": true,
       "x": 3000,
-      "y": 2160,
+      "y": 2165,
       "w": 20,
       "h": 20,
       "rot": 0
@@ -1275,7 +1275,7 @@
       "z1": 28,
       "provisional": true,
       "x": 2110,
-      "y": 2410,
+      "y": 2400,
       "w": 20,
       "h": 20,
       "rot": 0

@@ -1,6 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import { cleanParams, cleanPlan, DEFAULT_MAP_ID, DEFAULT_PARAMS, mergeInterstices, planToWorld, resolveMapId, windowGap, windowZone } from '../../js/core/maps.js';
 import { formatJson, generateMapFiles } from '../../scripts/plan-vers-monde.mjs';
+import { recalerObstacles } from '../../js/core/collisions-dessin.js';
+import { parseZones, zonesToWorld } from '../../js/core/zones.js';
+import { segmentRects } from '../../js/core/shape.js';
 import { readFileSync } from 'node:fs';
 import { deepFreeze, params, plan, px, WEIRD, world } from './helpers/carte.js';
 
@@ -223,9 +226,20 @@ describe('fichiers versionnés = sortie du script (aucune retouche à la main)',
 
   it('les fichiers se relisent en JSON et correspondent à planToWorld (plus les obstacles du décor solide, lot 9a-I : sacs de sable)', () => {
     const lu = JSON.parse(files.world);
-    const solides = lu.obstacles.filter((o) => o.kind === 'sacs');
-    expect(solides.map((o) => o.id)).toEqual(['sacs-1', 'sacs-2']);
-    expect({ ...lu, obstacles: lu.obstacles.filter((o) => o.kind !== 'sacs') }).toEqual(JSON.parse(JSON.stringify(out.world)));
+    const solides = lu.obstacles.filter((o) => o.kind === 'sacs' || o.kind === 'bidon');
+    expect(solides.map((o) => o.id)).toEqual(['sacs-1', 'sacs-2', 'bidon-salle', 'bidon-poche']); // lot 9h (retours) : bidons solides
+    // Lot 9h (retours du propriétaire, intérieur) : collisions recalées sur le dessin (js/core/collisions-dessin.js) : marches des escaliers, meubles
+    // dont un bord reculait d'au moins 6 ; mêmes obstacles sinon, dans le même ordre.
+    const planOut = JSON.parse(JSON.stringify(out.world));
+    const pieces = Object.values(JSON.parse(files.mobilier).pieces).filter((p) => p.floor === 'rdc');
+    const zw = zonesToWorld(parseZones(JSON.parse(readFileSync('data/game/maps/rez-de-chaussee/zones.json', 'utf8'))), planOut.transform);
+    const escaliers = planOut.stairs.map((s) => {
+      const z = zw.stairs.find((q) => q.id === s.role);
+      return { id: s.id, walk: z.walk, interdits: [z.floors.rdc.trigger].map((t) => ({ x: t.x, y: t.y, w: t.w, h: t.h })) };
+    });
+    const attendu = recalerObstacles([...planOut.obstacles, ...solides], { pieces, escaliers, murs: segmentRects(planOut.walls, params.wallThickness), min: planOut.minCorridor }).obstacles;
+    expect(lu.obstacles).toEqual(attendu);
+    expect({ ...lu, obstacles: [] }).toEqual({ ...planOut, obstacles: [] });
     // Lot 9h : plus la clé epoque (décor d'époque contrôlé et écrit par npm run carte : js/core/decor-epoque.js, tests/unit/decor-epoque.test.js).
     const { epoque, ...decorLu } = JSON.parse(files.decor);
     expect(decorLu).toEqual(JSON.parse(JSON.stringify(out.decor)));

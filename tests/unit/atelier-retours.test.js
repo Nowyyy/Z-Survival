@@ -58,9 +58,11 @@ describe('escalier courbe : l\'emprise suit les marches', () => {
   const parts = world.obstacles.filter((o) => o.kind === 'escalier' && /^escalier-courbe(\.\d+)?$/.test(o.id));
   const stair = world.stairs.find((s) => s.id === 'escalier-courbe');
 
-  it('plusieurs morceaux, tous dans l\'emprise entière (world.stairs, inchangée)', () => {
+  // Lot 9h (retours du propriétaire : on traversait le bord de l'escalier) : les morceaux suivent les marches DESSINÉES (js/core/collisions-dessin.js),
+  // qui débordent un peu de l'emprise du plan (world.stairs, inchangée), interstices de moins de 50 refermés (jusqu'au pilier 7) : tous à moins de 60 d'elle.
+  it('plusieurs morceaux, tous près de l\'emprise entière (world.stairs, inchangée)', () => {
     expect(parts.length).toBeGreaterThan(1);
-    for (const p of parts) expect(p.x >= stair.x - 1e-6 && p.y >= stair.y - 1e-6 && p.x + p.w <= stair.x + stair.w + 1e-6 && p.y + p.h <= stair.y + stair.h + 1e-6, p.id).toBe(true);
+    for (const p of parts) expect(p.x >= stair.x - 60 && p.y >= stair.y - 60 && p.x + p.w <= stair.x + stair.w + 60 && p.y + p.h <= stair.y + stair.h + 60, p.id).toBe(true);
   });
 
   it('le coin intérieur (près du pivot) est libre ; l\'arc des marches est couvert', () => {
@@ -79,7 +81,7 @@ describe('escalier courbe : l\'emprise suit les marches', () => {
     const out = generateMapFiles('rez-de-chaussee');
     expect(out.report.valid).toBe(true);
     expect(out.problems).toEqual([]);
-    expect(JSON.parse(out.world).obstacles.filter((o) => o.kind === 'escalier').length).toBe(parts.length + 1);
+    expect(JSON.parse(out.world).obstacles.filter((o) => o.kind === 'escalier').length).toBe(parts.length + JSON.parse(out.world).obstacles.filter((o) => /^escalier-aile(\.\d+)?$/.test(o.id)).length); // lot 9h : l'escalier de l'aile aussi en marches
   });
 });
 

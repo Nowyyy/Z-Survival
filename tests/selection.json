@@ -352,6 +352,7 @@
         "js/core/decor-vivant.js",
         "js/core/epaves.js",
         "js/core/decor-epoque.js",
+        "js/core/collisions-dessin.js",
         "data/game/decor-epoque.json",
         "data/game/decor-epoque-choix.json",
         "js/core/lamps.js",

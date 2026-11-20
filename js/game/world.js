@@ -703,6 +703,7 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
     // projettent une ombre, les pieds, dossiers et socles forment un maillage sans ombre portée. Les collisions gardent le rectangle d'origine.
     l.furniture.forEach((fu, i) => {
       if (fu.kind === 'escalier') return; // dessiné par la rampe (escalier physique)
+      if (fu.kind === 'bidon') return; // lot 9h : bidon solide, dessiné par le décor léger (decor-interieur.world.json)
       // Lot 9a-I : sacs de sable (obstacles venus du décor solide) : pile de sacs en toile de jute (texture « toile-jute », répétée), à tous les
       // réglages comme leur collision ; sans ombre portée (18 de haut, comme le décor léger), réception des ombres.
       if (fu.kind === 'sacs') {

@@ -83,6 +83,7 @@ describe('mêmes règles qu\'au lot 1', () => {
     allowed.push('js/core/armes/armes.js', 'js/core/armes/atlas.js', 'js/core/armes/caisse.js', 'js/core/armes/geometrie.js', 'js/core/armes/modeles.js', 'js/core/armes/visuel.js'); // lot 9c : armes de l'atelier (géométrie, atlas, caisse d'armes, données, visuels 2D ; nouveaux fichiers purs, aucun module existant modifié)
     allowed.push('js/core/gabarit.js', 'js/core/armes/partie.js', 'js/core/armes/inventaire.js', 'js/core/armes/tenue-jeu.js', 'js/core/armes/geste.js'); // lot 9e : corps long et capsule des rampants, table des armes, armes portées, tenue en partie ; partie I : geste du rechargement (nouveaux fichiers purs)
     allowed.push('js/core/decor-epoque.js'); // lot 9h : décor extérieur d'époque (modèles, atlas généré, placement, contrôles ; nouveau fichier, pur)
+    allowed.push('js/core/collisions-dessin.js'); // lot 9h (retours) : collisions de l'intérieur recalées sur le dessin (escaliers, meubles), utilisé par npm run carte (nouveau fichier, pur)
     expect(changed.filter((f) => !allowed.includes(f))).toEqual([]);
   });
 });

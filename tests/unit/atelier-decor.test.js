@@ -186,7 +186,8 @@ describe('données du dépôt', () => {
   });
 
   it('non solide : aucun élément du décor léger dans les obstacles du monde', () => {
-    const ids = new Set(derived.items.map((x) => x.id));
+    // Lot 9h (retours du propriétaire) : les bidons sont solides (obstacles) mais dessinés par le décor léger (dessinLeger) : seule exception.
+    const ids = new Set(derived.items.filter((x) => x.kind !== 'bidon').map((x) => x.id));
     for (const o of [...world.obstacles, ...etageWorld.obstacles]) expect(ids.has(o.id), o.id).toBe(false);
   });
 

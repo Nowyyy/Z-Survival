@@ -60,10 +60,10 @@
     {"id":"tache-etage-2","floor":"etage","kind":"tache","x":220,"y":320,"w":9,"h":7,"provisional":true},
     {"id":"sacs-1","floor":"rdc","kind":"sacs","x":171,"y":222,"w":12,"h":6.5,"source":"modele","note":"lot 9a-I : solide ; relevé x 171, y 218, 12 × 7 ; deux rangées de sacs à 50 du mur nord (passage du joueur derrière, retour du propriétaire), règle des 50 de la carte"},
     {"id":"sacs-2","floor":"rdc","kind":"sacs","x":183,"y":222,"w":11.5,"h":6.5,"source":"modele","note":"lot 9a-I : solide ; relevé x 184, y 219, 11 × 6 ; collé à sacs-1 et au flanc ouest du pilier 10 (x 194,5), à 50 du mur nord"},
-    {"id":"bidon-salle","floor":"rdc","kind":"bidon","x":440,"y":272,"w":4,"h":4,"provisional":true},
+    {"id":"bidon-salle","floor":"rdc","kind":"bidon","x":440,"y":273,"w":4,"h":4,"provisional":true},
     {"id":"bidon-poche","floor":"rdc","kind":"bidon","x":62,"y":300,"w":4,"h":4,"provisional":true},
     {"id":"grille-F7","floor":"rdc","kind":"grille","on":"contour-7","from":0.8171,"to":0.8872,"source":"modele"},
     {"id":"grille-F8","floor":"rdc","kind":"grille","on":"contour-7","from":0.9604,"to":0.9787,"source":"modele"},
-    {"id":"bidon-etage","floor":"etage","kind":"bidon","x":262,"y":322,"w":4,"h":4,"provisional":true}
+    {"id":"bidon-etage","floor":"etage","kind":"bidon","x":262,"y":320,"w":4,"h":4,"provisional":true}
   ]
 }
