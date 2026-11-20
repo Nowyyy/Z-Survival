@@ -5,7 +5,7 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { DEFAULTS, PERSO_VALUES, SANG_VALUES, SLOTS, USURE_VALUES, VARIANTES, needsChoices, readPersosParams, slotVariants } from '../../js/game/persos-params.js';
 import { choiceOptions, createPersos } from '../../js/game/persos-runtime.js';
 import { createV2Kit } from '../../js/game/character-v2.js';
-import { ANIM_MACROS, MACRO_IDS } from '../../js/core/persos-variants.js';
+import { ANIM_MACROS, MACRO_IDS, resoudreEpoque } from '../../js/core/persos-variants.js';
 import { LIMITS, characterCost, choicesOf, crowdCost, project } from '../../scripts/personnages/projection.mjs';
 import { characters, load, poses } from '../../scripts/personnages/lib.mjs';
 import { sansImagesStudio } from './helpers/images-studio.js'; // lot 8g : logo et son du studio, exception nominative
@@ -27,6 +27,12 @@ const git = (cmd) => {
   }
 };
 const variants = load('zombie-variants');
+// Lot 9g (GO du propriétaire) : la table nomme « epoque » ; la variante effective est celle de persos-epoque-choix.json (Survivant A,
+// zombies A et B mélangés), résolue comme en jeu (resoudreEpoque, niveau complet). Les contrôles d'avant portent sur cette variante.
+const epoque = JSON.parse(readFileSync('data/game/persos-epoque.json', 'utf8'));
+const epoqueChoix = JSON.parse(readFileSync('data/game/persos-epoque-choix.json', 'utf8'));
+const resolu = resoudreEpoque({ characters, epoque, choixJson: epoqueChoix, table: choix, perso: 'choix', slots: slotVariants('choix', choix) });
+const tableVariant = (s) => resolu.characters.slots.find((x) => x.id === s)?.variants.find((v) => v.id === resolu.slots[s]);
 
 describe('table des choix (data/game/persos-choix.json)', () => {
   it('provisoire, source nommée, version 1', () => {
@@ -41,12 +47,12 @@ describe('table des choix (data/game/persos-choix.json)', () => {
   it.each(SLOTS)('%s : variante connue, présente dans characters-v2.json (lot 5e : « actuel » n\'est plus permis)', (s) => {
     const c = choix.persos[s];
     expect(VARIANTES).toContain(c.variante);
-    expect(variantOf(s, c.variante)).toBeTruthy();
+    expect(tableVariant(s)).toBeTruthy();
     expect(c.source).toBe('passation-personnages-4b.md');
   });
   it.each(SLOTS)('%s : macros connues, dans les bornes de la variante', (s) => {
     const c = choix.persos[s];
-    const defs = variantOf(s, c.variante).macros;
+    const defs = tableVariant(s).macros;
     for (const [k, v] of Object.entries(c.macros ?? {})) {
       expect(MACRO_IDS).toContain(k);
       expect(Number.isInteger(v)).toBe(true);
@@ -64,7 +70,7 @@ describe('table des choix (data/game/persos-choix.json)', () => {
   it.each(SLOTS)('%s : style A, B ou C (style des données de la variante, le fichier ne le précise pas)', (s) => {
     const c = choix.persos[s];
     expect(['A', 'B', 'C']).toContain(c.style);
-    expect(c.style).toBe(variantOf(s, c.variante).style);
+    expect(c.style).toBe(tableVariant(s).style);
   });
   it.each(SLOTS)('%s : tenues « toutes » ou liste de tenues existantes, sans doublon', (s) => {
     const c = choix.persos[s];
@@ -72,13 +78,16 @@ describe('table des choix (data/game/persos-choix.json)', () => {
     expect(Array.isArray(c.tenues)).toBe(true);
     expect(c.tenues.length).toBeGreaterThan(0);
     expect(new Set(c.tenues).size).toBe(c.tenues.length);
-    const ids = variantOf(s, c.variante).outfits.map((o) => o.id);
+    const ids = tableVariant(s).outfits.map((o) => o.id);
     for (const t of c.tenues) expect(ids).toContain(t);
   });
-  it('choix reportés de la passation : « riche » pour les 5, 6 tenues tirées par zombie, joueur sur sa palette par défaut', () => {
-    for (const s of SLOTS) expect(choix.persos[s].variante).toBe('riche');
+  // Lot 9g (GO du propriétaire) : « epoque » remplace « riche » (passation du lot 3j) pour les cinq ; mêmes tenues tirées (toutes), joueur sur sa
+  // première tenue ; variantes effectives : Survivant A, zombies A et B mélangés (douze tenues).
+  it('choix du lot 9g : « epoque » pour les 5, toutes les tenues tirées par zombie, joueur sur sa première tenue', () => {
+    for (const s of SLOTS) expect(choix.persos[s].variante).toBe('epoque');
     for (const s of ['marcheur', 'petit', 'voute', 'grand']) expect(choix.persos[s].tenues).toBe('toutes');
-    expect(choix.persos.joueur.tenues).toEqual([variantOf('joueur', 'riche').outfits[0].id]);
+    expect(choix.persos.joueur.tenues).toEqual([tableVariant('joueur').outfits[0].id]);
+    expect(resolu.slots).toEqual({ joueur: 'epoque-A', marcheur: 'epoque-A+epoque-B', petit: 'epoque-A+epoque-B', voute: 'epoque-A+epoque-B', grand: 'epoque-A+epoque-B' });
   });
   it('sang complet (1) et usure auto, valeurs reconnues par les paramètres', () => {
     expect(choix.sang).toBe('1');
@@ -96,11 +105,11 @@ describe('table des choix (data/game/persos-choix.json)', () => {
 });
 
 describe('paramètres : ?perso=choix par défaut', () => {
-  it('défaut : choix, sang et usure de la table, les 5 personnages en « riche »', () => {
+  it('défaut : choix, sang et usure de la table, les 5 personnages en « epoque » (lot 9g ; avant : « riche »)', () => {
     expect(DEFAULTS.perso).toBe('choix');
     const p = readPersosParams('', choix);
     expect(p).toMatchObject({ perso: 'choix', sang: '1', usure: 'auto', v2: true, active: true });
-    expect(p.slots).toEqual({ joueur: 'riche', marcheur: 'riche', petit: 'riche', voute: 'riche', grand: 'riche' });
+    expect(p.slots).toEqual({ joueur: 'epoque', marcheur: 'epoque', petit: 'epoque', voute: 'epoque', grand: 'epoque' });
   });
   it('sans table (illisible ou absente) : tous en variante A (lot 5e, repli), sang 0', () => {
     expect(readPersosParams('', null)).toMatchObject({ perso: 'choix', sang: '0', v2: true, active: true, slots: { joueur: 'A', marcheur: 'A', petit: 'A', voute: 'A', grand: 'A' } });
@@ -175,7 +184,8 @@ describe('chargeur : modules réellement importés (Node)', () => {
     const p = await loadPersos('');
     expect(existsSync('js/core/pose.js') || existsSync('js/game/character.js')).toBe(false);
     expect(calls).toContain('data/game/persos-choix.json');
-    expect(p.params.slots.joueur).toBe('riche');
+    expect(calls).toEqual(expect.arrayContaining(['data/game/persos-epoque.json', 'data/game/persos-epoque-choix.json'])); // lot 9g
+    expect(p.params.slots.joueur).toBe('epoque'); // lot 9g : résolue à l'attache (personnage joué)
     expect(p.model.computePose({ state: 'marche' })).toEqual({});
   });
   it('?perso=actuel (lot 5e : valeur inconnue) : défaut choix, modèle v2 (aucune pose de l\'ancien modèle), chargeur actif', async () => {
@@ -212,22 +222,24 @@ describe('aiguillage par personnage (character-v2.js, persos-runtime.js)', () =>
   const kitFor = (params) => {
     stubs();
     const lookup = () => [200, 180, 160];
-    return createV2Kit({ characters, poses, lookup, choice: params.perso, styleOf: params.slots, ...choiceOptions(params, choix), zombieIds: variants.zombie.variants.map((v) => v.id), seed: 3, wear: () => 0 });
+    // Lot 9g : variantes de la table résolues comme en jeu (epoque : Survivant A, zombies A et B mélangés).
+    const ep = resoudreEpoque({ characters, epoque, choixJson: epoqueChoix, table: choix, perso: params.perso, slots: params.slots });
+    return createV2Kit({ characters: ep.characters, poses, lookup, choice: params.perso, styleOf: ep.slots, ...choiceOptions(params, choix), zombieIds: variants.zombie.variants.map((v) => v.id), seed: 3, wear: () => 0 });
   };
   it('défaut : chaque personnage est un personnage v2 de la variante de la table', () => {
     const v2 = kitFor(readPersosParams('', choix));
     expect(v2.handles('player')).toBe(true);
     const p = v2.create('player');
-    expect(p.choice).toBe('riche');
-    for (let i = 0; i < 4; i += 1) expect(v2.create('zombie', i).choice).toBe(choix.persos[variants.zombie.variants[i].id].variante);
+    expect(p.choice).toBe('epoque-A');
+    for (let i = 0; i < 4; i += 1) expect(v2.create('zombie', i).choice).toBe(resolu.slots[variants.zombie.variants[i].id]);
   });
   it('choices() : variante, style, tenues et macros appliqués, sans rien construire', () => {
     const v2 = kitFor(readPersosParams('', choix));
     const c = v2.choices();
     expect(Object.keys(c).sort()).toEqual([...SLOTS].sort());
-    expect(c.marcheur).toMatchObject({ variante: 'riche', style: 'A', macros: { taille: 0, carrure: 0, usure: 0, teinte: 0, posture: 0 } });
-    expect(c.marcheur.tenues).toHaveLength(6);
-    expect(c.joueur.tenues).toEqual(['sable']);
+    expect(c.marcheur).toMatchObject({ variante: 'epoque-A+epoque-B', style: 'A', macros: { taille: 0, carrure: 0, usure: 0, teinte: 0, posture: 0 } });
+    expect(c.marcheur.tenues).toHaveLength(12); // lot 9g : six tenues de A puis six de B
+    expect(c.joueur.tenues).toEqual(['standard']);
     expect(v2.textureCount()).toBe(0);
   });
   it('« actuel » dans la table (lot 5e : inconnu) : personnage v2 de la variante A (handles vrai)', () => {
@@ -275,11 +287,14 @@ describe('aiguillage par personnage (character-v2.js, persos-runtime.js)', () =>
   it('état du jeu (getState().persos) : variante de chaque personnage et réglages appliqués', () => {
     stubs();
     const params = readPersosParams('', choix);
-    const pv = createPersos(params, { characters, poses, blood: load('blood'), choices: choix }, { computePose: () => ({}), createKit: () => ({}), createCharacter: () => null });
+    const pv = createPersos(params, { characters, poses, blood: load('blood'), choices: choix, epoque, epoqueChoix }, { computePose: () => ({}), createKit: () => ({}), createCharacter: () => null });
+    pv.choisirPersonnage('personnage-2'); // lot 9g : personnage joué (sauvegarde) : parachutiste radio
     pv.attach({ kit: { variants: variants.zombie.variants }, world: { dynamic: new THREE.Group() }, render: load('render'), palette: { hit: '#ffffff' }, variants, seed: 3 });
     const st = pv.state({});
-    expect(st).toMatchObject({ perso: 'choix', sang: '1', architecture: 'rigid', slots: params.slots });
-    expect(st.choix.voute.variante).toBe('riche');
+    expect(st).toMatchObject({ perso: 'choix', sang: '1', architecture: 'rigid', slots: params.slots, personnage: 'personnage-2' });
+    expect(st.slots.joueur).toBe('para-B');
+    expect(st.choix.voute.variante).toBe('epoque-A+epoque-B');
+    expect(pv.data.characters.slots.find((s) => s.id === 'joueur').variants.some((v) => v.id === 'para-B')).toBe(true); // game.js : tenue des armes
   });
 });
 
@@ -318,7 +333,10 @@ describe('rampants dans les escaliers', () => {
 describe('projection du budget avec la table des choix', () => {
   const choiceOf = choicesOf(choix);
   it('choicesOf lit la variante de chaque personnage (inconnue : A, comme le jeu depuis le lot 5e)', () => {
-    expect(choiceOf('grand')).toBe('riche');
+    // Lot 9g : l'outil de projection ne connaît que les variantes actuelles (« epoque » : A, son repli) ; le budget des variantes d'époque est
+    // projeté dans persos-epoque.test.js (riche + 10 % au plus) et mesuré par scripts/perf/mesurer.mjs.
+    expect(choiceOf('grand')).toBe('A');
+    expect(choicesOf({ persos: { grand: { variante: 'riche' } } })('grand')).toBe('riche');
     expect(choicesOf({ persos: { grand: { variante: 'X' } } })('grand')).toBe('A');
   });
   it.each(['R1', 'R2', 'U1', 'U4'])('%s projeté (défaut, sang de la table) : sous 45 000 triangles et 400 appels', (id) => {

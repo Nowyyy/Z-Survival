@@ -10,7 +10,8 @@ const json = (path) => fetch(path).then((r) => {
 const NO_POSE = Object.freeze({}); // personnages v2 : la pose v1 n'est pas calculée (setPose lit l'entrée de la pose)
 export const v2Model = { computePose: () => NO_POSE, createKit: ({ variants }) => ({ variants: variants.zombie.variants }), createCharacter: (kit, kind, variant) => kit.v2.create(kind, variant) };
 // Lot 3m : blood-fx.js (maillages et atlas du sang) n'est importé que si le sang peut servir (?sang=0 explicite : jamais).
-const v2Files = (fx) => [import('./persos-runtime.js'), json('data/game/characters-v2.json'), json('data/game/poses-v2.json'), json('data/game/blood.json'), fx ? import('./blood-fx.js') : null];
+// Lot 9g : variantes d'époque (recettes et choix) lues avec les données des personnages ; absentes ou illisibles : variantes actuelles.
+const v2Files = (fx) => [import('./persos-runtime.js'), json('data/game/characters-v2.json'), json('data/game/poses-v2.json'), json('data/game/blood.json'), fx ? import('./blood-fx.js') : null, json('data/game/persos-epoque.json').catch(() => null), json('data/game/persos-epoque-choix.json').catch(() => null)];
 
 export async function loadPersos(search, { corpses = null } = {}) { // lot 5b : corpses = cadavres du préréglage graphique (null : blood.json)
   const wanted = needsChoices(search);
@@ -22,8 +23,8 @@ export async function loadPersos(search, { corpses = null } = {}) { // lot 5b : 
   const params = readPersosParams(search, choices);
   const model = v2Model;
   if (!params.active) return { params, model, attach: () => null };
-  const [runtime, characters, poses, blood, fx] = await (early ?? Promise.all(v2Files(params.sang !== '0')));
+  const [runtime, characters, poses, blood, fx, epoque, epoqueChoix] = await (early ?? Promise.all(v2Files(params.sang !== '0')));
   if (Number.isInteger(corpses) && blood?.levels?.[params.sang]) blood.levels[params.sang].corpses = corpses; // copie lue à l'instant : blood.json n'est pas modifié
   const bloodFx = params.sang === '0' ? null : fx ?? (await import('./blood-fx.js'));
-  return Object.assign(runtime.createPersos(params, { characters, poses, blood, choices, bloodFx }), { model });
+  return Object.assign(runtime.createPersos(params, { characters, poses, blood, choices, bloodFx, epoque, epoqueChoix }), { model });
 }

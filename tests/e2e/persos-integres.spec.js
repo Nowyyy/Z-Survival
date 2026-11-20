@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { readFileSync } from 'node:fs';
 import { parseZones, zonesToWorld } from '../../js/core/zones.js';
+import { resoudreEpoque } from '../../js/core/persos-variants.js';
 
 // Lot 3m : les personnages choisis (data/game/persos-choix.json) sont le défaut du jeu ; lot 5e : l'ancien modèle (?perso=actuel) est retiré.
 // 667 × 375, step() et hooks de ?test=1 ; suite rapide (fin de la liste ESSENTIAL de playwright.config.js).
@@ -10,7 +11,10 @@ const S = (page) => page.evaluate(() => window.__zs.getState());
 const load = (p) => JSON.parse(readFileSync(p, 'utf8'));
 const CHOIX = load('data/game/persos-choix.json');
 const SLOTS = ['joueur', 'marcheur', 'petit', 'voute', 'grand'];
-const EXPECTED = Object.fromEntries(SLOTS.map((s) => [s, CHOIX.persos[s].variante]));
+// Lot 9g (GO du propriétaire) : la table nomme « epoque » ; variantes attendues en jeu = celles résolues comme le jeu (Survivant A, zombies A et B
+// mélangés ; niveau simple avec ?perso=A ; B, C, riche : variantes actuelles, pour comparer).
+const resolus = (perso) => resoudreEpoque({ characters: load('data/game/characters-v2.json'), epoque: load('data/game/persos-epoque.json'), choixJson: load('data/game/persos-epoque-choix.json'), table: CHOIX, perso, slots: Object.fromEntries(SLOTS.map((s) => [s, perso === 'choix' ? CHOIX.persos[s].variante : perso])) }).slots;
+const EXPECTED = resolus('choix');
 const OLD = ['/js/core/pose.js', '/js/game/character.js']; // lot 5e : fichiers supprimés, jamais demandés
 const zw = zonesToWorld(parseZones(load('data/game/maps/rez-de-chaussee/zones.json')), load('data/game/maps/rez-de-chaussee/world.json').transform);
 const DEPART = zw.stairs.find((s) => s.id === 'escalier-depart');
@@ -71,7 +75,7 @@ test.describe('personnages intégrés (choix par défaut)', () => {
       await page.evaluate(() => window.__zs.step(0.3));
       const s = await S(page);
       expect(s.persos).toMatchObject({ perso: 'choix', sang: CHOIX.sang, slots: EXPECTED, architecture: 'rigid' });
-      for (const id of SLOTS) expect(s.persos.choix[id]).toMatchObject({ variante: CHOIX.persos[id].variante, style: CHOIX.persos[id].style });
+      for (const id of SLOTS) expect(s.persos.choix[id]).toMatchObject({ variante: EXPECTED[id], style: CHOIX.persos[id].style }); // lot 9g : variante résolue
       expect(s.pose).toMatchObject({ choice: EXPECTED.joueur, slot: 'joueur' });
       for (const e of s.enemies) expect(e.pose.choice).toBe(EXPECTED[e.pose.slot]);
       expect(new Set(s.enemies.map((e) => e.pose.slot))).toEqual(new Set(T));
@@ -80,6 +84,7 @@ test.describe('personnages intégrés (choix par défaut)', () => {
       await page.evaluate(() => window.__zs.step(0.7));
       for (const f of OLD) expect(files).not.toContain(f);
       expect(files).toContain('/data/game/persos-choix.json');
+      expect(files).toEqual(expect.arrayContaining(['/data/game/persos-epoque.json', '/data/game/persos-epoque-choix.json'])); // lot 9g
       expect(files).toContain('/js/game/character-v2.js');
       testInfo.annotations.push({ type: 'réseau', description: `${new Set(files.filter((f) => /\.js$/.test(f))).size} fichiers JavaScript` });
     });
@@ -138,14 +143,15 @@ test.describe('personnages intégrés (choix par défaut)', () => {
   });
 
   for (const v of ['A', 'B', 'C', 'riche']) {
-    test(`?perso=${v} force la variante pour les 5 personnages`, async ({ page }) => {
+    test(`?perso=${v} force la variante (ou son niveau d'époque) pour les 5 personnages`, async ({ page }) => {
       await open(page, `&perso=${v}&nospawn=1`);
       await spawnTen(page);
       await page.evaluate(() => window.__zs.step(0.3));
       const s = await S(page);
-      expect(s.persos.slots).toEqual(Object.fromEntries(SLOTS.map((id) => [id, v])));
-      expect(s.pose.choice).toBe(v);
-      for (const e of s.enemies) expect(e.pose.choice).toBe(v);
+      const attendu = resolus(v); // lot 9g : ?perso=A = niveau simple des variantes d'époque ; B, C, riche : variantes actuelles
+      expect(s.persos.slots).toEqual(attendu);
+      expect(s.pose.choice).toBe(attendu.joueur);
+      for (const e of s.enemies) expect(e.pose.choice).toBe(attendu[e.pose.slot]);
     });
   }
 

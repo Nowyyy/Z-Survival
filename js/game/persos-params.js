@@ -6,7 +6,8 @@ export const PERSO_VALUES = ['choix', 'A', 'B', 'C', 'riche'];
 export const SANG_VALUES = ['0', 'reduit', '1'];
 export const USURE_VALUES = ['auto', '0', '1', '2', '3'];
 export const SLOTS = ['joueur', 'marcheur', 'petit', 'voute', 'grand'];
-export const VARIANTES = ['A', 'B', 'C', 'riche'];
+// Lot 9g : « epoque » (table seulement) : variante d'époque retenue dans data/game/persos-epoque-choix.json, résolue par persos-runtime.js.
+export const VARIANTES = ['A', 'B', 'C', 'riche', 'epoque'];
 export const REPLI = 'A'; // lot 5e : variante d'un personnage quand la table manque ou nomme une variante inconnue
 export const DEFAULTS = { perso: 'choix', sang: '0', usure: 'auto' };
 

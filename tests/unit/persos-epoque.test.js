@@ -2,7 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { characterStats, silhouetteMetrics } from '../../js/core/character-parts.js';
 import { contrast } from '../../js/core/color.js';
-import { NIVEAUX_EPOQUE, SUFFIXE_SIMPLE, buildEpochVariant, lireChoixEpoque, paletteColor, partRgb, resolveVariant, slotsWithEpoch } from '../../js/core/persos-variants.js';
+import { NIVEAUX_EPOQUE, SUFFIXE_SIMPLE, buildEpochVariant, lireChoixEpoque, melangeEpoque, paletteColor, partRgb, resolveVariant, resoudreEpoque, slotsWithEpoch } from '../../js/core/persos-variants.js';
+import { LIMITS, characterCost, crowdCost, project } from '../../scripts/personnages/projection.mjs';
 import { EPOQUE_KINDS, PALETTE_REGION, PALETTE_REGION_EPOQUE, REGION_KINDS, createPersoTexture, persoRegionRect, persoSpec, regionFactor, regionOfPalette } from '../../js/core/texgen-persos.js';
 import { characters, floorsWithStains, gameView, lookup, skeletons, tokens, v2Pose, variantChecks } from '../../scripts/personnages/lib.mjs';
 
@@ -212,8 +213,45 @@ describe('fichier de choix (data/game/persos-epoque-choix.json)', () => {
     expect(lireChoixEpoque({ choix: { grand: 'epoque-C', 'personnage-2': 'para-C' } }, epoque, PERSOS, SLOT)).toMatchObject({ grand: 'epoque-C', 'personnage-2': 'para-C', marcheur: 'epoque-A' });
     expect(lireChoixEpoque({}, null, ['marcheur'])).toEqual({ marcheur: null });
   });
-  it('le jeu ne lit encore aucune variante d\'époque (partie B : table du jeu inchangée)', () => {
+  // Lot 9g (partie C, après « GO 9g ») : la table du jeu nomme « epoque » ; résolution comme en jeu (resoudreEpoque).
+  it('jeu : niveau complet (?perso=choix), simple (?perso=A, Moyen et Faible), actuel pour comparer (?perso=B, C, riche), personnage joué', () => {
     const table = JSON.parse(readFileSync('data/game/persos-choix.json', 'utf8'));
-    for (const p of Object.values(table.persos)) expect(['A', 'B', 'C', 'riche']).toContain(p.variante);
+    for (const p of Object.values(table.persos)) expect(p.variante).toBe('epoque');
+    const all = (v) => Object.fromEntries(['joueur', 'marcheur', 'petit', 'voute', 'grand'].map((k) => [k, v]));
+    const r = (perso, personnage) => resoudreEpoque({ characters, epoque, choixJson, table, perso, slots: all(perso === 'choix' ? 'epoque' : perso), personnage });
+    expect(r('choix').slots).toEqual({ joueur: 'epoque-A', marcheur: 'epoque-A+epoque-B', petit: 'epoque-A+epoque-B', voute: 'epoque-A+epoque-B', grand: 'epoque-A+epoque-B' });
+    expect(r('choix', 'personnage-2').slots.joueur).toBe('para-B');
+    expect(r('choix', 'personnage-5').slots.joueur).toBe('epoque-A');
+    expect(r('A').slots).toEqual({ joueur: 'epoque-A-simple', marcheur: 'epoque-A-simple+epoque-B-simple', petit: 'epoque-A-simple+epoque-B-simple', voute: 'epoque-A-simple+epoque-B-simple', grand: 'epoque-A-simple+epoque-B-simple' });
+    for (const v of ['B', 'C', 'riche']) expect(r(v).slots).toEqual(all(v));
+    expect(r('choix').tenuesJoueur).toEqual(['standard']);
+    expect(resoudreEpoque({ characters, epoque: null, choixJson, table, perso: 'choix', slots: all('epoque') }).slots).toEqual(all('A'));
+  });
+  it('mélange A + B : douze tenues (six de chaque, palette de leur variante), pièces de chaque tenue identiques à celles de sa variante', () => {
+    const r = resoudreEpoque({ characters, epoque, choixJson, table: JSON.parse(readFileSync('data/game/persos-choix.json', 'utf8')), perso: 'choix', slots: { joueur: 'epoque', marcheur: 'epoque', petit: 'epoque', voute: 'epoque', grand: 'epoque' } });
+    for (const z of ['marcheur', 'petit', 'voute', 'grand']) {
+      const sl = r.characters.slots.find((x) => x.id === z);
+      const mix = sl.variants.find((v) => v.id === 'epoque-A+epoque-B');
+      expect(mix.outfits).toHaveLength(12);
+      ['epoque-A', 'epoque-B'].forEach((id, k) => {
+        const v = sl.variants.find((x) => x.id === id);
+        for (let o = 0; o < 6; o += 1) {
+          const a = resolve(mix, { outfit: k * 6 + o });
+          const b = resolve(v, { outfit: o });
+          expect(a.parts.map((p) => p.id).sort()).toEqual(b.parts.map((p) => p.id).sort());
+          expect(a.palette).toEqual(b.palette);
+          expect(characterStats(a, { skeletons }).triangles).toBe(characterStats(b, { skeletons }).triangles);
+        }
+      });
+      for (const k of GARDES) expect(mix[k]).toEqual(sl.variants.find((x) => x.id === 'riche')[k]);
+    }
+    expect(melangeEpoque([])).toBe(null);
+  });
+  it('projection de la scène (R1, R2, U1, U4) : personnages actuels « riche » + 10 % au plus, sous 45 000 triangles et 400 appels', () => {
+    for (const [id, p] of Object.entries(project(() => 'riche', '1'))) {
+      const extra = 0.1 * crowdCost(() => 'riche').triangles + 2 * 0.1 * characterCost('marcheur', 'riche').triangles;
+      expect(p.triangles + extra, id).toBeLessThanOrEqual(LIMITS.refonte.triangles);
+      expect(p.calls, id).toBeLessThanOrEqual(LIMITS.refonte.calls);
+    }
   });
 });

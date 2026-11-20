@@ -3,17 +3,18 @@
 // de tokens.css). Animations du jeu (marche lente qui boite, attente, touché, chute) pilotées par la chronologie (js/core/ouverture.js : instant).
 // Retour du propriétaire (« qu'ils ressemblent aux zombies de base de la partie, avec des textures ») : mêmes réglages que la partie par défaut
 // (?perso=choix) : table data/game/persos-choix.json lue par les fonctions du jeu (slotVariants, choiceOptions : variante « riche », tenues tirées,
-// macros), usure d'une manche moyenne (wearTier), textures du jeu (atlas de createV2Kit).
+// macros), usure d'une manche moyenne (wearTier), textures du jeu (atlas de createV2Kit). Lot 9g : variante « epoque » (resoudreEpoque).
 import * as THREE from 'three';
 import { createV2Kit } from '../../game/character-v2.js';
 import { createTokenLookup, readPalette } from '../../game/palette.js';
 import { slotVariants } from '../../game/persos-params.js';
 import { choiceOptions } from '../../game/persos-runtime.js';
-import { wearTier } from '../../core/persos-variants.js';
+import { resoudreEpoque, wearTier } from '../../core/persos-variants.js';
 
 const json = (path) => fetch(path).then((r) => (r.ok ? r.json() : Promise.reject(new Error(path))));
 let donnees = null;
-export const prechargerZombies = () => (donnees ??= Promise.all(['data/game/characters-v2.json', 'data/game/poses-v2.json', 'data/game/zombie-variants.json', 'data/game/persos-choix.json'].map(json)));
+// Lot 9g : variantes d'époque (recettes et choix, comme la partie) ; absentes ou illisibles : variantes actuelles.
+export const prechargerZombies = () => (donnees ??= Promise.all([...['data/game/characters-v2.json', 'data/game/poses-v2.json', 'data/game/zombie-variants.json', 'data/game/persos-choix.json'].map(json), ...['data/game/persos-epoque.json', 'data/game/persos-epoque-choix.json'].map((p) => json(p).catch(() => null))]));
 
 // Types de zombies montrés (emplacements du jeu) : un marcheur et un voûté (qui boite).
 const TYPES = ['marcheur', 'voute'];
@@ -46,10 +47,13 @@ function raviver(root) {
 }
 
 export async function creerZombies({ graine = 7 } = {}) {
-  const [characters, poses, variants, choix] = await prechargerZombies();
+  const [base, poses, variants, choix, epoque, epoqueChoix] = await prechargerZombies();
   const ids = variants.zombie.variants.map((v) => v.id);
   const palette = readPalette();
-  const slots = slotVariants('choix', choix);
+  // Lot 9g : soldats d'époque, comme la partie au niveau complet (zombies A et B mélangés, tenues des deux).
+  const ep = resoudreEpoque({ characters: base, epoque, choixJson: epoqueChoix, table: choix, perso: 'choix', slots: slotVariants('choix', choix) });
+  const characters = ep.characters;
+  const slots = ep.slots;
   const usure = wearTier(MANCHE, characters.wearByWave);
   const kit = createV2Kit({ characters, poses, lookup: createTokenLookup(), hit: palette.hit, choice: 'choix', styleOf: slots, ...choiceOptions({ perso: 'choix', slots }, choix), zombieIds: ids, seed: graine, wear: () => usure });
   const liste = [];

@@ -56,7 +56,8 @@ describe('leviers de chargement', () => {
     const p = await loadPersos('');
     expect(p.params.sang).toBe('1');
     expect(evaluated).toHaveBeenCalled();
-    expect(calls.slice(0, 4).sort()).toEqual(['data/game/blood.json', 'data/game/characters-v2.json', 'data/game/persos-choix.json', 'data/game/poses-v2.json']);
+    // Lot 9g : les recettes et le choix d'époque partent avec les données des personnages, avant la table.
+    expect(calls.slice(0, 6).sort()).toEqual(['data/game/blood.json', 'data/game/characters-v2.json', 'data/game/persos-choix.json', 'data/game/persos-epoque-choix.json', 'data/game/persos-epoque.json', 'data/game/poses-v2.json']);
   });
   it('persos-runtime.js n\'importe plus blood-fx.js de façon statique (il le reçoit du chargeur)', () => {
     expect(read('js/game/persos-runtime.js')).not.toMatch(/^import .*blood-fx/m);
@@ -100,8 +101,9 @@ describe('leviers de chargement', () => {
 });
 
 describe('retours du propriétaire (passation du lot 3j) : présents par défaut', () => {
-  it('« riche » pour les cinq personnages et sang complet par défaut (table des choix)', () => {
-    expect(Object.values(choix.persos).map((c) => c.variante)).toEqual(['riche', 'riche', 'riche', 'riche', 'riche']);
+  // Lot 9g (GO du propriétaire) : « epoque » remplace « riche » (même niveau de détail : variante riche d'origine + pièces d'époque).
+  it('« epoque » pour les cinq personnages et sang complet par défaut (table des choix)', () => {
+    expect(Object.values(choix.persos).map((c) => c.variante)).toEqual(['epoque', 'epoque', 'epoque', 'epoque', 'epoque']);
     expect(readPersosParams('', choix).sang).toBe('1');
   });
   it('morts selon le côté touché : de face, le zombie tombe en arrière', () => {

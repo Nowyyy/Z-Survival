@@ -296,3 +296,74 @@ export function lireChoixEpoque(json, epoque, cles, slotOf = (c) => c) {
     return [cle, Array.isArray(v) && pick.length > 1 ? pick : pick[0]];
   }));
 }
+
+// Lot 9g (partie C) : mélange de variantes d'époque d'un même emplacement (zombies A et B) en une seule variante dont les tenues sont celles
+// de chaque variante à la suite (palette de la variante comprise dans chaque tenue) : le kit tire une tenue à chaque apparition parmi toutes,
+// jamais deux fois la même à la suite ; une seule texture et une seule fusion par tenue. Les variantes doivent partager leur variante d'origine
+// (même niveau) : sinon, la première seule. Pièces identiques regroupées (tenues réunies).
+export const SEPARATEUR_MELANGE = '+';
+export function melangeEpoque(variants, id = null) {
+  const list = (Array.isArray(variants) ? variants : []).filter((v) => v && Array.isArray(v.parts));
+  if (list.length === 0) return null;
+  const same = list.filter((v) => v.base === list[0].base && v.niveau === list[0].niveau);
+  if (same.length === 1) return same[0];
+  const parts = [];
+  const index = new Map();
+  const outfits = [];
+  let offset = 0;
+  for (const v of same) {
+    const n = Math.max(1, v.outfits.length);
+    const all = Array.from({ length: n }, (_, i) => i);
+    for (const p of v.parts) {
+      const { outfits: own, ...rest } = p;
+      const key = JSON.stringify(rest);
+      const idx = (Array.isArray(own) ? own : all).map((i) => i + offset);
+      if (index.has(key)) index.get(key).outfits.push(...idx);
+      else {
+        const entry = { ...rest, outfits: idx };
+        index.set(key, entry);
+        parts.push(entry);
+      }
+    }
+    v.outfits.forEach((o) => outfits.push({ id: `${v.id}:${o.id}`, label: `${v.label} — ${o.label}`, palette: { ...obj(v.palette), ...obj(o.palette) } }));
+    offset += n;
+  }
+  const total = outfits.length;
+  const cleaned = parts.map((p) => (p.outfits.length === total ? Object.fromEntries(Object.entries(p).filter(([k]) => k !== 'outfits')) : p));
+  return { ...same[0], id: id ?? same.map((v) => v.id).join(SEPARATEUR_MELANGE), label: same.map((v) => v.label).join(' + '), intent: same.map((v) => v.intent).join(' / '), parts: cleaned, palette: { ...obj(same[0].palette) }, outfits, melange: same.map((v) => v.id) };
+}
+
+// Lot 9g (partie C) : variantes d'époque retenues pour la partie. table : data/game/persos-choix.json (variante « epoque » : celle de
+// data/game/persos-epoque-choix.json) ; perso : ?perso= effectif (« choix » : niveau complet ; « A » : préréglages Moyen et Faible, niveau simple ;
+// B, C, riche : variante actuelle pour comparer, rien n'est changé) ; slots : variantes lues dans la table ou l'adresse ; personnage : personnage
+// joué (menu, sauvegarde ; inconnu : survivant). Renvoie { slots (emplacement → id de variante), characters (emplacements avec les variantes
+// d'époque et les mélanges), tenuesJoueur ([id] ou null) }. Données absentes ou invalides : les variantes actuelles, sans exception.
+export const PERSONNAGES_EPOQUE = ['survivant', 'personnage-2'];
+export function resoudreEpoque({ characters, epoque, choixJson, table, perso, slots, personnage } = {}) {
+  const c = obj(characters);
+  const sl = { ...obj(slots) };
+  const persos = obj(obj(table).persos);
+  const level = perso === 'choix' ? 'complet' : perso === 'A' ? 'simple' : null;
+  const wanted = Object.keys(sl).filter((s) => obj(persos[s]).variante === 'epoque');
+  if (!epoque || !Array.isArray(c.slots) || wanted.length === 0) return { slots: Object.fromEntries(Object.entries(sl).map(([k, v]) => [k, v === 'epoque' ? 'A' : v])), characters: c, tenuesJoueur: null };
+  const qui = PERSONNAGES_EPOQUE.includes(personnage) ? personnage : 'survivant';
+  const keyOf = (s) => (s === 'joueur' ? qui : s);
+  const choix = lireChoixEpoque(choixJson, epoque, wanted.map(keyOf), (k) => (PERSONNAGES_EPOQUE.includes(k) ? 'joueur' : k));
+  const merged = slotsWithEpoch(c.slots, epoque);
+  const suffix = level === 'simple' ? SUFFIXE_SIMPLE : '';
+  const out = merged.map((s) => {
+    if (!wanted.includes(s.id) || level === null) return s;
+    const ids = [choix[keyOf(s.id)]].flat().filter(Boolean).map((x) => `${x}${suffix}`);
+    if (ids.length < 2) return s;
+    const mix = melangeEpoque(ids.map((x) => s.variants.find((v) => v.id === x)));
+    return mix ? { ...s, variants: [...s.variants, mix] } : s;
+  });
+  for (const s of Object.keys(sl)) {
+    if (sl[s] === 'epoque') sl[s] = 'A';
+    if (!wanted.includes(s) || level === null) continue;
+    const ids = [choix[keyOf(s)]].flat().filter(Boolean).map((x) => `${x}${suffix}`);
+    if (ids.length) sl[s] = ids.length > 1 ? ids.join(SEPARATEUR_MELANGE) : ids[0];
+  }
+  const tenue = obj(obj(choixJson).tenues)[qui];
+  return { slots: sl, characters: { ...c, slots: out }, tenuesJoueur: level !== null && wanted.includes('joueur') && typeof tenue === 'string' ? [tenue] : null };
+}

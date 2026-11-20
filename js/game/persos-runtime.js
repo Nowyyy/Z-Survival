@@ -3,7 +3,7 @@
 // (js/game/game.js) ; chaque personnage est construit par kit.v2 (modèle du chargeur, js/game/persos-loader.js).
 import { settings, woundTier } from '../core/blood.js';
 import { floorOf } from '../core/floors.js';
-import { wearTier } from '../core/persos-variants.js';
+import { resoudreEpoque, wearTier } from '../core/persos-variants.js';
 import { createV2Kit } from './character-v2.js';
 import { createTokenLookup } from './palette.js';
 
@@ -78,19 +78,32 @@ export function createPersos(params, data) {
     return mark(c);
   }
   const giveCorpse = (c) => pools.get(c.variant)?.push(c);
+  // Lot 9g : personnage joué (menu, sauvegarde : survivant, personnage-2 ; autre ou inconnu : survivant), lu avant attach.
+  let personnage = 'survivant';
 
   return {
     params,
     data: { characters: data.characters, poses: data.poses }, // lot 9e : squelette et poses du joueur (tenue des armes, js/core/armes/tenue-jeu.js)
+    choisirPersonnage(id) {
+      personnage = typeof id === 'string' ? id : 'survivant';
+    },
     // Appelé une fois après createKit : kit.v2 aiguille createCharacter vers les personnages v2 ; le sang est posé dans world.dynamic.
     attach({ kit: k, world, render, palette, variants, seed, sansPistolet = false }) {
       kit = k;
       dynamic = world.dynamic;
       const lookup = createTokenLookup();
       if (params.v2) {
+        // Lot 9g : variantes d'époque (table « epoque » : persos-epoque-choix.json ; niveau complet avec ?perso=choix, simple avec A) ; le joueur
+        // selon le personnage joué ; zombies A et B mélangés en une variante (tenues des deux). params.slots et data.characters reçoivent les
+        // variantes résolues (game.js : tenue des armes du joueur, état des tests).
+        const ep = resoudreEpoque({ characters: data.characters, epoque: data.epoque, choixJson: data.epoqueChoix, table: data.choices, perso: params.perso, slots: params.slots, personnage });
+        params.slots = ep.slots;
+        this.data.characters = ep.characters;
+        const options = choiceOptions(params, data.choices);
+        if (ep.tenuesJoueur) options.outfitsOf = { ...(options.outfitsOf ?? {}), joueur: ep.tenuesJoueur };
         // Lot 3m : variante de chaque personnage (params.slots) ; avec ?perso=choix, macros, style, macros
         // d'animation et tenues de la table des choix.
-        v2 = createV2Kit({ ...(params.corpsAvant ? { corps: null } : {}), sansPistolet, characters: data.characters, poses: data.poses, lookup, hit: palette.hit, choice: params.perso, styleOf: params.slots, ...choiceOptions(params, data.choices), zombieIds: variants.zombie.variants.map((v) => v.id), seed, wear, sill: render.sillHeight });
+        v2 = createV2Kit({ ...(params.corpsAvant ? { corps: null } : {}), sansPistolet, characters: ep.characters, poses: data.poses, lookup, hit: palette.hit, choice: params.perso, styleOf: params.slots, ...options, zombieIds: variants.zombie.variants.map((v) => v.id), seed, wear, sill: render.sillHeight });
         kit.v2 = v2;
         // Lot 5b-G : la première tenue de chaque zombie est préparée tout de suite (derrière l'écran de préparation), les autres pendant les temps libres.
         for (let i = 0; i < variants.zombie.variants.length; i += 1) if (v2.handles('zombie', i)) v2.prewarm(i, 0);
@@ -183,7 +196,7 @@ export function createPersos(params, data) {
       const b = blood?.stats() ?? { particles: 0, decals: 0, corpses: 0, calls: 0, triangles: 0, drawnParticles: 0, drawnDecals: 0, corpseMeshes: 0 };
       return {
         perso: params.perso, sang: params.sang, usure: params.usure, wear: wear(), architecture: 'rigid',
-        characters: { joueur: params.slots.joueur, zombies }, slots: { ...params.slots }, choix: v2?.choices() ?? null, blood: { particules: b.particles, taches: b.decals, cadavres: b.corpses, calls: b.calls, triangles: b.triangles, dessines: { particules: b.drawnParticles, taches: b.drawnDecals } },
+        characters: { joueur: params.slots.joueur, zombies }, slots: { ...params.slots }, personnage, choix: v2?.choices() ?? null, blood: { particules: b.particles, taches: b.decals, cadavres: b.corpses, calls: b.calls, triangles: b.triangles, dessines: { particules: b.drawnParticles, taches: b.drawnDecals } },
         textures: v2 ? { count: v2.textureCount(), bytes: v2.textureBytes() } : null, render: { ...render },
       };
     },
