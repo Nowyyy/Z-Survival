@@ -231,7 +231,7 @@ describe('fichiers versionnés = sortie du script (aucune retouche à la main)',
     // Lot 9h (retours du propriétaire, intérieur) : collisions recalées sur le dessin (js/core/collisions-dessin.js) : marches des escaliers, meubles
     // dont un bord reculait d'au moins 6 ; mêmes obstacles sinon, dans le même ordre.
     const planOut = JSON.parse(JSON.stringify(out.world));
-    const pieces = Object.values(JSON.parse(files.mobilier).pieces).filter((p) => p.floor === 'rdc');
+    const pieces = Object.entries(JSON.parse(files.mobilier).pieces).map(([id, p]) => ({ id, ...p, obstacle: p.obstacle.includes('+') || !planOut.obstacles.some((q) => q.id === p.obstacle) ? planOut.obstacles.concat(solides).find((q) => (q.parts ?? [q.id]).includes(id))?.id ?? p.obstacle : p.obstacle })).filter((p) => p.floor === 'rdc');
     const zw = zonesToWorld(parseZones(JSON.parse(readFileSync('data/game/maps/rez-de-chaussee/zones.json', 'utf8'))), planOut.transform);
     const escaliers = planOut.stairs.map((s) => {
       const z = zw.stairs.find((q) => q.id === s.role);

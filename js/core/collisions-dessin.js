@@ -61,9 +61,11 @@ const r1 = (v) => Math.round(v * 10) / 10;
 // Rectangles alignés couvrant les marches : chaque marche coupée en `tranches` dans sa largeur, chaque tranche → son rectangle englobant.
 // Escalier droit (toutes les marches dans la même direction) : un seul rectangle, celui de toutes les marches (un zombie posé dedans en ressort
 // par le bord le plus proche ; plusieurs petits rectangles le retiendraient).
-export function rectsMarches(walk, { tranches = TRANCHES, ...opts } = {}) {
+// depuis : fraction de la montée à partir de laquelle les marches comptent (0 : toutes ; lot 9h, tirs : partie haute seulement).
+export function rectsMarches(walk, { tranches = TRANCHES, depuis = 0, ...opts } = {}) {
   const rects = [];
-  const liste = marches(walk, opts);
+  const n = opts.n ?? MARCHES;
+  const liste = marches(walk, opts).filter((m, i) => i / n >= depuis - 1e-9);
   const droit = liste.length > 0 && liste.every((m) => Math.abs(m.dx * liste[0].dy - m.dy * liste[0].dx) < 0.02 && m.dx * liste[0].dx + m.dy * liste[0].dy > 0);
   if (droit) tranches = 1;
   for (const m of liste) {
@@ -141,13 +143,17 @@ function horsZone(r, z) {
   return { x: r1(garde.x), y: r1(garde.y), w: r1(garde.w), h: r1(garde.h) };
 }
 
-// Obstacles d'un étage recalés sur le dessin. obstacles : world.json → obstacles ; pieces : pièces de mobilier.world.json de cet étage ({ obstacle, boxes }) ;
+// Obstacles d'un étage recalés sur le dessin. obstacles : world.json → obstacles ; pieces : pièces de mobilier.world.json de cet étage ({ id, obstacle, boxes }) ;
 // escaliers : [{ id (obstacle), walk, interdits: [rects] (zones de déclenchement) }] (rez-de-chaussée) ; murs : rectangles des murs (segmentRects) ;
 // min : couloir minimal (params.json → minCorridor, 50). Les interstices plus étroits que min sont refermés (au contact). → { obstacles, rapport }.
 export function recalerObstacles(obstacles, { pieces = [], escaliers = [], murs = [], min = 50 } = {}) {
   const rapport = [];
   const parObstacle = new Map();
-  for (const p of pieces) if (p && typeof p.obstacle === 'string' && Array.isArray(p.boxes)) parObstacle.set(p.obstacle, [...(parObstacle.get(p.obstacle) ?? []), ...p.boxes]);
+  const parPiece = new Map();
+  for (const p of pieces) if (p && typeof p.obstacle === 'string' && Array.isArray(p.boxes)) {
+    parObstacle.set(p.obstacle, [...(parObstacle.get(p.obstacle) ?? []), ...p.boxes]);
+    if (typeof p.id === 'string') parPiece.set(p.id, p.boxes);
+  }
   const liste = Array.isArray(obstacles) ? obstacles : [];
   const escalierDe = (o) => escaliers.find((e) => o.id === e.id || o.id.startsWith(`${e.id}.`));
   const base = (o) => (escalierDe(o)?.id ?? o.id);
@@ -172,6 +178,22 @@ export function recalerObstacles(obstacles, { pieces = [], escaliers = [], murs 
       nouveaux.push({ o, rects: [o], fixe: true });
       continue;
     }
+    // Meuble fusionné (plusieurs pièces du plan, « M33+M34+M35 ») : une collision par pièce, celle de son dessin, à la hauteur de son dessin (retour du
+    // propriétaire : le comptoir de la salle de F1 bloquait le vide entre ses deux comptoirs et son tabouret ; les gravats bas, fusionnés avec une
+    // étagère, arrêtaient les tirs). Bornée au rectangle du meuble ; interstices refermés à la seconde passe (entre pièces sœurs aussi).
+    const parts = Array.isArray(o.parts) ? o.parts : [];
+    if (parts.length > 1 && parts.some((id) => parPiece.get(id)?.length)) {
+      for (const id of parts) {
+        const bx = parPiece.get(id);
+        if (!bx || bx.length === 0) continue;
+        const x0 = Math.max(o.x, Math.floor(Math.min(...bx.map((b) => b.x0)) * 2) / 2);
+        const x1 = Math.min(o.x + o.w, Math.ceil(Math.max(...bx.map((b) => b.x1)) * 2) / 2);
+        const y0 = Math.max(o.y, Math.floor(Math.min(...bx.map((b) => b.z0)) * 2) / 2);
+        const y1 = Math.min(o.y + o.h, Math.ceil(Math.max(...bx.map((b) => b.z1)) * 2) / 2);
+        nouveaux.push({ o, meuble: true, piece: id, hauteur: Math.ceil(Math.max(...bx.map((b) => b.y1))), rects: [{ x: r1(x0), y: r1(y0), w: r1(x1 - x0), h: r1(y1 - y0) }] });
+      }
+      continue;
+    }
     // Bord recalé seulement s'il recule d'au moins SEUIL (vrai mur invisible) ; arrondi vers l'extérieur au demi : le dessin reste dans la collision.
     const bord = (plan, dessin, sens) => (Math.abs(dessin - plan) >= SEUIL ? (sens < 0 ? Math.floor(dessin * 2) / 2 : Math.ceil(dessin * 2) / 2) : plan);
     const x0 = bord(o.x, Math.max(o.x, Math.min(...boxes.map((b) => b.x0))), -1);
@@ -181,10 +203,11 @@ export function recalerObstacles(obstacles, { pieces = [], escaliers = [], murs 
     nouveaux.push({ o, meuble: true, rects: [{ x: r1(x0), y: r1(y0), w: r1(x1 - x0), h: r1(y1 - y0) }] });
   }
   // Seconde passe : interstices refermés contre les murs et les autres obstacles (jamais entre morceaux d'un même escalier), zones de déclenchement libres.
-  const tous = () => nouveaux.flatMap((n) => n.rects.map((r) => ({ ...r, cle: n.esc?.id ?? n.o.id })));
+  const cleDe = (n) => n.esc?.id ?? n.piece ?? n.o.id;
+  const tous = () => nouveaux.flatMap((n) => n.rects.map((r) => ({ ...r, cle: cleDe(n) })));
   for (const n of nouveaux) {
     if (n.fixe) continue;
-    const cle = n.esc?.id ?? n.o.id;
+    const cle = cleDe(n);
     const voisins = [...murs, ...tous().filter((r) => r.cle !== cle)];
     n.rects = n.rects.map((r) => fermer(r, voisins, min, n.meuble ? { x: n.o.x, y: n.o.y, w: n.o.w, h: n.o.h } : null));
     if (n.esc) n.rects = n.rects.map((r) => (n.esc.interdits ?? []).reduce((q, z) => (q ? horsZone(q, z) : q), r)).filter(Boolean);
@@ -202,6 +225,11 @@ export function recalerObstacles(obstacles, { pieces = [], escaliers = [], murs 
     }
     const r = n.rects[0];
     const o = n.o;
+    if (n.piece) {
+      out.push({ ...o, id: n.piece, ...r, hauteur: Math.min(num(o.hauteur, n.hauteur), n.hauteur), parts: [n.piece], fusion: o.id });
+      rapport.push({ id: n.piece, avant: { x: o.x, y: o.y, w: o.w, h: o.h, fusion: o.id }, apres: { ...r, hauteur: n.hauteur } });
+      continue;
+    }
     if (Math.abs(r.x - o.x) + Math.abs(r.y - o.y) + Math.abs(r.w - o.w) + Math.abs(r.h - o.h) > 1) {
       rapport.push({ id: o.id, avant: { x: o.x, y: o.y, w: o.w, h: o.h }, apres: r });
       out.push({ ...o, ...r });

@@ -91,7 +91,10 @@ test.describe('budgets de rendu avec le détail (27 300 triangles et 84 appels a
       // Lot 9h : personnages d'époque du lot 9g (&perso=A = niveau simple des soldats) : + 284 (R3), + 296 (U1), + 472 (U4) triangles mesurés sur origin/dev
       // d43689a (écart présent avant ce lot, comme EPOQUE_SIMPLE d'argent.spec.js) ; les autres scènes restent dans la tolérance.
       const LOT_9G = { R3: 284, U1: 296, U4: 472 }[id] ?? 0;
-      const ecarts = [EPAVES, EPAVES - HELI_TOLE].flatMap((e) => [e, e + SACS]).flatMap((e) => [e, e + LOT_9G]).map((e) => Math.abs(off.triangles - e - ref[1]));
+      // Lot 9h (retours du propriétaire, collisions de l'intérieur) : les meubles fusionnés sont découpés en leurs pièces (js/core/collisions-dessin.js) ;
+      // sans le détail (?detail=0), chaque pièce a son propre modèle de secours : + 204 à + 240 triangles mesurés selon la scène (avec le détail : dessin inchangé).
+      const LOT_9H = { R1: 214, R2: 214, R3: 204, U1: 204, U4: 204, V2: 240 }[id] ?? 0;
+      const ecarts = [EPAVES, EPAVES - HELI_TOLE].flatMap((e) => [e, e + SACS]).flatMap((e) => [e, e + LOT_9G]).flatMap((e) => [e, e + LOT_9H]).map((e) => Math.abs(off.triangles - e - ref[1]));
       expect(Math.min(...ecarts)).toBeLessThanOrEqual(80); // lot 5a : + les triangles des épaves
       expect(off.calls).toBeLessThanOrEqual(ref[0] + 3);
       expect(off.calls).toBeGreaterThanOrEqual(ref[0] - 1);

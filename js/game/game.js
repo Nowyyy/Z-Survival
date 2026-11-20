@@ -22,7 +22,7 @@ import { applyHeal, canFire, canHealOnKill, canMove, createPlayerDown, isInvulne
 import { effectivePlayer, effectiveWeapon, normalizeLevels, STAT_IDS, statValues } from '../core/player-stats.js';
 import { createBullet, stepBullets } from '../core/projectile.js';
 import { castRay, departLibre } from '../core/ray.js';
-import { longueursCone, obstaclesTirs, preparerTirs } from '../core/tir-traverse.js';
+import { hautsEscaliers, longueursCone, obstaclesTirs, preparerTirs } from '../core/tir-traverse.js';
 import { createRng } from '../core/rng.js';
 import { shotAngle, speedRatio, spreadHalfAngle, stepSpreadRatio, toRadians } from '../core/spread.js';
 import { zoneZombie } from '../core/gabarit.js';
@@ -102,6 +102,7 @@ export function createGame(ctx) {
   // jusqu'au bord du monde. Salle du lot 1m (?empty=1) : les limites de la salle, comme avant. Lot 3c : les portes fermées arrêtent aussi les balles et le laser (sans
   // dégâts) ; la liste suit l'état des portes et l'étage du joueur (syncSolids). Lot 3e : ce sont toujours les solides de l'étage du joueur.
   let blockers = [];
+  let blockersHaut = []; // lot 9h : blockers + partie haute des escaliers (rez-de-chaussée, joueur hors de l'escalier) ; voir tirsBloc
   const tirs = preparerTirs(cfg.tirs, layouts); // lot 8j : tirs par-dessus les objets bas et à travers les grilles (null : liste d'avant)
   let playerSolids = layout.playerObstacles;
   // Lot 3 : les fenêtres ont des planches (siège par les zombies) ; la salle du lot 1m (?empty=1) n'a ni planches ni siège. Lot 3e : tout ce qui est par étage (grilles de
@@ -128,6 +129,7 @@ export function createGame(ctx) {
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const fadeOptions = { fadeOut: stairCfg.fadeOut, fadeIn: stairCfg.fadeIn, fadeLockReduced: stairCfg.fadeLockReduced, reduced };
   const stairsWorld = multi ? layouts.stairs : [];
+  const hautsEsc = tirs ? hautsEscaliers(stairsWorld) : []; // lot 9h : la partie haute des escaliers arrête les tirs (js/core/tir-traverse.js) ; sans tirs : comme avant
 
   let renderer;
   try {
@@ -286,9 +288,11 @@ export function createGame(ctx) {
   }
   // Départ des balles et du laser : le bout du canon de l'arme tenue (retour du propriétaire après le lot 9e), ramené devant un mur ou un
   // obstacle des tirs quand le joueur s'y colle (le canon long ne tire jamais de l'autre côté) ; corps d'avant : exactement le point d'avant.
+  // Obstacles des tirs : dans un escalier, le joueur tire comme au lot 3e (aucune marche ne l'arrête) ; ailleurs, la partie haute des escaliers compte.
+  const tirsBloc = () => (sim.sw === null ? blockersHaut : blockers);
   const boucheJoueur = (angle, w, bounds) => {
     const m = muzzlePoint(sim.player, angle, w.muzzleOffset, bounds, w.muzzleSide ?? 0);
-    return armesAvant || !sim.inv ? m : departLibre(sim.player, m, shotBounds, blockers);
+    return armesAvant || !sim.inv ? m : departLibre(sim.player, m, shotBounds, tirsBloc());
   };
   let armesApi = null; // méthodes de la partie (recharger, changerArme), pour les boutons de l'interface des armes
   let etaitASec = false;
@@ -373,6 +377,7 @@ export function createGame(ctx) {
     const l = layoutOf(pf());
     playerSolids = [...l.playerObstacles, ...closedDoors(l, open)];
     blockers = obstaclesTirs(l, closedDoors(l, open), tirs); // lot 8j : sans tirs, exactement la liste d'avant
+    blockersHaut = pf() === 'rdc' && hautsEsc.length > 0 ? [...blockers, ...hautsEsc] : blockers;
   }
   const activeIdsNow = () => (zoneCfg ? activeWindows(zoneCfg, zoneOf, openIds()) : geoms.map((g) => g.id));
   const allSpawnPoints = () => layouts.floors.flatMap((f) => (layoutOf(f).spawnPoints ?? layoutOf(f).windows).map((p) => ({ ...p, floor: f })));
@@ -752,14 +757,15 @@ export function createGame(ctx) {
     // Laser : sert à viser et à déclencher le tir, jamais aux dégâts.
     const muzzle = boucheJoueur(sim.aim.angle, weapon, layout.muzzleBounds);
     const cibles = zones();
-    const ray = castRay(muzzle, sim.aim.angle, weapon.laserRange, cibles, shotBounds, blockers, pf());
+    const bloc = tirsBloc();
+    const ray = castRay(muzzle, sim.aim.angle, weapon.laserRange, cibles, shotBounds, bloc, pf());
     // Lot 9e : pas de laser pendant un changement d'arme ou un rechargement, ni pendant le court délai qui le suit (partie M) : aucun tir possible.
-    laser = !firing || (sim.inv && (sim.inv.sortie || enRecharge(sim.inv) || enAttente(sim.inv))) ? null : { from: muzzle, ray, cone: { angle: sim.aim.angle, half: toRadians(halfAngle()), length: weapon.laserRange, lengths: longueursCone(muzzle, sim.aim.angle, toRadians(halfAngle()), weapon.laserRange, shotBounds, blockers) } }; // cône arrêté comme le laser
+    laser = !firing || (sim.inv && (sim.inv.sortie || enRecharge(sim.inv) || enAttente(sim.inv))) ? null : { from: muzzle, ray, cone: { angle: sim.aim.angle, half: toRadians(halfAngle()), length: weapon.laserRange, lengths: longueursCone(muzzle, sim.aim.angle, toRadians(halfAngle()), weapon.laserRange, shotBounds, bloc) } }; // cône arrêté comme le laser
     // Le tir part aussi quand la visée passe sur un ennemi au-delà de la portée du laser (le trait s'estompe, la balle continue) ;
     // un ennemi caché derrière un meuble ne déclenche jamais de tir.
     // Marge de visée : le tir part si la ligne passe à moins de aimTolerance du bord d'un ennemi ; la balle suit la vraie visée et peut le rater.
     const wide = cibles.map((e) => ({ ...e, r: e.r + num(weapon.aimTolerance) }));
-    const aimed = firing && (ray.hit !== null || castRay(muzzle, sim.aim.angle, weapon.fireRange, wide, shotBounds, blockers, pf()).hit !== null);
+    const aimed = firing && (ray.hit !== null || castRay(muzzle, sim.aim.angle, weapon.fireRange, wide, shotBounds, bloc, pf()).hit !== null);
 
     // Lot 9e : armes portées (changement, rechargement) ; le tir ne part que si l'arme active le permet (ni changement, ni rechargement, une
     // cartouche au moins). Le fusil à pompe tire plusieurs plombs, chacun tiré dans le cône (même tirage que la balle unique).
@@ -830,7 +836,7 @@ export function createGame(ctx) {
     }
 
     // Balles : les dégâts n'existent qu'à l'impact.
-    const flight = stepBullets(sim.bullets, zones(), dt, shotBounds, blockers);
+    const flight = stepBullets(sim.bullets, zones(), dt, shotBounds, tirsBloc());
     sim.bullets = flight.bullets;
     const typeOf = new Map(sim.enemies.map((e) => [e.id, e.type]));
     const result = applyImpacts(sim.enemies, flight.impacts);

@@ -5,7 +5,7 @@ import { deepFreeze, WEIRD } from './helpers/carte.js';
 
 const world = JSON.parse(readFileSync('data/game/maps/rez-de-chaussee/world.json', 'utf8'));
 const REG = { table: 'bois', comptoir: 'tole', caisse: 'caisse', armoire: 'bois-sombre', etagere: 'etagere' };
-const furniture = world.obstacles.filter((o) => !['pilier', 'escalier', 'bidon'].includes(o.kind)); // lot 9h (retours) : bidons solides, dessinés par le décor léger (aucun modèle de meuble)
+const furniture = world.obstacles.filter((o) => !['pilier', 'escalier', 'bidon'].includes(o.kind) && !o.fusion); // lot 9h (retours) : bidons solides (décor léger) et pièces de meubles fusionnés (dessinées d'après le modèle) exclus // lot 9h (retours) : bidons solides, dessinés par le décor léger (aucun modèle de meuble)
 const tris = (p) => [...p.body, ...p.detail].reduce((n, b) => n + (b.faces === 'cotes' ? 8 : 10), 0);
 
 describe('modèles de meubles : blocs, chaises, armoires', () => {

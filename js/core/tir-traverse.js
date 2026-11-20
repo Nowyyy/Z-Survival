@@ -7,6 +7,7 @@
 // Sans données (null : ?test=1&tirtraverse=0, ancienne salle) : la liste d'obstacles des tirs est exactement celle d'avant le lot.
 
 import { castRay } from './ray.js';
+import { rectsMarches } from './collisions-dessin.js';
 
 const FLOORS = ['rdc', 'etage'];
 const isNum = (v) => typeof v === 'number' && Number.isFinite(v);
@@ -80,6 +81,22 @@ export function obstaclesTirs(couche, portesFermees, prep) {
   if (!p) return [...meubles, ...couche.walls, ...decor, ...portesFermees];
   const garde = (o) => !p.ids.has(o.id);
   return [...meubles.filter(garde), ...couche.walls.flatMap((w) => p.murs.get(w.id) ?? [w]), ...decor.filter(garde), ...portesFermees];
+}
+
+// Lot 9h (retour du propriétaire : « le laser traverse les escaliers ») : depuis le lot 3e, l'emprise d'un escalier ne bloque aucun tir (on tire sur
+// les zombies qui marchent dans l'escalier, et depuis l'escalier). Au rez-de-chaussée, la partie haute de chaque escalier arrête maintenant les tirs :
+// les marches à partir de TIRS_ESCALIER_DEPUIS de la montée (dessinées à 0,6 × floorLift = 108 et plus, au-dessus de l'arme). Plus bas, les tirs
+// passent toujours : un zombie de l'escalier n'est au rez-de-chaussée que jusqu'à 0,52 de la montée (stair-walk.js, SWAP_UP), le bas de son corps
+// est donc toujours hors de la partie haute : il reste touchable comme au lot 3e (plus haut, il est à l'étage : aucun tir du rez-de-chaussée). Rend [{ id, x, y, w, h, kind: 'escalier-haut' }] (escaliers de zonesToWorld, walk en unités).
+export const TIRS_ESCALIER_DEPUIS = 0.6;
+export function hautsEscaliers(stairs, depuis = TIRS_ESCALIER_DEPUIS) {
+  const out = [];
+  for (const st of Array.isArray(stairs) ? stairs : []) {
+    if (!st?.walk || typeof st.id !== 'string') continue;
+    const walk = { path: (st.walk.path ?? []).map((q) => (Array.isArray(q) ? { x: q[0], y: q[1], t: q[2] } : q)), width: st.walk.width };
+    rectsMarches(walk, { depuis }).forEach((r, k) => out.push({ id: k === 0 ? `${st.id}-haut` : `${st.id}-haut.${k + 1}`, ...r, kind: 'escalier-haut' }));
+  }
+  return out;
 }
 
 // npm run carte : vérifie la liste du propriétaire (data/game/tirs-traversables.json, une carte : { rdc: [ids], etage: [ids] }) et rend le

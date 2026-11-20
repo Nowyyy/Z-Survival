@@ -23,6 +23,7 @@ describe('règles de la carte : couloirs et interstices', () => {
     const base = (o) => String(o.id).replace(/\.\d+$/, '');
     for (const [a, b] of pairs) {
       if (a.kind === 'escalier' && b.kind === 'escalier' && base(a) === base(b)) continue;
+      if (a.fusion && a.fusion === b.fusion) continue; // lot 9h (retours) : pièces d'un même meuble fusionné, découpé sur son dessin (comme les morceaux d'un escalier)
       const g = rectGap(a, b);
       expect(g === 0 || g >= world.minCorridor, `${a.id} / ${b.id} : ${g}`).toBe(true);
       expect(overlapArea(a, b), `${a.id} / ${b.id}`).toBe(0);

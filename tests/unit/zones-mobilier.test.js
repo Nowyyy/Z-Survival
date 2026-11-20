@@ -91,7 +91,7 @@ describe('mobilier de complément : plan.json, source unique', () => {
   it('chaque pièce ajoutée est dans world.json (seule ou dans un bloc), avec son origine, sans avoir été retirée', () => {
     expect(addedWorld.length).toBeGreaterThanOrEqual(added.length - 4);
     for (const o of addedWorld) {
-      const parts = (o.parts ?? [o.id]).map((id) => plan.furniture.find((f) => f.id === id)).filter(Boolean);
+      const parts = (o.fusion ? o.fusion.split('+') : o.parts ?? [o.id]).map((id) => plan.furniture.find((f) => f.id === id)).filter(Boolean); // lot 9h : pièce d'un meuble fusionné : le bloc entier
       expect(o.provisional === true || parts.every((f) => f.source === 'modele' || ORIGINAL.includes(f.id)), o.id).toBe(true);
       expect(o.provisional === true, o.id).toBe(parts.some((f) => f.provisional === true));
     }
@@ -140,6 +140,7 @@ describe('mobilier de complément : règles de la carte, zone par zone, porte fe
     const base = (o) => String(o.id).replace(/\.\d+$/, ''); // lot 3g : morceaux d'une même emprise d'escalier (voir maps-regles)
     for (const [a, b] of pairs) {
       if (a.kind === 'escalier' && b.kind === 'escalier' && base(a) === base(b)) continue;
+      if (a.fusion && a.fusion === b.fusion) continue; // lot 9h (retours) : pièces d'un même meuble fusionné, découpé sur son dessin
       const gap = rectGap(a, b);
       expect(gap === 0 || gap >= world.minCorridor, `${a.id} / ${b.id} : ${gap}`).toBe(true);
       expect(overlapArea(a, b), `${a.id} / ${b.id}`).toBe(0);

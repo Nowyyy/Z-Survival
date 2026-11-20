@@ -109,7 +109,7 @@ test.describe('zones : mobilier de complément, budget, interface', () => {
       zs.setInput({});
       return { x: p.x, right: q.x + q.w, laser };
     }, [o]);
-    const haute = added.find((o) => o.id === 'P3+R-G37');
+    const haute = added.find((o) => o.id === 'R-G39'); // lot 9h (retours) : P3+R-G37 est découpé en ses pièces (gravats bas, étagère) ; R-G39 (étagère de 70, pièce de P1+P2+R-G39) sert de pièce haute
     const r = await essai(haute);
     expect(r.x).toBeGreaterThanOrEqual(r.right + 18 - 1);
     expect(r.laser.stoppedBy).toBe(haute.id);
