@@ -15,7 +15,7 @@
 ## Tests adaptés
 - Nouveaux : `empreinte.test.js`, `cache-adresses.test.js`, `cache.spec.js`, test de l'archiveur. Adaptés sans perte d'assertion : `publication.spec.js` (`site-info.json` avec ou sans `?v=` ; lot-9f dans les évolutions), `debug-menu.spec.js` et `canal.spec.js` (paramètre inconnu `x=` au lieu de `v=`, réservé), `liberation.test.js` (`info`), `data-changelog.test.js` (lot-9f).
 ## CI
-- `lot-9f` : Tests verts sur B (`44627666121`) et C (`44634680814`, ≈ 7 min) ; fusion et CI de `dev` : message final.
+- `lot-9f` : Tests verts sur B (`44627666121`), C (`44634680814`, ≈ 7 min) et D (`44638724405`) ; après la fusion de `origin/dev`, `44637141556` en échec (liste des évolutions du site de test, corrigée en D). Fusion par [Nowyyy/Z-Survival#172](https://github.com/Nowyyy/Z-Survival/pull/172) (`f00f71d`) : Tests et Pages de `dev` verts ; `/dev/jeu.html` porte `f00f71d`, comme `dev/build-info.json`.
 ## Points ouverts
 - `site-info.json` garde le cache normal (accueil jusqu'à 10 min en retard) ; les liens vers le jeu sont toujours neufs.
 ## Idées
@@ -27,4 +27,4 @@
 ## Passages du seed à réécrire par le propriétaire
 - « Publication par versions » et l'état de la V0.9 : cache des navigateurs fait (empreinte, vérification au démarrage, bandeau au retour au menu).
 ## À faire par moi
-1. Après le déploiement, ouvrir `…/Recette/` puis « Dernier build de développement » sur PC et téléphone : la version affichée (« V0.9 · dev ») doit être la dernière, sans Ctrl+Maj+R. 2. Rapporter les retours.
+1. Après le déploiement, ouvrir `…/Recette/` puis « Dernier build de développement » sur PC et téléphone : la version affichée (« V0.9 · dev ») doit être la dernière, sans Ctrl+Maj+R (une dernière fois peut-être, si le navigateur garde une page `/dev/` d'avant le lot) ; la Recette en profitera à la publication de `main`. 2. Rapporter les retours.

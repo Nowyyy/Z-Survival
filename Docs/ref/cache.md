@@ -1,6 +1,7 @@
 # Cache des navigateurs (lot 9f)
 
 Relevé et plan écrits en partie A (base `origin/dev` `622df2c`), avant tout changement du site.
+**État (fin du lot)** : plan réalisé tel quel en parties B et C (bilan : `Docs/lots/lot-9f.md`) ; en ligne sur `/dev/` depuis `f00f71d` ; `/Recette/` à la publication de `main`. Déclarations du contrôle : `DECLARATIONS` de `scripts/site/empreinte.mjs`.
 
 ## En-têtes servis par Pages (`curl -I`, 19/11/2026)
 - `/dev/jeu.html`, `/Recette/`, `/dev/js/menu/demarrage.js`, `/dev/build-info.json` : `cache-control: max-age=600`, `expires` (+10 min), `etag` et `last-modified` identiques pour tout le déploiement (heure du déploiement), `vary: Accept-Encoding`, `access-control-allow-origin: *`.
