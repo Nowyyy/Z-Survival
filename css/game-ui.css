@@ -983,8 +983,8 @@
 }
 
 /* Téléphone (partie S) : sous les deux emplacements d'armes, centré, dans la marge du bas (les emplacements et le bouton de rechargement ne
-   bougent pas) : bloc d'une ligne exacte (1 em, la marge en fait 16 px), posé sur la zone de sécurité du bas. Le bouton montre la balle :
-   pas d'icône ici. */
+   bougent pas) : bloc d'une ligne exacte (1 em, la marge en fait 16 px), posé sur la zone de sécurité du bas ; icône de la balle comme sur
+   ordinateur (partie U). */
 #game-root[data-input="touch"] .hud-ammo {
   right: auto;
   left: 50%;
@@ -998,11 +998,13 @@
   text-align: center;
 }
 
-
-
 #game-root[data-input="touch"] .hud-ammo .hud-icon {
-  display: none;
+  width: 0.9em;
+  height: 0.9em; /* dans la ligne d'un em : l'espace de 4 px sous les emplacements reste libre */
 }
+
+
+
 
 /* Largeur fixe du nombre de balles (parties R et S : « toujours la même taille ») : celle du texte le plus long de toutes les armes
    (--ammo-largeur, en ch, posée par js/game/armes-ui.js), chiffres de même largeur : le bloc ne change de taille ni pendant les tirs ni d'une

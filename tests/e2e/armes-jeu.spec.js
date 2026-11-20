@@ -313,6 +313,7 @@ test.describe('emplacements d\'armes et rechargement sur téléphone (parties E,
     await page.touchscreen.tap(200, 300);
     await expect(page.locator('#game-root')).toHaveAttribute('data-input', 'touch');
     await expect(page.locator('#btn-recharger')).toBeVisible();
+    await expect(page.locator('#hud-ammo .hud-icon')).toBeVisible(); // partie U : icône de la balle comme sur ordinateur
     const slot1 = page.locator('#arme-slot-1');
     const slot2 = page.locator('#arme-slot-2');
     await expect(slot1).toHaveAttribute('aria-pressed', 'true'); // le Colt en main
@@ -674,7 +675,7 @@ test('pas chassé : visée en haut, marche à gauche : le joueur reste tourné v
 
 // Retours du propriétaire, partie T : « Recharge » dans la colonne centrale du haut (là où s'affiche le compte à rebours « À terre ») ; aura
 // blanche quand les zombies proches sont repoussés (chute, relevage).
-test('« Recharge » sous la vague, comme le compte à rebours « À terre » ; aura blanche au repoussement des zombies (puis elle s\'efface)', async ({ page }) => {
+test('« Recharge » sous la vague, comme le compte à rebours « À terre » ; aura blanche quand il se relève (pas à la chute), puis elle s\'efface', async ({ page }) => {
   await page.goto('/jeu.html?test=1&seed=2&nospawn=1&map=salle&lum=off&vhs=0');
   await waitReady(page);
   await page.evaluate(() => {
@@ -700,19 +701,26 @@ test('« Recharge » sous la vague, comme le compte à rebours « À terre » ; 
   expect(m.y).toBeGreaterThanOrEqual(vague.y + vague.height - 1);
   await page.evaluate(() => { for (let i = 0; i < 60; i += 1) window.__zs.step(0.05); });
   await expect(page.locator('#hud-ammo-state')).toBeHidden();
-  // Aura : lancée à la chute (repoussement), visible, puis effacée après 0,5 s.
+  // Aura (partie U) : jamais à la chute ; lancée quand il se relève (repoussement), puis effacée après 0,5 s.
   const aura = await page.evaluate(async () => {
     const zs = window.__zs;
     const image = () => new Promise((ok) => requestAnimationFrame(() => requestAnimationFrame(ok)));
     zs.downPlayer();
     zs.step(0.05);
     await image();
-    const pendant = zs.getState().armes.aura;
-    for (let i = 0; i < 12; i += 1) zs.step(0.05);
+    const chute = zs.getState().armes.aura;
+    let i = 0;
+    while (i < 400 && zs.getState().player.down.state !== 'debout') {
+      zs.step(0.05);
+      i += 1;
+    }
+    const releve = zs.getState().armes.aura;
+    for (let k = 0; k < 12; k += 1) zs.step(0.05);
     await image();
-    return { pendant, apres: zs.getState().armes.aura };
+    return { chute, releve, apres: zs.getState().armes.aura, pas: i };
   });
-  expect(aura.pendant.lancees).toBe(1);
+  expect(aura.chute.lancees, JSON.stringify(aura)).toBe(0);
+  expect(aura.releve.lancees, JSON.stringify(aura)).toBe(1);
   expect(aura.apres.visible).toBe(false);
 });
 
