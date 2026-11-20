@@ -53,7 +53,9 @@ export function admitVoice(state, req, now, cfg) {
   const last = { ...(state?.last ?? {}) };
   const nextId = num(state?.nextId, 1);
   const minDelay = num(cfg?.minDelay?.[sound]);
-  if (minDelay > 0 && Object.hasOwn(last, sound) && t - last[sound] < minDelay) return { state: { voices, last, nextId }, play: false, reason: 'delai', stolen: null };
+  // Tolérance de 1 µs (lot 9e) : les pas du joueur tombent pile sur leur intervalle minimal (0,15 s) ; une somme d'images (1/60 s, 0,05 s)
+  // donne 0,1499999… et un pas sur deux était refusé (même tolérance que js/core/footsteps.js).
+  if (minDelay > 0 && Object.hasOwn(last, sound) && t - last[sound] < minDelay - 1e-6) return { state: { voices, last, nextId }, play: false, reason: 'delai', stolen: null };
   let stolen = null;
   let kept = voices;
   if (voices.length >= max) {

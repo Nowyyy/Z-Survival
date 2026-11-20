@@ -988,7 +988,7 @@
 #game-root[data-input="touch"] .hud-ammo {
   right: auto;
   left: 50%;
-  bottom: var(--safe-bottom);
+  bottom: max(0px, var(--safe-bottom) - var(--hud-gap)); /* partie T : un petit espace (4 px) sous les emplacements */
   height: 1em;
   line-height: 1;
   transform: translateX(-50%);
@@ -998,13 +998,7 @@
   text-align: center;
 }
 
-#game-root[data-input="touch"] .hud-ammo-state {
-  right: auto;
-  bottom: auto;
-  left: calc(100% + var(--hud-gap));
-  top: 0;
-  height: 1em;
-}
+
 
 #game-root[data-input="touch"] .hud-ammo .hud-icon {
   display: none;
@@ -1023,13 +1017,14 @@
   overflow: visible;
 }
 
-/* « Recharge », « À sec » : hors du bloc (sa taille ne change pas) ; au-dessus sur ordinateur, à droite du nombre sur téléphone. */
+/* « Recharge », « À sec » (partie T) : dans la colonne centrale du haut, sous la vague, là où s'affiche le compte à rebours « À terre » ; zone
+   pleine (le texte n'est jamais posé sur le jeu). */
+.hud-ammo-state[hidden] {
+  display: none;
+}
+
 .hud-ammo-state {
-  position: absolute;
-  right: 0;
-  bottom: calc(100% + var(--hud-gap));
-  padding: 0 0.35em;
-  background: color-mix(in srgb, var(--hud-bg) calc(var(--hud-bg-alpha) * 100%), transparent);
+  justify-content: center;
   font-family: var(--font-label);
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -1037,7 +1032,7 @@
 }
 
 .hud-ammo[data-etat="sec"] .hud-value,
-.hud-ammo[data-etat="sec"] .hud-ammo-state {
+.hud-ammo-state[data-etat="sec"] {
   color: var(--color-danger);
 }
 
@@ -1149,6 +1144,11 @@
 /* Rappels des touches 1 et 2 : jamais sur un écran tactile (partie R : ils restaient affichés jusqu'au premier toucher). */
 #game-root[data-input="touch"] .arme-slot-touche {
   display: none;
+}
+
+/* Téléphone sans zone de sécurité en bas (Android) : les emplacements montent juste de quoi laisser 4 px au-dessus du nombre de balles. */
+#game-root[data-input="touch"] .armes-slots {
+  bottom: calc(var(--game-margin) + var(--safe-bottom) + max(0px, var(--hud-gap) - var(--safe-bottom)));
 }
 
 @media (hover: none) and (pointer: coarse) {

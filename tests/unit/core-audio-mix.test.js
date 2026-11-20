@@ -152,3 +152,25 @@ describe('audio-mix.js : limite de voix et délais minimaux', () => {
     }
   });
 });
+
+// Lot 9e (retour du propriétaire : bruits de pas) : un pas qui tombe pile sur le délai minimal (somme d'images de 1/60 s ou de 0,05 s,
+// 0,1499999…) est joué ; avant, un pas sur deux était refusé en marche droite.
+describe('délai minimal : tolérance des sommes d\'images', () => {
+  it('pas toutes les 0,15 s en images de 1/60 s et de 0,05 s : tous joués ; un pas vraiment trop tôt reste refusé', () => {
+    const cfg = { maxVoices: 16, minDelay: { pas: 0.15 } };
+    for (const dt of [1 / 60, 0.05]) {
+      let state = createVoiceState();
+      let t = 0;
+      let joues = 0;
+      for (let pas = 0; pas < 20; pas += 1) {
+        for (let k = 0; k < Math.round(0.15 / dt); k += 1) t += dt;
+        const r = admitVoice(state, { sound: 'pas', priority: 1, duration: 0.1 }, t, cfg);
+        state = r.state;
+        if (r.play) joues += 1;
+      }
+      expect(joues, `images de ${dt}`).toBe(20);
+    }
+    const s0 = admitVoice(createVoiceState(), { sound: 'pas', priority: 1, duration: 0.1 }, 1, cfg).state;
+    expect(admitVoice(s0, { sound: 'pas', priority: 1, duration: 0.1 }, 1.1, cfg).play).toBe(false);
+  });
+});

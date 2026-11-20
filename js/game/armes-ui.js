@@ -11,8 +11,9 @@ import { fmt } from './texts.js';
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
 // dict : textes (fr.json) ; root : conteneur du jeu (#game) ; col : colonne du HUD où placer les munitions ; donnees : lireArmes() ; choix :
-// armes-choix.json ; annonce(texte) : région polie ; onRecharger() : bouton de rechargement ; onChoisir(i) : emplacement i choisi.
-export function createArmesUi({ dict, root, col, donnees, choix, annonce = () => {}, onRecharger = () => {}, onChoisir = () => {} }) {
+// armes-choix.json ; centre : colonne centrale du HUD (le message « Recharge » / « À sec » s'y affiche, à la place du message « À terre ») ;
+// annonce(texte) : région polie ; onRecharger() : bouton de rechargement ; onChoisir(i) : emplacement i choisi.
+export function createArmesUi({ dict, root, col, centre, donnees, choix, annonce = () => {}, onRecharger = () => {}, onChoisir = () => {} }) {
   const t = (k) => dict[k] ?? k;
   const ammo = document.createElement('p');
   ammo.id = 'hud-ammo';
@@ -30,11 +31,14 @@ export function createArmesUi({ dict, root, col, donnees, choix, annonce = () =>
   const texte = document.createElement('span');
   texte.id = 'hud-ammo-text';
   texte.classList.add('hud-value');
-  const etat = document.createElement('span');
+  // Partie T : « Recharge » / « À sec » dans la colonne centrale du haut, sous la vague, là où s'affiche le compte à rebours « À terre ».
+  const etat = document.createElement('p');
   etat.id = 'hud-ammo-state';
-  etat.classList.add('hud-ammo-state');
-  ammo.append(icone, nom, document.createTextNode(' '), texte, etat);
-  (root ?? col)?.append(ammo); // en bas à droite (au-dessus des boutons sur téléphone), hors de la bande du HUD
+  etat.classList.add('hud-block', 'hud-ammo-state');
+  etat.hidden = true;
+  ammo.append(icone, nom, document.createTextNode(' '), texte);
+  (root ?? col)?.append(ammo); // en bas à droite (sous les emplacements sur téléphone), hors de la bande du HUD
+  (centre ?? root ?? col)?.append(etat);
 
   const boutons = document.createElement('div');
   boutons.classList.add('armes-boutons');
@@ -132,6 +136,7 @@ export function createArmesUi({ dict, root, col, donnees, choix, annonce = () =>
         etat.textContent = st === 'sec' ? t('game.armes.aSec') : st === 'recharge' ? t('game.armes.recharge') : '';
         etat.hidden = st === '';
         ammo.dataset.etat = st;
+        etat.dataset.etat = st;
       }
       if (fois('slotsVus', e.visible !== false)) slots.hidden = e.visible === false;
       const ids = Array.isArray(e.slots) ? e.slots : [];
@@ -159,6 +164,7 @@ export function createArmesUi({ dict, root, col, donnees, choix, annonce = () =>
       recharger.removeEventListener('click', onR);
       cases.forEach((c, i) => c.b.removeEventListener('click', onS[i]));
       ammo.remove();
+      etat.remove();
       boutons.remove();
       slots.remove();
       visuels.clear();
