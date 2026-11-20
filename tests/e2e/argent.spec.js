@@ -891,6 +891,9 @@ test.describe('budget et performance', () => {
   // Lot 5e : références remesurées avec la variante A (&perso=A&sang=0, lot-5c 92e4556, épaves retirées ; avant : ancien modèle, retiré) ; plafonds
   // 27 300 triangles et 84 appels (au plus 25 805 et 72 mesurés, arrondis au millier et à la dizaine, + 5 % ; décision du propriétaire).
   const REF = { R1: [55, 13360], U1: [64, 14916] };
+  // Lot 9g : &perso=A est le niveau simple des variantes d'époque (soldats ; avant : variante A actuelle) : + 292 triangles mesurés dans les deux scènes
+  // contre origin/dev 7514702 (R1 14 033 → 14 325, U1 15 777 → 16 069 ; appels identiques), dans le +10 % par personnage du lot.
+  const EPOQUE_SIMPLE = 292;
   // Branche lot-3g (main récupéré) : l'atelier de la carte ajoute du rendu (mobilier, portes, feux, extérieur, brume). Le lot 4 n'ajoute rien : sans le détail de
   // l'atelier (?detail=0), la référence à quelques éléments près (+ 2 appels : nappes de brume ; + 1 : fenêtre ; triangles à 120 près) ; avec : les plafonds du projet.
   const measure = (page, mode) => page.evaluate((m) => {
@@ -918,7 +921,7 @@ test.describe('budget et performance', () => {
       expect(off.calls).toBeGreaterThanOrEqual(REF[name][0] - 1);
       expect(off.calls).toBeLessThanOrEqual(REF[name][0] + 3);
       // Lot 9a : la tôle et le rotor de l'hélicoptère (HELI_TOLE) ne sont plus dans le décor dessiné partout : comptés seulement s'il est dans le champ.
-      expect(Math.min(Math.abs(off.triangles - EPAVES - REF[name][1]), Math.abs(off.triangles - (EPAVES - HELI_TOLE) - REF[name][1]))).toBeLessThanOrEqual(120); // lot 5a : + les triangles des épaves
+      expect(Math.min(Math.abs(off.triangles - EPOQUE_SIMPLE - EPAVES - REF[name][1]), Math.abs(off.triangles - EPOQUE_SIMPLE - (EPAVES - HELI_TOLE) - REF[name][1]))).toBeLessThanOrEqual(120); // lot 5a : + les triangles des épaves ; lot 9g : + EPOQUE_SIMPLE
       await open(page, `/jeu.html?test=1&seed=1&shadows=1&perso=A&sang=0${extra}&lum=off`);
       const on = await measure(page, where);
       console.log(`BUDGET lot 4 / 3g ${name} : detail=0 ${off.calls} / ${off.triangles} ; detail=1 ${on.calls} / ${on.triangles} (référence ${REF[name].join(' / ')})`);
