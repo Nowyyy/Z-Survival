@@ -1,10 +1,11 @@
 {
-  "_provisoire": "Lot 3 : chutes du joueur, valeurs provisoires (équilibrage non jugé par l'agent). Lu par js/core/player-down.js. chutesBase : chutes au niveau 0 de la statistique « chutes » (même valeur que extra.chutes.base de player-stats.json).",
+  "_provisoire": "Lot 3 : chutes du joueur, valeurs provisoires (équilibrage non jugé par l'agent). Lu par js/core/player-down.js. chutesBase : chutes au niveau 0 de la statistique « chutes » (même valeur que extra.chutes.base de player-stats.json). Lot 9e (retour du propriétaire, partie V) : standUpToEdge : au relevage, les zombies du rayon sont repoussés jusqu'au bord du rayon (knockbackRadius, celui de l'aura) ; standUpDistance ne sert plus que sans lui.",
   "downDuration": 5,
   "standUpHealFraction": 0.5,
   "graceTime": 2,
   "knockbackRadius": 220,
   "fallDistance": 160,
   "standUpDistance": 200,
+  "standUpToEdge": true,
   "chutesBase": 1
 }

@@ -29,7 +29,7 @@ const sane = (down) => {
 };
 
 // vitals : { hp, maxHp }. Renvoie { down, hp, events, knockback } : events parmi 'fall', 'standup', 'death' ; knockback : null ou
-// { radius, distance, reason: 'fall' | 'standup' } (repoussement des zombies à appliquer par le jeu).
+// { radius, distance, reason: 'fall' | 'standup' } (repoussement des zombies à appliquer par le jeu) ; bord: true au relevage si standUpToEdge.
 export function stepPlayerDown(down, vitals, dt, params) {
   const step = clampDt(dt);
   const d = sane(down);
@@ -66,6 +66,8 @@ export function stepPlayerDown(down, vitals, dt, params) {
       d.pendingHeal = 0;
       events.push('standup');
       knockback = ball(params?.standUpDistance, 'standup');
+      // Lot 9e (retour du propriétaire, partie V : « les zombies expulsés à la même distance que l'aura ») : standUpToEdge : jusqu'au bord du rayon.
+      if (params?.standUpToEdge === true) knockback.bord = true;
     }
   } else hp = 0;
   return { down: d, hp, events, knockback };
@@ -97,11 +99,14 @@ export function applyHeal(hp, maxHp, fraction, down) {
 // plus, en s'arrêtant aux murs, aux meubles et aux fenêtres (même ouvertes). layout : { bounds, furniture, walls, gaps } (rectangles).
 // Les zombies hors de la salle ou en approche, attente, arrache, escalade ne bougent pas. Renvoie une nouvelle liste.
 // Lot 3e : seuls les zombies du même étage que center (champ floor, rez-de-chaussée par défaut) sont repoussés ; layout est la couche de cet étage.
+// Lot 9e (partie V) : params.bord === true : chacun est repoussé jusqu'au bord du rayon (à radius du centre, murs et meubles compris), pas de
+// distance unités : ils finissent tous sur l'anneau de l'aura.
 export function knockbackZombies(zombies, center, params, layout) {
   const cx = num(center?.x);
   const cy = num(center?.y);
   const radius = Math.max(0, num(params?.radius));
   const distance = Math.max(0, num(params?.distance));
+  const bord = params?.bord === true;
   const b = layout?.bounds;
   const solids = [...validRects(layout?.furniture), ...validRects(layout?.walls), ...validRects(layout?.gaps)];
   const bounds = b && [b.minX, b.minY, b.maxX, b.maxY].every(isNum) ? b : null;
@@ -116,7 +121,8 @@ export function knockbackZombies(zombies, center, params, layout) {
     if (Math.hypot(dx, dy) > radius) return z;
     // Superposé au centre : direction fixe, choisie d'après l'identifiant (déterministe).
     const away = Math.hypot(dx, dy) > 1e-9 ? normalize({ x: dx, y: dy }) : { x: num(z.id) % 2 === 0 ? 1 : -1, y: 0 };
-    const moved = moveWithCollision({ x: z.x, y: z.y, r: Math.max(0, num(z.r)) }, { x: away.x * distance, y: away.y * distance }, solids, typeof layout?.inside === 'function' ? undefined : bounds ?? undefined);
+    const pousse = bord ? radius - Math.hypot(dx, dy) : distance;
+    const moved = moveWithCollision({ x: z.x, y: z.y, r: Math.max(0, num(z.r)) }, { x: away.x * pousse, y: away.y * pousse }, solids, typeof layout?.inside === 'function' ? undefined : bounds ?? undefined);
     return { ...z, x: moved.x, y: moved.y };
   });
 }

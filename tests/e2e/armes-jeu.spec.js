@@ -674,7 +674,7 @@ test('pas chassé : visée en haut, marche à gauche : le joueur reste tourné v
 });
 
 // Retours du propriétaire, partie T : « Recharge » dans la colonne centrale du haut (là où s'affiche le compte à rebours « À terre ») ; aura
-// blanche quand les zombies proches sont repoussés (chute, relevage).
+// blanche quand les zombies proches sont repoussés (chute, relevage) ; partie V : repoussés jusqu'au bord de l'aura.
 test('« Recharge » sous la vague, comme le compte à rebours « À terre » ; aura blanche quand il se relève (pas à la chute), puis elle s\'efface', async ({ page }) => {
   await page.goto('/jeu.html?test=1&seed=2&nospawn=1&map=salle&lum=off&vhs=0');
   await waitReady(page);
@@ -705,6 +705,9 @@ test('« Recharge » sous la vague, comme le compte à rebours « À terre » ; 
   const aura = await page.evaluate(async () => {
     const zs = window.__zs;
     const image = () => new Promise((ok) => requestAnimationFrame(() => requestAnimationFrame(ok)));
+    const p0 = zs.getState().player;
+    zs.spawnEnemy(p0.x + 70, p0.y, { type: 'marcheur', gait: 'lent', wave: 3 });
+    zs.spawnEnemy(p0.x - 40, p0.y + 40, { type: 'marcheur', gait: 'lent', wave: 3 });
     zs.downPlayer();
     zs.step(0.05);
     await image();
@@ -715,12 +718,21 @@ test('« Recharge » sous la vague, comme le compte à rebours « À terre » ; 
       i += 1;
     }
     const releve = zs.getState().armes.aura;
+    const p = zs.getState().player;
+    const distances = zs.getState().enemies.map((e) => Math.hypot(e.x - p.x, e.y - p.y));
+    await image();
+    const glisse = zs.getState().armes.aura.reculs;
     for (let k = 0; k < 12; k += 1) zs.step(0.05);
     await image();
-    return { chute, releve, apres: zs.getState().armes.aura, pas: i };
+    return { chute, releve, distances, glisse, apres: zs.getState().armes.aura, pas: i };
   });
   expect(aura.chute.lancees, JSON.stringify(aura)).toBe(0);
   expect(aura.releve.lancees, JSON.stringify(aura)).toBe(1);
   expect(aura.apres.visible).toBe(false);
+  // Partie V : les zombies proches sont repoussés jusqu'au bord de l'aura (rayon 220, player-down.json), dessinés glissant jusque-là.
+  expect(aura.distances.length, JSON.stringify(aura)).toBe(2);
+  for (const d of aura.distances) expect(Math.abs(d - 220), JSON.stringify(aura)).toBeLessThan(1);
+  expect(aura.glisse).toBe(2);
+  expect(aura.apres.reculs).toBe(0);
 });
 

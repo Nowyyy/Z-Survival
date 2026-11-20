@@ -96,6 +96,27 @@ describe('animations : marche bras tendus, coup à sa vraie portée', () => {
       }
     }
   });
+  // Partie V (retour du propriétaire : « quand ils tapent, ils croisent les bras ») : attack.rentre des trois styles ; au corps long, les mains
+  // restent de leur côté pendant tout le coup (garde, élan, frappe), sans se toucher ; sans rentre (valeurs d'avant), elles se croisaient.
+  it.each(['marcheur', 'petit', 'voute', 'grand'])('%s : coup sans croiser les bras (styles A, B, C, corps long)', (id) => {
+    expect(poses.styles.A.attack.rentre).toEqual([0.15, 0.2, 0.2]);
+    const ecart = (style, data) => {
+      let min = Infinity;
+      for (let k = 0; k <= 40; k += 1) {
+        const v = varianteCorps({ ...riche(id), style }, corps);
+        const pose = poseAt(rigCorps(rigOf(v, skeletons), corps), 'attaque', k / 40, {}, data);
+        pose.scales = { ...pose.scales, ...echellesCorps(corps) };
+        const boxes = fkPose(v, pose, { skeletons }).boxes;
+        const g = boxes.filter((b) => b.joint === 'wristL');
+        const d = boxes.filter((b) => b.joint === 'wristR');
+        min = Math.min(min, Math.min(...g.map((b) => b.min[0])) - Math.max(...d.map((b) => b.max[0])));
+      }
+      return min;
+    };
+    for (const style of ['A', 'B', 'C']) expect(ecart(style, poses), style).toBeGreaterThan(2);
+    const avant = { ...poses, styles: { ...poses.styles, A: { ...poses.styles.A, attack: { ...poses.styles.A.attack, rentre: undefined } } } };
+    expect(ecart('A', avant)).toBeLessThan(0); // valeurs d'avant : mains croisées
+  });
   it('marche : mains levées devant (≥ 27 devant le marcheur au corps long, à hauteur de poitrine)', () => {
     expect(devant('marcheur', 'marche', 0.25)).toBeGreaterThan(27);
   });

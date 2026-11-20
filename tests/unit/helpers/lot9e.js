@@ -9,5 +9,7 @@ export const PERMIS_9E = Object.freeze({
   'js/core/projectile.js': 'balle contre la capsule d\'un rampant',
   'js/core/ray.js': 'laser contre la capsule d\'un rampant',
   'js/core/combat.js': 'coup d\'un rampant : distance à sa capsule',
+  'data/game/player-down.json': 'standUpToEdge ajouté (partie V : au relevage, zombies repoussés jusqu\'au bord de l\'aura), texte _provisoire complété',
+  'js/core/player-down.js': 'partie V : repoussement jusqu\'au bord du rayon (params.bord) ; sans bord : distance, comme avant',
 });
 export const hors9e = (list) => (Array.isArray(list) ? list.filter((f) => !Object.hasOwn(PERMIS_9E, f)) : list);

@@ -67,7 +67,7 @@ describe('player-down.js : machine d\'états', () => {
       const up = run(fall.down, 0, 5, maxHp);
       expect(up.hp).toBe(maxHp / 2);
       expect(up.down.grace).toBe(2);
-      expect(up.knocks).toEqual([{ radius: 220, distance: 200, reason: 'standup' }]);
+      expect(up.knocks).toEqual([{ radius: 220, distance: 200, reason: 'standup', bord: true }]); // partie V : jusqu'au bord de l'aura
     }
   });
 
@@ -189,6 +189,26 @@ describe('player-down.js : knockbackZombies', () => {
     const out = knockbackZombies([z(1, 1900, 1400)], center, params, room)[0];
     expect(out.x).toBeCloseTo(2060, 6);
     expect(out.y).toBeCloseTo(1400, 6);
+  });
+
+  // Lot 9e (partie V) : bord : chacun finit au bord du rayon (220 du centre), quelle que soit sa distance de départ ; sans bord, comme avant.
+  it('bord : chaque zombie du rayon finit à radius du centre ; hors du rayon, rien ; sans bord, distance', () => {
+    const list = [z(1, 1900, 1400), z(2, 1860, 1460), z(3, 1720, 1400), z(4, 2100, 1400)];
+    const out = knockbackZombies(list, center, { ...params, bord: true }, room);
+    for (const e of out.slice(0, 3)) expect(Math.hypot(e.x - center.x, e.y - center.y)).toBeCloseTo(220, 5);
+    expect(out[3]).toEqual(list[3]);
+    expect(knockbackZombies(list, center, { ...params, bord: 'oui' }, room)).toEqual(knockbackZombies(list, center, params, room));
+  });
+  it('relevage sans standUpToEdge : repoussement d\'avant (sans bord)', () => {
+    const sans = { ...cfg, standUpToEdge: undefined };
+    let d = stepPlayerDown(createPlayerDown(1), vit(0), 0.05, sans).down;
+    const knocks = [];
+    for (let i = 0; i < 100; i += 1) {
+      const out = stepPlayerDown(d, vit(0), 0.05, sans);
+      d = out.down;
+      if (out.knockback) knocks.push(out.knockback);
+    }
+    expect(knocks).toEqual([{ radius: 220, distance: 200, reason: 'standup' }]);
   });
 
   it('direction oblique : la distance parcourue est celle demandée', () => {

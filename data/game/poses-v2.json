@@ -1,5 +1,5 @@
 {
- "_provisoire": "Squelettes et animations des personnages du lot 3j (valeurs provisoires, purement visuelles). Angles en radians, Euler 'YXZ' de Three.js par articulation (x : flexion, positif = vers l'arrière pour les hanches et les épaules, vers l'avant pour la colonne et la tête ; y : torsion ; z : écart latéral). v1 : squelette actuel de js/game/character.js (pose.js) ; v2 : squelette du lot 3j (colonne en deux segments, cou, chevilles). range : plage articulaire [min, max] par axe ; rest : pose de repos (tous les angles nuls). Lot 9e (corps long, décision du propriétaire) : style A (celui de la partie) : marche « bras tendus » (walk.armL, armR : bras levés devant, coudes presque droits) et coup porté bras tendu à hauteur de poitrine, buste avancé (attack.strike 1,5, lunge 3) : au corps long, la main frappe à 30 devant le marcheur (28 le petit, 34 le grand), donc touche le torse du joueur à la distance du coup (r_joueur + r_zombie + 1 = 39) ; avant : 12 à 20 (coup dans le vide).",
+ "_provisoire": "Squelettes et animations des personnages du lot 3j (valeurs provisoires, purement visuelles). Angles en radians, Euler 'YXZ' de Three.js par articulation (x : flexion, positif = vers l'arrière pour les hanches et les épaules, vers l'avant pour la colonne et la tête ; y : torsion ; z : écart latéral). v1 : squelette actuel de js/game/character.js (pose.js) ; v2 : squelette du lot 3j (colonne en deux segments, cou, chevilles). range : plage articulaire [min, max] par axe ; rest : pose de repos (tous les angles nuls). Lot 9e (corps long, décision du propriétaire) : style A (celui de la partie) : marche « bras tendus » (walk.armL, armR : bras levés devant, coudes presque droits) et coup porté bras tendu à hauteur de poitrine, buste avancé (attack.strike 1,5, lunge 3) : au corps long, la main frappe à 30 devant le marcheur (28 le petit, 34 le grand), donc touche le torse du joueur à la distance du coup (r_joueur + r_zombie + 1 = 39) ; avant : 12 à 20 (coup dans le vide). Partie V (retour du propriétaire) : attack.rentre (bras ramenés vers l'axe à la garde, à l'élan et au coup ; défaut 0,35, 0,45, 0,55) réduit pour que les mains ne se croisent plus au corps long.",
  "version": 1,
  "skeletons": {
   "v1": {
@@ -968,7 +968,12 @@
    "attack": {
     "windup": 1.5,
     "strike": 1.5,
-    "lunge": 3
+    "lunge": 3,
+    "rentre": [
+     0.15,
+     0.2,
+     0.2
+    ]
    },
    "hurt": {
     "amount": 1
@@ -1050,7 +1055,12 @@
    "attack": {
     "windup": 1.1,
     "strike": 0.3,
-    "lunge": 0.5
+    "lunge": 0.5,
+    "rentre": [
+     0.15,
+     0.2,
+     0.2
+    ]
    },
    "hurt": {
     "amount": 0.8
@@ -1132,7 +1142,12 @@
    "attack": {
     "windup": 1.7,
     "strike": 0.5,
-    "lunge": 0.5
+    "lunge": 0.5,
+    "rentre": [
+     0.15,
+     0.2,
+     0.2
+    ]
    },
    "hurt": {
     "amount": 1.2
