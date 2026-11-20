@@ -175,6 +175,10 @@ describe('fichier de choix (data/game/persos-epoque-choix.json)', () => {
     for (const [k, v] of Object.entries(c)) for (const id of [v].flat()) expect(epoque.variantes.some((r) => r.id === id && r.slot === SLOT(k)), k).toBe(true);
     expect(choixJson.choix).toEqual(c);
     expect(c.survivant).toBe('epoque-A');
+    // Retour du propriétaire (20/11/2026) : personnage 2 = parachutiste radio (B), tenue 1 ; tenues des personnages jouables valides.
+    expect(c['personnage-2']).toBe('para-B');
+    expect(choixJson.tenues).toEqual({ survivant: 'standard', 'personnage-2': 'standard' });
+    for (const [k, tenue] of Object.entries(choixJson.tenues)) expect(slotOf('joueur').variants.find((v) => v.id === c[k]).outfits[0].id, k).toBe(tenue);
     for (const z of ['marcheur', 'petit', 'voute', 'grand']) expect(c[z]).toEqual(['epoque-A', 'epoque-B']);
     expect(epoque.variantes.filter((r) => r.id === 'epoque-C' && r.slot !== 'joueur')).toHaveLength(4);
   });
