@@ -115,13 +115,18 @@ export function createArmesUi({ dict, root, col, donnees, choix, annonce = () =>
     return true;
   };
   return {
-    // e : { active (id), texte (« 5 / 42 »), recharge (vrai pendant un rechargement), aSec, slots ([id | null] : emplacements), actif (indice
-    // de l'emplacement tenu), visible }.
+    // e : { active (id), texte (« 5 / 42 »), largeur (caractères du texte le plus long de l'arme), recharge (vrai pendant un rechargement),
+    // aSec, slots ([id | null] : emplacements), actif (indice de l'emplacement tenu), visible }.
     update(e) {
       if (!e) return;
       if (fois('visible', e.visible !== false)) ammo.hidden = e.visible === false;
       if (fois('nom', e.active)) nom.textContent = t(`game.armes.${e.active}`);
       if (fois('texte', e.texte)) texte.textContent = e.texte ?? '';
+      // Largeur fixe du nombre de balles (partie R) : celle du texte le plus long de l'arme tenue (« chargeur / réserve » pleins), en ch.
+      if (fois('largeur', e.largeur ?? null)) {
+        if (e.largeur) ammo.style.setProperty('--ammo-largeur', `${e.largeur}ch`);
+        else ammo.style.removeProperty('--ammo-largeur');
+      }
       const st = e.aSec ? 'sec' : e.recharge ? 'recharge' : '';
       if (fois('etat', st)) {
         etat.textContent = st === 'sec' ? t('game.armes.aSec') : st === 'recharge' ? t('game.armes.recharge') : '';
