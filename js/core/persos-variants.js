@@ -281,15 +281,18 @@ export function slotsWithEpoch(slots, epoque) {
   });
 }
 
-// Fichier de choix (data/game/persos-epoque-choix.json) : { choix: { cle: id } } ; cle : personnage du menu (survivant, personnage-2) ou
-// type de zombie ; slotOf(cle) : emplacement (joueur pour les personnages). Id inconnu, absent ou fichier invalide : défaut (premier id
-// d'époque de l'emplacement pour la clé, sinon null). Renvoie { cle: id }.
+// Fichier de choix (data/game/persos-epoque-choix.json) : { choix: { cle: id | [ids] } } ; cle : personnage du menu (survivant, personnage-2)
+// ou type de zombie ; slotOf(cle) : emplacement (joueur pour les personnages). Liste (retour du propriétaire, lot 9g : zombies A et B
+// mélangés) : ids valides gardés dans l'ordre, sans doublon ; liste réduite à un id : cet id. Id inconnu, liste vide, absent ou fichier
+// invalide : défaut (premier id d'époque de l'emplacement pour la clé, sinon null). Renvoie { cle: id | [ids] }.
 export function lireChoixEpoque(json, epoque, cles, slotOf = (c) => c) {
   const choix = obj(obj(json).choix);
   const list = Array.isArray(obj(epoque).variantes) ? epoque.variantes : [];
   return Object.fromEntries((Array.isArray(cles) ? cles : []).map((cle) => {
     const ids = list.filter((r) => r?.slot === slotOf(cle) && (!Array.isArray(r.pour) || r.pour.includes(cle))).map((r) => r.id);
     const v = choix[cle];
-    return [cle, typeof v === 'string' && ids.includes(v) ? v : ids[0] ?? null];
+    const pick = (Array.isArray(v) ? v : [v]).filter((x, i, a) => typeof x === 'string' && ids.includes(x) && a.indexOf(x) === i);
+    if (pick.length === 0) return [cle, ids[0] ?? null];
+    return [cle, Array.isArray(v) && pick.length > 1 ? pick : pick[0]];
   }));
 }

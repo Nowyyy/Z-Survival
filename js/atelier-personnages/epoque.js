@@ -38,7 +38,7 @@ export async function initEpoque(ctx) {
   const slotOf = (id) => slots.find((s) => s.id === id);
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const state = {
-    perso: 'marcheur', lettre: 'A', tenue: 0, niveau: 'complet', anim: 'marche', arme: 'm1911', sol: 'carrelage', lumiere: 'eclairage', usure: 0, horde: 'melange',
+    perso: 'marcheur', lettre: 'A', tenue: 0, niveau: 'complet', anim: 'marche', arme: 'm1911', sol: 'carrelage', lumiere: 'eclairage', usure: 0, horde: 'choix',
     playing: !testMode && !reduced, time: 0,
     choix: lireChoixEpoque(choixJson, epoque, PERSOS, SLOT),
   };
@@ -75,6 +75,7 @@ export async function initEpoque(ctx) {
   }
 
   // --- Personnages --------------------------------------------------------------------------------------------------------------------------
+  const lettreDe = (id) => (typeof id === 'string' ? id.slice(-1) : 'A');
   const tenues = (perso, lettre, niveau = state.niveau) => slotOf(SLOT(perso)).variants.find((v) => v.id === variantId(perso, lettre, niveau))?.outfits ?? [];
   const tenuesAvec = new Map();
   function tenueArmeDe(variant, id) {
@@ -138,7 +139,10 @@ export async function initEpoque(ctx) {
     if (!ANIMS[isZ ? 'zombie' : 'joueur'].includes(state.anim)) state.anim = isZ ? 'marche' : 'marche';
     groups.gros.push(place(make(state.perso, state.lettre, state.tenue), 0, 0));
     // Vue du jeu : actuelle, A, B, C côte à côte (même tenue, même animation).
-    ['actuelle', ...LETTRES].forEach((l, i) => groups.jeu.push(place(make(state.perso, l, state.tenue), (i - 1.5) * 64, 0, 0.35)));
+    // Retour du propriétaire (« on distingue difficilement le personnage 2 du personnage 1 ») : le Survivant retenu à côté, pour comparer.
+    const rang = [...['actuelle', ...LETTRES].map((l) => [state.perso, l, state.tenue]), ...(state.perso === 'personnage-2' ? [['survivant', lettreDe(state.choix.survivant), 0]] : [])];
+    const pas = rang.length > 4 ? 50 : 64;
+    rang.forEach(([p, l, o], i) => groups.jeu.push(place(make(p, l, o), (i - (rang.length - 1) / 2) * pas, 0, 0.35)));
     // Planche des tenues (sous-variantes).
     const list = tenues(state.perso, state.lettre);
     list.forEach((_, i) => groups.tenues.push(place(make(state.perso, state.lettre, i), (i - (list.length - 1) / 2) * 52, 0, 0.35)));
@@ -146,13 +150,15 @@ export async function initEpoque(ctx) {
     const hordeAnims = ['marche', 'course', 'marche', 'rampe', 'attaque', 'marcheLente'];
     for (let i = 0; i < 20; i += 1) {
       const type = ZOMBIES[i % 4];
-      const lettre = state.horde === 'melange' ? LETTRES[i % 3] : state.horde;
+      // Choix : variantes retenues du type (liste du fichier de choix, A et B pour les zombies), tour à tour.
+      const retenues = [state.choix[type]].flat().map(lettreDe);
+      const lettre = state.horde === 'choix' ? retenues[Math.floor(i / 4) % retenues.length] : state.horde === 'melange' ? LETTRES[i % 3] : state.horde;
       const a = (i / 20) * TAU + 0.3;
       const r = 110 + (i % 3) * 38;
       const ch = make(type, lettre, Math.floor(i / 4) + (i % 4), { anim: hordeAnims[i % hordeAnims.length], offset: i * 0.37 });
       groups.horde.push(place(ch, Math.cos(a) * r * 1.5, Math.sin(a) * r, Math.atan2(-Math.cos(a), -Math.sin(a))));
     }
-    groups.horde.push(place(make('survivant', state.choix.survivant?.slice(-1) ?? 'A', 0, { anim: 'repos', arme: 'thompson' }), 0, 0, 0.5));
+    groups.horde.push(place(make('survivant', lettreDe(state.choix.survivant), 0, { anim: 'repos', arme: 'thompson' }), 0, 0, 0.5));
   }
 
   // --- Vues ---------------------------------------------------------------------------------------------------------------------------------
@@ -273,7 +279,7 @@ export async function initEpoque(ctx) {
     fill($('ep-sol'), ['carrelage', 'herbe', 'route', 'escalier'].map((s) => [s, t(`dev.persos.sol.${s}`)]), state.sol);
     fill($('ep-lumiere'), ['eclairage', 'lune'].map((s) => [s, t(`dev.epoque.lumiere.${s}`)]), state.lumiere);
     fill($('ep-usure'), [0, 1, 2, 3].map((i) => [i, t('dev.persos.usure.palier', { n: i })]), state.usure);
-    fill($('ep-horde-lettre'), [['melange', t('dev.epoque.horde.melange')], ...LETTRES.map((l) => [l, t('dev.epoque.horde.lettre', { l })]), ['actuelle', t('dev.epoque.horde.actuelle')]], state.horde);
+    fill($('ep-horde-lettre'), [['choix', t('dev.epoque.horde.choix.fichier')], ['melange', t('dev.epoque.horde.melange')], ...LETTRES.map((l) => [l, t('dev.epoque.horde.lettre', { l })]), ['actuelle', t('dev.epoque.horde.actuelle')]], state.horde);
     const v = slotOf(slot).variants.find((x) => x.id === variantId(state.perso, state.lettre, state.niveau));
     $('ep-intent').textContent = v ? `${v.label} : ${v.intent}` : '';
     $('ep-jeu-legende').textContent = t('dev.epoque.jeu.legende');
@@ -281,7 +287,11 @@ export async function initEpoque(ctx) {
   function updateChoices() {
     for (const p of PERSOS) {
       const node = $(`ep-choix-${p}`);
-      if (node) fill(node, LETTRES.map((l) => [variantId(p, l, 'complet'), t(`dev.epoque.lettre.${p === 'personnage-2' ? 'p2' : SLOT(p) === 'joueur' ? 'p1' : 'z'}.${l}`)]), state.choix[p]);
+      const kind = p === 'personnage-2' ? 'p2' : SLOT(p) === 'joueur' ? 'p1' : 'z';
+      const seules = LETTRES.map((l) => [variantId(p, l, 'complet'), t(`dev.epoque.lettre.${kind}.${l}`)]);
+      // Zombies : une variante ou plusieurs, tirées tour à tour (retour du propriétaire : A et B mélangés).
+      const listes = kind === 'z' ? [[['A', 'B'], 'dev.epoque.choix.ab'], [LETTRES, 'dev.epoque.choix.abc']].map(([ls, key]) => [ls.map((l) => variantId(p, l, 'complet')).join(','), t(key)]) : [];
+      if (node) fill(node, [...seules, ...listes], [state.choix[p]].flat().join(','));
     }
     $('ep-choix-texte').value = JSON.stringify({ version: 1, choix: state.choix }, null, 2);
   }
@@ -304,7 +314,8 @@ export async function initEpoque(ctx) {
   on('ep-horde-lettre', 'horde');
   for (const p of PERSOS) {
     $(`ep-choix-${p}`).addEventListener('change', () => {
-      state.choix[p] = $(`ep-choix-${p}`).value;
+      const v = $(`ep-choix-${p}`).value.split(',');
+      state.choix[p] = v.length > 1 ? v : v[0];
       updateChoices();
     });
   }
@@ -347,7 +358,7 @@ export async function initEpoque(ctx) {
   return {
     getState: () => ({
       ready: true, webgl: Boolean(renderer), perso: state.perso, lettre: state.lettre, tenue: state.tenue, niveau: state.niveau, anim: state.anim, arme: state.arme, sol: state.sol, lumiere: state.lumiere, usure: state.usure, horde: state.horde, playing: state.playing, time: state.time,
-      choix: { ...state.choix }, texte: $('ep-choix-texte').value,
+      choix: structuredClone(state.choix), texte: $('ep-choix-texte').value,
       vues: structuredClone(info),
       groupes: Object.fromEntries(Object.entries(groups).map(([k, list]) => [k, list.map((ch) => ({ perso: ch.perso, slot: ch.slot, id: ch.id, outfit: ch.c.outfit, triangles: ch.c.readPose().triangles, arme: ch.c.arme }))])),
       budgets: structuredClone(budgets),

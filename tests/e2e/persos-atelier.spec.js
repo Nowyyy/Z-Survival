@@ -71,7 +71,11 @@ test.describe('atelier des personnages', () => {
     expect(st.groupes.horde).toHaveLength(21);
     expect(new Set(st.groupes.horde.slice(0, 20).map((g) => g.slot))).toEqual(new Set(['marcheur', 'petit', 'voute', 'grand']));
     expect(new Set(st.groupes.horde.slice(0, 20).map((g) => `${g.slot}:${g.outfit}`)).size).toBeGreaterThanOrEqual(12);
+    // Retour du propriétaire : horde du fichier de choix = zombies A et B mélangés (C gardé pour la carte 3).
+    expect(new Set(st.groupes.horde.slice(0, 20).map((g) => g.id))).toEqual(new Set(['epoque-A', 'epoque-B']));
     expect(JSON.parse(st.texte).choix).toEqual(st.choix);
+    await E(() => window.__zsPersos.epoque.set('ep-perso', 'personnage-2'));
+    expect((await E(() => window.__zsPersos.epoque.getState())).groupes.jeu.map((g) => g.id)).toEqual(['riche', 'para-A', 'para-B', 'para-C', 'epoque-A']);
     for (const [id, v] of [['ep-perso', 'personnage-2'], ['ep-lettre', 'B'], ['ep-arme', 'garand'], ['ep-niveau', 'simple'], ['ep-lumiere', 'lune'], ['ep-perso', 'petit'], ['ep-anim', 'rampe']]) await E(([i, x]) => window.__zsPersos.epoque.set(i, x), [id, v]);
     await E(() => window.__zsPersos.epoque.step(0.5));
     const s2 = await E(() => window.__zsPersos.epoque.getState());
@@ -82,8 +86,11 @@ test.describe('atelier des personnages', () => {
       expect(s2.vues.hd).toMatchObject({ width: 1920, height: 1080 });
       expect(s2.vues.gros.calls).toBeLessThanOrEqual(4);
     }
+    expect(JSON.parse(st.texte).choix.grand).toEqual(['epoque-A', 'epoque-B']);
     await E(() => window.__zsPersos.epoque.set('ep-choix-grand', 'epoque-C'));
     expect(JSON.parse((await E(() => window.__zsPersos.epoque.getState())).texte).choix.grand).toBe('epoque-C');
+    await E(() => window.__zsPersos.epoque.set('ep-choix-grand', 'epoque-A,epoque-B,epoque-C'));
+    expect(JSON.parse((await E(() => window.__zsPersos.epoque.getState())).texte).choix.grand).toEqual(['epoque-A', 'epoque-B', 'epoque-C']);
     expect(await E(() => [localStorage.length, sessionStorage.length])).toEqual([0, 0]);
     expect(errors).toEqual([]);
   });

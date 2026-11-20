@@ -162,6 +162,44 @@
    "jeton": "--perso-tissu-olive",
    "vers": "--perso-sac",
    "part": 0.4
+  },
+  "casque-m1-gris": {
+   "jeton": "--perso-tissu-gris",
+   "vers": "--perso-tissu-olive",
+   "part": 0.12,
+   "ombre": -0.1
+  },
+  "m42-vert": {
+   "jeton": "--perso-tissu-olive",
+   "vers": "--perso-tissu-kaki",
+   "part": 0.1,
+   "ombre": -0.05
+  },
+  "m42-clair": {
+   "jeton": "--perso-pantalon-toile",
+   "vers": "--perso-tissu-os",
+   "part": 0.4
+  },
+  "filet-vert": {
+   "jeton": "--perso-tissu-olive",
+   "vers": "--perso-cuir",
+   "part": 0.15,
+   "ombre": -0.04
+  },
+  "radio": {
+   "jeton": "--perso-tissu-olive",
+   "vers": "--perso-tissu-kaki",
+   "part": 0.4
+  },
+  "camo-brun": {
+   "jeton": "--perso-tissu-sable",
+   "vers": "--perso-tissu-olive",
+   "part": 0.35
+  },
+  "camo-clair": {
+   "jeton": "--perso-tissu-olive",
+   "vers": "--perso-tissu-os",
+   "part": 0.35
   }
  },
  "pieces": {
@@ -1348,6 +1386,229 @@
      "palette": "tenue",
      "cloth": true,
      "simple": false
+    }
+   ]
+  },
+  "bandoulieres-x": {
+   "suit": "chest",
+   "parts": [
+    {
+     "id": "bandouliereA",
+     "joint": "chest",
+     "kind": "box",
+     "dims": {
+      "w": 1.8,
+      "h": 15,
+      "d": 0.8
+     },
+     "offset": [
+      0,
+      4.6,
+      5.6
+     ],
+     "palette": "equipement",
+     "rotation": [
+      0,
+      0,
+      0.62
+     ]
+    },
+    {
+     "id": "bandouliereB",
+     "joint": "chest",
+     "kind": "box",
+     "dims": {
+      "w": 1.8,
+      "h": 15,
+      "d": 0.8
+     },
+     "offset": [
+      0,
+      4.6,
+      5.7
+     ],
+     "palette": "equipement",
+     "rotation": [
+      0,
+      0,
+      -0.62
+     ]
+    },
+    {
+     "id": "bandouliereDosA",
+     "joint": "chest",
+     "kind": "box",
+     "dims": {
+      "w": 1.8,
+      "h": 15,
+      "d": 0.8
+     },
+     "offset": [
+      0,
+      4.6,
+      -5.6
+     ],
+     "palette": "equipement",
+     "rotation": [
+      0,
+      0,
+      0.62
+     ]
+    },
+    {
+     "id": "bandouliereDosB",
+     "joint": "chest",
+     "kind": "box",
+     "dims": {
+      "w": 1.8,
+      "h": 15,
+      "d": 0.8
+     },
+     "offset": [
+      0,
+      4.6,
+      -5.7
+     ],
+     "palette": "equipement",
+     "rotation": [
+      0,
+      0,
+      -0.62
+     ],
+     "simple": false
+    }
+   ]
+  },
+  "feuillage": {
+   "suit": "head",
+   "parts": [
+    {
+     "id": "feuille1",
+     "joint": "head",
+     "kind": "box",
+     "dims": {
+      "w": 1.8,
+      "h": 0.8,
+      "d": 4.4
+     },
+     "offset": [
+      2.2,
+      9.8,
+      1
+     ],
+     "palette": "filet",
+     "rotation": [
+      0.4,
+      0.5,
+      0.2
+     ]
+    },
+    {
+     "id": "feuille2",
+     "joint": "head",
+     "kind": "box",
+     "dims": {
+      "w": 1.8,
+      "h": 0.8,
+      "d": 4.4
+     },
+     "offset": [
+      -2.4,
+      9.7,
+      -0.6
+     ],
+     "palette": "filet",
+     "rotation": [
+      -0.3,
+      -0.7,
+      -0.2
+     ]
+    },
+    {
+     "id": "feuille3",
+     "joint": "head",
+     "kind": "box",
+     "dims": {
+      "w": 4.4,
+      "h": 0.8,
+      "d": 1.8
+     },
+     "offset": [
+      0.6,
+      9.9,
+      -2.6
+     ],
+     "palette": "filet",
+     "rotation": [
+      -0.2,
+      0.3,
+      0.3
+     ],
+     "simple": false
+    },
+    {
+     "id": "feuille4",
+     "joint": "head",
+     "kind": "box",
+     "dims": {
+      "w": 4,
+      "h": 0.8,
+      "d": 1.6
+     },
+     "offset": [
+      -1.2,
+      9.6,
+      2.8
+     ],
+     "palette": "filet",
+     "rotation": [
+      0.3,
+      -0.2,
+      -0.3
+     ],
+     "simple": false
+    }
+   ]
+  },
+  "radio": {
+   "suit": "chest",
+   "parts": [
+    {
+     "id": "radioBoite",
+     "joint": "chest",
+     "kind": "box",
+     "dims": {
+      "w": 9,
+      "h": 12,
+      "d": 5.4
+     },
+     "offset": [
+      0,
+      4.4,
+      -8.2
+     ],
+     "palette": "metal"
+    },
+    {
+     "id": "radioAntenne",
+     "joint": "chest",
+     "kind": "box",
+     "dims": {
+      "w": 0.5,
+      "h": 16,
+      "d": 0.5
+     },
+     "offset": [
+      3.4,
+      15,
+      -12
+     ],
+     "palette": "sombre",
+     "rotation": [
+      -0.55,
+      0,
+      0.12
+     ]
     }
    ]
   },
@@ -3689,12 +3950,12 @@
    ],
    "id": "epoque-A",
    "label": "Survivant A",
-   "intent": "Fantassin américain de 1942, lisible : casque M1 nu à jugulaire, veste M41 sable, pantalon olive, guêtres de toile claires, ceinturon à cartouchières et bretelles, brodequins.",
+   "intent": "Fantassin américain de 1942, lisible : casque M1 nu gris à jugulaire, veste M41 sable, pantalon olive, guêtres de toile claires, ceinturon à cartouchières et bretelles, brodequins.",
    "palette": {
     "peau": "--perso-peau-joueur",
     "botte": "brodequin",
     "equipement": "sangle-us",
-    "casque": "casque-m1",
+    "casque": "casque-m1-gris",
     "filet": "filet",
     "camo": "camo",
     "guetre": "guetre",
@@ -3962,21 +4223,21 @@
    ],
    "id": "para-A",
    "label": "Personnage 2 A (parachutiste)",
-   "intent": "Parachutiste américain de 1942 : veste M42 sable à grandes poches de poitrine, pantalon à poches de cuisse, bottes de saut, casque à filet, harnais.",
+   "intent": "Parachutiste américain de 1942, à l'opposé du Survivant : veste M42 verte et pantalon clair (couleurs inversées), casque à filet garni de branchages, bandoulières de cartouches croisées sur la poitrine, poches de cuisse, bottes de saut.",
    "palette": {
     "peau": "--perso-peau-joueur",
     "botte": "botte-saut",
     "equipement": "guetre",
-    "casque": "casque-m1",
-    "filet": "filet",
+    "casque": "filet-vert",
+    "filet": "filet-vert",
     "camo": "camo",
     "guetre": "guetre",
-    "poche": "guetre",
+    "poche": "m42-clair",
     "sac": "sangle-us",
     "cuir": "brodequin",
     "accent": "sangle-us",
-    "tenue": "m42",
-    "pantalon": "m42"
+    "tenue": "m42-vert",
+    "pantalon": "m42-clair"
    },
    "base": {
     "retire": [
@@ -4011,182 +4272,10 @@
    },
    "pieces": [
     "casque-m1-filet",
-    "poches-m42",
+    "feuillage",
+    "bandoulieres-x",
     "poches-cuisse",
-    "ceinturon-us",
-    "harnais"
-   ],
-   "tenues": [
-    {
-     "id": "standard",
-     "label": "standard",
-     "palette": {}
-    },
-    {
-     "id": "boue",
-     "label": "crotté",
-     "palette": {
-      "tenue": "m42-olive",
-      "pantalon": "m42-olive"
-     }
-    },
-    {
-     "id": "delave",
-     "label": "délavé",
-     "palette": {
-      "tenue": "hbt-delave",
-      "pantalon": "hbt-delave"
-     }
-    }
-   ]
-  },
-  {
-   "slot": "joueur",
-   "pour": [
-    "personnage-2"
-   ],
-   "id": "para-B",
-   "label": "Personnage 2 B (parachutiste équipé)",
-   "intent": "Parachutiste à la veste M42 renforcée olive : renforts aux genoux, musette ventrale, poches de cuisse, bottes de saut, casque à filet, harnais, gourde.",
-   "palette": {
-    "peau": "--perso-peau-joueur",
-    "botte": "botte-saut",
-    "equipement": "guetre",
-    "casque": "casque-m1",
-    "filet": "filet",
-    "camo": "camo",
-    "guetre": "guetre",
-    "poche": "guetre",
-    "sac": "sangle-us",
-    "cuir": "brodequin",
-    "accent": "sangle-us",
-    "tenue": "m42-olive",
-    "pantalon": "m42-olive"
-   },
-   "base": {
-    "retire": [
-     "cap",
-     "capBrim",
-     "vestA",
-     "kneeL",
-     "pack",
-     "earL"
-    ],
-    "retireSimple": [
-     "neck",
-     "ragHipL"
-    ],
-    "modifs": {
-     "shinL": {
-      "palette": "botte"
-     },
-     "neck": {
-      "dims": {
-       "radial": 8,
-       "caps": 1
-      }
-     },
-     "handL": {
-      "dims": {
-       "w": 8,
-       "h": 6
-      }
-     }
-    }
-   },
-   "pieces": [
-    "casque-m1-filet",
-    "poches-m42",
-    "poches-cuisse",
-    "renforts-genou",
-    "musette-ventrale",
-    "harnais",
-    "gourde-us"
-   ],
-   "tenues": [
-    {
-     "id": "standard",
-     "label": "standard",
-     "palette": {}
-    },
-    {
-     "id": "boue",
-     "label": "crotté",
-     "palette": {
-      "tenue": "m42",
-      "pantalon": "m42"
-     }
-    },
-    {
-     "id": "delave",
-     "label": "délavé",
-     "palette": {
-      "tenue": "hbt-delave",
-      "pantalon": "hbt-delave"
-     }
-    }
-   ]
-  },
-  {
-   "slot": "joueur",
-   "pour": [
-    "personnage-2"
-   ],
-   "id": "para-C",
-   "label": "Personnage 2 C (Marine du Pacifique)",
-   "intent": "Marine du Pacifique (option) : couvre-casque camouflé, treillis P41 vert à poche de poitrine, brodequins sans guêtres, ceinturon, bretelles.",
-   "palette": {
-    "peau": "--perso-peau-joueur",
-    "botte": "brodequin",
-    "equipement": "sangle-us",
-    "casque": "casque-m1",
-    "filet": "filet",
-    "camo": "camo",
-    "guetre": "guetre",
-    "poche": "poche-us",
-    "sac": "sangle-us",
-    "cuir": "brodequin",
-    "accent": "sangle-us",
-    "tenue": "p41",
-    "pantalon": "p41"
-   },
-   "base": {
-    "retire": [
-     "cap",
-     "capBrim",
-     "vestA",
-     "kneeL",
-     "pack",
-     "earL"
-    ],
-    "retireSimple": [
-     "neck",
-     "ragHipL"
-    ],
-    "modifs": {
-     "shinL": {
-      "palette": "pantalon"
-     },
-     "neck": {
-      "dims": {
-       "radial": 8,
-       "caps": 1
-      }
-     },
-     "handL": {
-      "dims": {
-       "w": 8,
-       "h": 6
-      }
-     }
-    }
-   },
-   "pieces": [
-    "casque-m1-camo",
-    "poche-p41",
-    "ceinturon-us",
-    "bretelles-us",
-    "gourde-us"
+    "ceinturon-us"
    ],
    "tenues": [
     {
@@ -4199,15 +4288,201 @@
      "label": "crotté",
      "palette": {
       "tenue": "hbt",
-      "pantalon": "hbt"
+      "pantalon": "guetre"
      }
     },
     {
      "id": "delave",
      "label": "délavé",
      "palette": {
-      "tenue": "hbt-delave",
-      "pantalon": "hbt-delave"
+      "tenue": "p41",
+      "pantalon": "m41"
+     }
+    }
+   ]
+  },
+  {
+   "slot": "joueur",
+   "pour": [
+    "personnage-2"
+   ],
+   "id": "para-B",
+   "label": "Personnage 2 B (radio)",
+   "intent": "Parachutiste radio : même tenue verte et claire que A, poste radio dorsal à antenne (gros volume au dos, antenne visible de dessus), casque à filet, harnais, poches de cuisse, bottes de saut.",
+   "palette": {
+    "peau": "--perso-peau-joueur",
+    "botte": "botte-saut",
+    "equipement": "guetre",
+    "casque": "filet-vert",
+    "filet": "filet-vert",
+    "camo": "camo",
+    "guetre": "guetre",
+    "poche": "m42-clair",
+    "sac": "sangle-us",
+    "cuir": "brodequin",
+    "accent": "sangle-us",
+    "tenue": "m42-vert",
+    "pantalon": "m42-clair",
+    "metal": "radio"
+   },
+   "base": {
+    "retire": [
+     "cap",
+     "capBrim",
+     "vestA",
+     "kneeL",
+     "pack",
+     "earL"
+    ],
+    "retireSimple": [
+     "neck",
+     "ragHipL"
+    ],
+    "modifs": {
+     "shinL": {
+      "palette": "botte"
+     },
+     "neck": {
+      "dims": {
+       "radial": 8,
+       "caps": 1
+      }
+     },
+     "handL": {
+      "dims": {
+       "w": 8,
+       "h": 6
+      }
+     }
+    }
+   },
+   "pieces": [
+    "casque-m1-filet",
+    "radio",
+    "harnais",
+    "poches-cuisse",
+    "ceinturon-us"
+   ],
+   "tenues": [
+    {
+     "id": "standard",
+     "label": "standard",
+     "palette": {}
+    },
+    {
+     "id": "boue",
+     "label": "crotté",
+     "palette": {
+      "tenue": "hbt",
+      "pantalon": "guetre"
+     }
+    },
+    {
+     "id": "delave",
+     "label": "délavé",
+     "palette": {
+      "tenue": "p41",
+      "pantalon": "m41"
+     }
+    }
+   ]
+  },
+  {
+   "slot": "joueur",
+   "pour": [
+    "personnage-2"
+   ],
+   "id": "para-C",
+   "label": "Personnage 2 C (Marine camouflé)",
+   "intent": "Marine du Pacifique : treillis entièrement camouflé (motif « peau de grenouille », veste et pantalon), couvre-casque camouflé, bandoulières croisées, brodequins sans guêtres.",
+   "palette": {
+    "peau": "--perso-peau-joueur",
+    "botte": "brodequin",
+    "equipement": "guetre",
+    "casque": "camo",
+    "filet": "filet",
+    "camo": "camo",
+    "guetre": "guetre",
+    "poche": "poche-us",
+    "sac": "sangle-us",
+    "cuir": "brodequin",
+    "accent": "sangle-us",
+    "tenue": "camo",
+    "pantalon": "camo"
+   },
+   "base": {
+    "retire": [
+     "cap",
+     "capBrim",
+     "vestA",
+     "kneeL",
+     "pack",
+     "earL"
+    ],
+    "retireSimple": [
+     "neck",
+     "ragHipL"
+    ],
+    "modifs": {
+     "shinL": {
+      "palette": "camo"
+     },
+     "neck": {
+      "dims": {
+       "radial": 8,
+       "caps": 1
+      }
+     },
+     "handL": {
+      "dims": {
+       "w": 8,
+       "h": 6
+      }
+     },
+     "chest": {
+      "palette": "camo"
+     },
+     "belly": {
+      "palette": "camo"
+     },
+     "upperL": {
+      "palette": "camo"
+     },
+     "foreL": {
+      "palette": "camo"
+     },
+     "thighL": {
+      "palette": "camo"
+     },
+     "pelvis": {
+      "palette": "camo"
+     }
+    }
+   },
+   "pieces": [
+    "casque-m1-camo",
+    "bandoulieres-x",
+    "ceinturon-us",
+    "gourde-us"
+   ],
+   "tenues": [
+    {
+     "id": "standard",
+     "label": "standard",
+     "palette": {}
+    },
+    {
+     "id": "boue",
+     "label": "crotté",
+     "palette": {
+      "camo": "camo-brun"
+     }
+    },
+    {
+     "id": "delave",
+     "label": "délavé",
+     "palette": {
+      "camo": "camo-clair"
      }
     }
    ]
