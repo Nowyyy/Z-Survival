@@ -607,3 +607,27 @@ describe('délai après le rechargement et tintement des cartouches (partie M)',
     for (const id of ['kar98k', 'winchester1897']) expect(table.armes[id].recharge.sons.balle).toBe('arme-cartouche');
   });
 });
+
+// Partie S : au pas chassé, les pas entendus suivent le même rythme ralenti que les pas dessinés.
+describe('rythme des pas au pas chassé (partie S)', () => {
+  it('tout droit et à reculons : rythme 1 ; sur le côté : environ 0,67 ; seuils à 50° et 130°', async () => {
+    const { rythmePasChasse } = await import('../../js/core/footsteps.js');
+    const haut = -Math.PI / 2;
+    expect(rythmePasChasse(haut, haut)).toBe(1); // vers la visée
+    expect(rythmePasChasse(Math.PI / 2, haut)).toBe(1); // à reculons
+    const cote = rythmePasChasse(0, haut); // vers la droite en visant le haut
+    expect(cote).toBeGreaterThan(0.6);
+    expect(cote).toBeLessThan(0.7);
+    expect(rythmePasChasse(Math.PI, haut)).toBeCloseTo(cote, 9); // l'autre côté
+    expect(rythmePasChasse(haut + (45 * Math.PI) / 180, haut)).toBe(1);
+    expect(rythmePasChasse(haut + (60 * Math.PI) / 180, haut)).toBeLessThan(1);
+    expect(rythmePasChasse(Number.NaN, haut)).toBe(1);
+  });
+  it('la partie l\'applique aux pas entendus (phase des pas) et aux pas dessinés, jamais avec le corps d\'avant', () => {
+    const src = readFileSync('js/game/game.js', 'utf8');
+    expect(src).toMatch(/const phase = sim\.walk\.phase \+ moved \* STRIDE \* rythme;/);
+    expect(src).toMatch(/armesAvant \|\| moved <= 0 \? 1 : rythmePas\(/);
+    expect(src).toMatch(/anim\.phase \+= dir \* speed \* dt \* STRIDE \* \(moveAngle === null \? 1 : rythmePas\(moveAngle, aim\)\)/);
+  });
+});
+
