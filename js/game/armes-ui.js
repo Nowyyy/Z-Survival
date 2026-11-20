@@ -140,7 +140,8 @@ export function createArmesUi({ dict, root, col, donnees, choix, annonce = () =>
           c.b.disabled = id === null;
           c.b.setAttribute('aria-pressed', tenu ? 'true' : 'false');
           c.b.dataset.vide = id === null ? 'oui' : 'non';
-          c.b.setAttribute('aria-label', id === null ? t('game.armes.slot.vide') : fmt(t(tenu ? 'game.armes.slot.tenue' : 'game.armes.slot.prendre'), { arme: t(`game.armes.${id}`) }));
+          // Le numéro affiché (touche 1 ou 2) commence le nom accessible (axe : texte visible compris dans le nom).
+          c.b.setAttribute('aria-label', fmt(t(id === null ? 'game.armes.slot.vide' : tenu ? 'game.armes.slot.tenue' : 'game.armes.slot.prendre'), { n: i + 1, arme: id ? t(`game.armes.${id}`) : '' }));
         });
       }
     },

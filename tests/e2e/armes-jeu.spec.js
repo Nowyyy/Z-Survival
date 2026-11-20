@@ -312,14 +312,14 @@ test.describe('emplacements d\'armes et rechargement sur téléphone (parties E,
     const slot2 = page.locator('#arme-slot-2');
     await expect(slot1).toHaveAttribute('aria-pressed', 'true'); // le Colt en main
     await expect(slot2).toBeDisabled(); // emplacement acheté encore vide
-    await expect(slot2).toHaveAttribute('aria-label', 'Emplacement vide');
+    await expect(slot2).toHaveAttribute('aria-label', '2 : emplacement vide');
     await page.evaluate(() => {
       window.__zs.donnerArme('thompson');
       for (let i = 0; i < 20; i += 1) window.__zs.step(0.05);
     });
     await expect(slot2).toHaveAttribute('aria-pressed', 'true');
-    await expect(slot2).toHaveAttribute('aria-label', /Thompson M1928, en main/);
-    await expect(slot1).toHaveAttribute('aria-label', /Prendre Colt M1911/);
+    await expect(slot2).toHaveAttribute('aria-label', '2 : Thompson M1928, en main');
+    await expect(slot1).toHaveAttribute('aria-label', '1 : prendre Colt M1911');
     for (const sl of [slot1, slot2]) await expect(sl.locator('svg.arm-svg')).toHaveCount(1);
     for (const id of ['#arme-slot-1', '#arme-slot-2', '#btn-recharger']) {
       const b = await page.locator(id).boundingBox();
@@ -357,7 +357,7 @@ test.describe('emplacements d\'armes et rechargement sur téléphone (parties E,
     await page.evaluate(() => window.__zs.step(0.05));
     expect((await S(page)).armes.actif).toBe('m1911');
     await expect(slot1).toHaveAttribute('aria-pressed', 'true');
-    await expect(slot2).toHaveAttribute('aria-label', /Prendre Thompson M1928/);
+    await expect(slot2).toHaveAttribute('aria-label', '2 : prendre Thompson M1928');
     const r = await new AxeBuilder({ page }).include('#armes-boutons').include('#hud-ammo').include('#armes-slots').analyze();
     expect(r.violations.map((v) => v.id)).toEqual([]);
     expect(await page.evaluate(() => window.__ecritures.length)).toBe(0);
