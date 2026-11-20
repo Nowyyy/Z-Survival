@@ -982,19 +982,54 @@
   pointer-events: none;
 }
 
-/* Téléphone : collées au bouton de rechargement, à sa gauche, centrées sur lui (retour du propriétaire, partie Q) ; même bord de référence
-   que le bouton (marge + zone de sécurité : sur iPhone en paysage, ≈ 59 px à droite, partie P). Le bouton montre la balle : pas d'icône ici. */
+/* Téléphone (partie S) : sous les deux emplacements d'armes, centré, dans la marge du bas (les emplacements et le bouton de rechargement ne
+   bougent pas) : bloc d'une ligne exacte (1 em, la marge en fait 16 px), posé sur la zone de sécurité du bas. Le bouton montre la balle :
+   pas d'icône ici. */
 #game-root[data-input="touch"] .hud-ammo {
-  right: calc(var(--game-margin) + var(--safe-right) + var(--hud-target));
-  bottom: calc(var(--game-margin) + var(--safe-bottom) + var(--hud-target) / 2 - 0.6em);
+  right: auto;
+  left: 50%;
+  bottom: var(--safe-bottom);
+  height: 1em;
+  line-height: 1;
+  transform: translateX(-50%);
+}
+
+#game-root[data-input="touch"] .hud-ammo .hud-value {
+  text-align: center;
+}
+
+#game-root[data-input="touch"] .hud-ammo-state {
+  right: auto;
+  bottom: auto;
+  left: calc(100% + var(--hud-gap));
+  top: 0;
+  height: 1em;
 }
 
 #game-root[data-input="touch"] .hud-ammo .hud-icon {
   display: none;
 }
 
+/* Largeur fixe du nombre de balles (parties R et S : « toujours la même taille ») : celle du texte le plus long de toutes les armes
+   (--ammo-largeur, en ch, posée par js/game/armes-ui.js), chiffres de même largeur : le bloc ne change de taille ni pendant les tirs ni d'une
+   arme à l'autre. */
+.hud-ammo .hud-value {
+  display: inline-block;
+  min-width: var(--ammo-largeur, auto);
+  text-align: right;
+}
+
+.hud-ammo {
+  overflow: visible;
+}
+
+/* « Recharge », « À sec » : hors du bloc (sa taille ne change pas) ; au-dessus sur ordinateur, à droite du nombre sur téléphone. */
 .hud-ammo-state {
-  margin-left: auto;
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + var(--hud-gap));
+  padding: 0 0.35em;
+  background: color-mix(in srgb, var(--hud-bg) calc(var(--hud-bg-alpha) * 100%), transparent);
   font-family: var(--font-label);
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -1111,7 +1146,14 @@
   color: var(--color-text);
 }
 
+/* Rappels des touches 1 et 2 : jamais sur un écran tactile (partie R : ils restaient affichés jusqu'au premier toucher). */
 #game-root[data-input="touch"] .arme-slot-touche {
   display: none;
+}
+
+@media (hover: none) and (pointer: coarse) {
+  .arme-slot-touche {
+    display: none;
+  }
 }
 

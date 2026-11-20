@@ -34,7 +34,7 @@ import { AU_SOL_DOUILLE, MAX_DOUILLES, creerArmesTombes, creerCartoucheMain } fr
 import { choregraphieBalle, choregraphieChargeur, dans, entreCles, entreClesManoeuvre, entreValeurs, poidsMain, secousse, surCorps, verrouManoeuvre } from '../core/armes/geste.js';
 import { createArmesUi } from './armes-ui.js';
 import { armeParId, echelleJeu } from '../core/armes/armes.js';
-import { createFootsteps, stepFootsteps } from '../core/footsteps.js';
+import { createFootsteps, rythmePasChasse, stepFootsteps } from '../core/footsteps.js';
 import { isHidden } from '../core/spawner.js';
 import { materialFor } from '../core/sound-director.js';
 import { variantFor } from '../core/variants.js';
@@ -73,6 +73,8 @@ const TAU = Math.PI * 2;
 const GAIT_POSE = { lent: 'lent', marche: 'zombie', rampe: 'rampe', course: 'course' };
 const PAS_CHASSE = (50 * Math.PI) / 180; // au-delà de 50° entre la marche et la visée (et en deçà de 130°) : pas chassé
 const PAS_CHASSE_LENTEUR = 0.35; // rythme des pas sur le côté : 65 % de celui de la marche (partie L)
+// Rythme des pas au pas chassé (pas dessinés et pas entendus) : rythmePasChasse de js/core/footsteps.js.
+const rythmePas = (marche, visee) => rythmePasChasse(marche, visee, { seuil: PAS_CHASSE, lenteur: PAS_CHASSE_LENTEUR });
 // Surcharge temporaire de waves.json (hook de test) : les sections objet sont fusionnées, le reste est remplacé.
 const mergeParams = (base, patch) => Object.fromEntries(Object.entries({ ...base, ...patch }).map(([k, v]) => [k, v && typeof v === 'object' && !Array.isArray(v) && patch?.[k] && typeof patch[k] === 'object' && !Array.isArray(patch[k]) ? { ...base[k], ...patch[k] } : v]));
 const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a));
@@ -233,6 +235,9 @@ export function createGame(ctx) {
   let armeVue = null; // arme montrée sur le personnage (identifiant)
   let lastGun = null; // bout du canon dessiné à la dernière image (tests : getState().armes.canon)
   let gesteVu = null; // geste du rechargement à la dernière image (tests : getState().armes.geste)
+  // Largeur du nombre de balles (parties R et S) : le plus long « chargeur / réserve » pleins de toutes les armes utilisables (réserve
+  // illimitée : « ∞ ») : le bloc des munitions garde la même taille d'une arme à l'autre.
+  const largeurMunitions = tableArmes ? Math.max(...tableArmes.actives.map((id) => `${tableArmes.armes[id].chargeur} / ${tableArmes.armes[id].reserve === Infinity ? '∞' : tableArmes.armes[id].reserve}`.length)) : null;
   const pasVu = { avant: 1, lateral: 0 }; // marche par rapport au corps à la dernière image (tests : pas chassé)
   // Pièces lâchées (chargeur vide, clip, tambour) en attente de la prochaine image (leur départ est le point de l'arme dessinée), avec le son
   // de leur chute au sol (retour du propriétaire après le lot 9e).
@@ -691,7 +696,10 @@ export function createGame(ctx) {
     }
     // Pas : la phase de marche avance avec la distance réellement parcourue (même rythme que les poses : STRIDE par unité).
     const moved = Math.hypot(sim.player.x - before.x, sim.player.y - before.y);
-    const phase = sim.walk.phase + moved * STRIDE;
+    // Partie S (retour du propriétaire : « en pas chassé, autant de bruits de pas que tout droit ») : au pas chassé, les pas entendus suivent
+    // le même rythme ralenti que les pas dessinés (rythmePas) ; corps d'avant (?corps=avant) : exactement comme avant.
+    const rythme = armesAvant || moved <= 0 ? 1 : rythmePas(Math.atan2(sim.player.y - before.y, sim.player.x - before.x), sim.aim.angle);
+    const phase = sim.walk.phase + moved * STRIDE * rythme;
     const foot = stepFootsteps(sim.walk.steps, sim.walk.phase, phase, moved / Math.max(dt, 1e-6), sim.time, vitesseJoueur(), ctx.audioCfg?.footsteps);
     sim.walk = { phase, steps: foot.state };
     // Cône : le rapport de vitesse (vitesse réelle / vitesse maximale effective) est lissé, indépendamment du nombre d'images par seconde.
@@ -1328,7 +1336,7 @@ export function createGame(ctx) {
     if (armesUi) {
       // Emplacements (partie Q) : le pistolet puis l'arme achetée ; un emplacement libre reste vide (maxEmplacements de la table).
       const slots = Array.from({ length: maxEmplacements(tableArmes) }, (_, i) => sim.inv.emplacements[i]?.id ?? null);
-      armesUi.update({ active: armeActive(sim.inv)?.id, texte: texteMunitions(sim.inv), recharge: enRecharge(sim.inv), aSec: aSec(sim.inv), slots, actif: sim.inv.actif, visible: !sim.dead });
+      armesUi.update({ active: armeActive(sim.inv)?.id, texte: texteMunitions(sim.inv), largeur: largeurMunitions, recharge: enRecharge(sim.inv), aSec: aSec(sim.inv), slots, actif: sim.inv.actif, visible: !sim.dead });
     }
   }
 
@@ -1368,7 +1376,7 @@ export function createGame(ctx) {
     const lateral = moveAngle === null ? 0 : -Math.sin(phi);
     pasVu.avant = avant;
     pasVu.lateral = lateral;
-    anim.phase += dir * speed * dt * STRIDE * (1 - PAS_CHASSE_LENTEUR * Math.abs(lateral)); // partie L : pas sur le côté plus lents (dessin seul)
+    anim.phase += dir * speed * dt * STRIDE * (moveAngle === null ? 1 : rythmePas(moveAngle, aim)); // pas sur le côté plus lents : même rythme que les pas entendus (parties L et S)
     anim.x = p.x;
     anim.y = p.y;
     const state = sim.down.state === 'terre' ? 'terre' : sim.time - lastFire < FIRE_POSE_TIME ? 'tir' : moving ? 'marche' : 'arret';

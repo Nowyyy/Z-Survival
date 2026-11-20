@@ -299,11 +299,13 @@ test.describe('emplacements et changement d\'arme (partie E)', () => {
 
 test.describe('emplacements d\'armes et rechargement sur téléphone (parties E, P, Q)', () => {
   test.use({ hasTouch: true, isMobile: true, viewport: { width: 812, height: 375 } });
-  test('deux emplacements centrés en bas (pistolet, arme achetée ; toucher l\'autre change d\'arme) ; « Recharger » près du stick droit, munitions collées à lui ; 44 px, dans l\'écran, rien ne se chevauche (zone de sécurité de l\'iPhone comprise) ; axe sans violation', async ({ page }) => {
+  test('deux emplacements centrés en bas (pistolet, arme achetée ; toucher l\'autre change d\'arme), le nombre de balles centré dessous ; « Recharger » près du stick droit ; 44 px, dans l\'écran, rien ne se chevauche (zone de sécurité de l\'iPhone comprise) ; axe sans violation', async ({ page }) => {
     const { default: AxeBuilder } = await import('@axe-core/playwright');
     await page.addInitScript(espion);
     await page.goto('/jeu.html?test=1&seed=2&nospawn=1&map=salle&lum=off&vhs=0');
     await waitReady(page);
+    // Partie R : sur un écran tactile, les rappels des touches 1 et 2 ne s'affichent jamais, même avant le premier toucher.
+    await expect(page.locator('#arme-slot-1 .arme-slot-touche')).toBeHidden();
     // Passage au toucher : un doigt posé puis levé sur la zone de jeu.
     await page.touchscreen.tap(200, 300);
     await expect(page.locator('#game-root')).toHaveAttribute('data-input', 'touch');
@@ -319,6 +321,31 @@ test.describe('emplacements d\'armes et rechargement sur téléphone (parties E,
     });
     await expect(slot2).toHaveAttribute('aria-pressed', 'true');
     await expect(slot2).toHaveAttribute('aria-label', '2 : Thompson M1928, en main');
+    // Partie R : la zone du nombre de balles garde sa largeur pendant les tirs (30 / 660 puis 9 / 660 ou moins).
+    const largeurs = await page.evaluate(async () => {
+      const zs = window.__zs;
+      const l = () => document.querySelector('#hud-ammo').getBoundingClientRect().width;
+      const image = () => new Promise((ok) => requestAnimationFrame(() => requestAnimationFrame(ok)));
+      await image();
+      const plein = [document.querySelector('#hud-ammo-text').textContent, l()];
+      zs.setWaveParams({ hp: { hpLinearPerRound: 1000, hpExpStartRound: 1000, hpExpFactor: 1, hpCap: 1e9 }, damage: { factor: 1, cap: 0.0001 } });
+      const p = zs.getState().player;
+      zs.spawnEnemy(p.x + 150, p.y, { type: 'marcheur', gait: 'lent', wave: 3 });
+      for (let i = 0; i < 200 && zs.getState().armes.emplacements[1].chargeur > 9; i += 1) {
+        zs.setInput({ aim: { angle: 0 } });
+        zs.step(0.05);
+      }
+      zs.killAll();
+      await image();
+      return { plein, entame: [document.querySelector('#hud-ammo-text').textContent, l()] };
+    });
+    expect(largeurs.plein[0]).toBe('30 / 660');
+    expect(largeurs.entame[0]).toMatch(/^\d \/ 660$/);
+    expect(Math.abs(largeurs.entame[1] - largeurs.plein[1])).toBeLessThan(0.5);
+    await page.evaluate(() => {
+      window.__zs.remplirMunitions();
+      for (let i = 0; i < 2; i += 1) window.__zs.step(0.05);
+    });
     await expect(slot1).toHaveAttribute('aria-label', '1 : prendre Colt M1911');
     for (const sl of [slot1, slot2]) await expect(sl.locator('svg.arm-svg')).toHaveCount(1);
     for (const id of ['#arme-slot-1', '#arme-slot-2', '#btn-recharger']) {
@@ -338,13 +365,17 @@ test.describe('emplacements d\'armes et rechargement sur téléphone (parties E,
         st.setProperty('--safe-bottom', `${b}px`);
         const r = (sel) => document.querySelector(sel).getBoundingClientRect().toJSON();
         const sticks = [...document.querySelectorAll('.stick:not([hidden]) .stick-base')].map((n) => n.getBoundingClientRect().toJSON());
-        return { munitions: r('#hud-ammo'), recharger: r('#btn-recharger'), slots: r('#armes-slots'), sticks, largeur: window.innerWidth };
+        return { munitions: r('#hud-ammo'), recharger: r('#btn-recharger'), slots: r('#armes-slots'), sticks, largeur: window.innerWidth, hauteur: window.innerHeight };
       }, [droite, bas]);
       const z = `zone de sécurité ${droite} / ${bas} px`;
       expect(touche(bx.munitions, bx.recharger), z).toBe(false);
-      expect(bx.recharger.left - bx.munitions.right, z).toBeGreaterThanOrEqual(-0.5);
-      expect(bx.recharger.left - bx.munitions.right, z).toBeLessThanOrEqual(1); // collées
+      // Partie S : le nombre de balles est centré sous les emplacements, dans la marge du bas, sans les toucher ; les emplacements restent à
+      // 16 px (+ zone de sécurité) du bas.
       expect(touche(bx.munitions, bx.slots), z).toBe(false);
+      expect(bx.munitions.top, z).toBeGreaterThanOrEqual(bx.slots.bottom - 0.5);
+      expect(bx.munitions.bottom, z).toBeLessThanOrEqual(bx.hauteur + 0.5);
+      expect(Math.abs((bx.munitions.left + bx.munitions.right) / 2 - (bx.slots.left + bx.slots.right) / 2), z).toBeLessThanOrEqual(1);
+      expect(Math.abs(bx.hauteur - bx.slots.bottom - (16 + bas)), z).toBeLessThanOrEqual(0.5);
       expect(touche(bx.recharger, bx.slots), z).toBe(false);
       for (const st of bx.sticks) expect(touche(bx.slots, st), z).toBe(false);
       expect(Math.abs((bx.slots.left + bx.slots.right) / 2 - bx.largeur / 2), z).toBeLessThanOrEqual(1);
@@ -364,9 +395,36 @@ test.describe('emplacements d\'armes et rechargement sur téléphone (parties E,
   });
 });
 
-test('ordinateur : emplacements centrés en bas avec les touches 1 et 2 ; un clic sur l\'autre emplacement change d\'arme (partie Q)', async ({ page }) => {
+test('ordinateur : emplacements centrés en bas avec les touches 1 et 2 ; un clic sur l\'autre emplacement change d\'arme (partie Q) ; bloc des munitions de taille constante (partie S)', async ({ page }) => {
   await page.goto('/jeu.html?test=1&seed=2&nospawn=1&map=salle&lum=off&vhs=0');
   await waitReady(page);
+  // Partie S : le bloc des munitions garde la même taille d'une arme à l'autre et pendant un rechargement (« Recharge » au-dessus, hors du bloc).
+  const taille = () => page.evaluate(async () => {
+    await new Promise((ok) => requestAnimationFrame(() => requestAnimationFrame(ok)));
+    const r = document.querySelector('#hud-ammo').getBoundingClientRect();
+    return [Math.round(r.width * 10) / 10, Math.round(r.height * 10) / 10];
+  });
+  const colt = await taille();
+  await page.evaluate(() => {
+    window.__zs.donnerArme('mg42');
+    for (let i = 0; i < 30; i += 1) window.__zs.step(0.05);
+  });
+  expect(await taille()).toEqual(colt);
+  await page.evaluate(() => {
+    const zs = window.__zs;
+    zs.setWaveParams({ hp: { hpLinearPerRound: 1000, hpExpStartRound: 1000, hpExpFactor: 1, hpCap: 1e9 }, damage: { factor: 1, cap: 0.0001 } });
+    const p = zs.getState().player;
+    zs.spawnEnemy(p.x + 150, p.y, { type: 'marcheur', gait: 'lent', wave: 3 });
+    for (let i = 0; i < 6; i += 1) {
+      zs.setInput({ aim: { angle: 0 } });
+      zs.step(0.05);
+    }
+    zs.killAll();
+    zs.recharger();
+    zs.step(0.05);
+  });
+  await expect(page.locator('#hud-ammo-state')).toHaveText('Recharge');
+  expect(await taille()).toEqual(colt);
   await page.evaluate(() => {
     window.__zs.donnerArme('garand');
     for (let i = 0; i < 20; i += 1) window.__zs.step(0.05);

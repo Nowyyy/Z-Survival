@@ -143,8 +143,10 @@ describe('feuilles de style de l\'interface (css/game-ui.css, css/game.css, css/
     const used = [...uiCss.matchAll(/var\((--[a-z0-9-]+)/g)].map((m) => m[1]);
     // Lot 8j : --ui-k (facteur de l'interface) est posé par js/game/ui-echelle.js ; --u est l'unité des écrans du menu (css/menu.css), reprise
     // par le panneau d'Options de la partie.
-    const byCode = ['--down-p', '--ui-k', '--u'];
+    // Lot 9e (partie R) : --ammo-largeur (largeur du nombre de balles de l'arme tenue) est posé par js/game/armes-ui.js.
+    const byCode = ['--down-p', '--ui-k', '--u', '--ammo-largeur'];
     for (const v of used) expect(defined.has(v) || byCode.includes(v), v).toBe(true);
+    expect(readFileSync('js/game/armes-ui.js', 'utf8')).toMatch(/setProperty\('--ammo-largeur'/);
     expect(gameJs).toMatch(/setProperty\('--down-p'/);
     expect(gameJs).toMatch(/setProperty\('--ui-k'/);
     expect(readFileSync('css/menu.css', 'utf8')).toMatch(/:root \{\s*--u: /);
