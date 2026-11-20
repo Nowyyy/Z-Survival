@@ -1,5 +1,5 @@
 # Décor extérieur d'époque (lot 9h) — relevé et plan
-Carte 1 (« Night of the Undead », 1942). Base : `origin/dev` `7514702` (seed 0.38). Valeurs provisoires jusqu'au « GO 9h » du propriétaire.
+Carte 1 (« Night of the Undead », 1942). Base : `origin/dev` `7514702` (seed 0.38), puis `d43689a` (lot 9g fusionné). **« GO 9h » du propriétaire : tout gardé, variantes proposées** (`data/game/decor-epoque-choix.json` inchangé) ; valeurs provisoires (positions, couleurs).
 
 ## Extérieur actuel (relevé sur `origin/dev`)
 - Monde 4040 × 3460 ; bâtiment en L (contour de `world.json`) ; 7 fenêtres au rez-de-chaussée (F1 nord, F2 est, F3 ouest, F4 nord, F5, F6, F8 sud), 7 à l'étage (U1 à U7).
@@ -47,6 +47,13 @@ Carte 1 (« Night of the Undead », 1942). Base : `origin/dev` `7514702` (seed 0
 - Budget : plan +3 297 triangles (objets et fils), −1 322 retirés (hélicoptère 310, voitures 632, voiture en flammes 158, poteaux et câbles 222) : **solde +1 975** (≤ +3 000) ; appels : +1 maillage d'époque, −2 de l'hélicoptère.
 - Jeu inchangé : trace 6 × 600 identique à chaque pas à `origin/dev` ; la partie ne charge aucun module du décor d'époque (test).
 
-## Tests prévus
-- Unitaires (`decor-epoque.test.js`) : modèles purs et déterministes, budgets, hauteurs, tirs (< 43 traversable), emprises, fichier de choix (invalide = défaut), placement (couloirs, apparitions, bâtiment, fenêtres), chemins de chaque point d'apparition vers sa fenêtre jamais coupés, contenu (aucun symbole interdit dans les données).
-- E2e (`atelier-decor.spec.js`) : toutes les variantes se construisent sous budget, vues et plan, mouvement réduit, axe, aucune requête externe, aucune écriture ; jeu inchangé avant le GO (trace identique, `npm run carte -- --verifie`).
+## Dans la partie (partie C)
+- `npm run carte` contrôle le plan sur le décor d'avant puis l'écrit dans `decor.json` (clé `epoque` : objets, spec, rectangles, remplacements, cicatrices de l'avion, couleurs) ; `generateDecor` l'applique après le tirage à graine (véhicules aux rectangles des voitures, mêmes identifiants ; avion à la place de l'hélicoptère ; objets solides de kind `epoque` ; petit décor qui les touche retiré) ; le décor vivant les traite comme des épaves. `?test=1&decor=avant` (jamais mémorisé) : décor d'avant.
+- Dessin (`js/game/world.js`) : un maillage d'époque sans ombre portée et un maillage des 4 véhicules avec ombre (comme les voitures d'avant ; le maillage des voitures disparaît) ; trous d'obus, cratère et traînée dans le sol ; poteaux télégraphiques à la place des poteaux électriques et de leurs câbles ; feu, fumée et lumière du véhicule en flammes (mêmes identifiant et réglages), fumée légère de l'avion.
+- Tirs : `tirs-traversables.json` + 13 rectangles dessinés sous 43 (voitures 1 à 4 et en flammes, ailes et débris de l'avion, hérissons, barbelés, jerrycans, caisses), vérifiés par `npm run carte`.
+- Preuves : trace 6 × 600 identique à chaque pas à `origin/dev`, avec et sans `decor=avant` (rien n'entre dans un couloir ; aucun tir des scénarios ne croise un objet) ; arrivées identiques (60 zombies) ; `blocage.mjs` : aucun zombie coincé ; budget (`mesurer.mjs --ref --ref-memes-reglages`, R1, R2, U1, U4 × 3 préréglages) : −1 à +1 appel, +1 588 à +2 158 triangles ; pire cas U4 Élevé 39 039 triangles (37 291 avant), 92 appels ; aucune ombre portée de plus.
+
+## Finitions et preuves (partie D)
+- Feu du véhicule en flammes : même source de lumière (`feu:feu-voiture-en-flammes`, choisie près de l'angle sud-est comme avant), foyers du modèle ; fumée de l'avion = réglage de celle de l'hélicoptère ; ombres : seuls les 4 véhicules (comme les voitures) ; Faible et Moyen : tout dessiné (collisions), sous budget.
+- Pixels (vue d'ensemble, onglet caché) : 36 896 changent dehors en Élevé (33 996 en Faible), 0 dans la vue intérieure, 0 avec `decor=avant` ; menu 27 fichiers (inchangé), partie 198 → 199 (`js/core/decor-epoque.js`), aucune requête externe, aucune écriture ; Lighthouse mobile 5 passes : `jeu.html` 79 à 83 avant (médiane 80) → 82 à 83 (83), `index.html` 90 ×5.
+- Tests : `decor-epoque.test.js`, `decor-epoque-atelier.spec.js`, `decor-epoque-jeu.spec.js` (objets, tirs, budget R1, R2, U1, U4 × 3) ; tests des épaves et budgets d'avant : `&decor=avant`.

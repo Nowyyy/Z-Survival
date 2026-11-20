@@ -65,5 +65,467 @@
       "scarTriangles": 287,
       "smoke": true
     }
+  },
+  "epoque": {
+    "couleurs": {
+      "olive": { "jeton": "--game-tree", "vers": "--game-paint-3", "part": 0.35 },
+      "feldgrau": { "jeton": "--game-wall", "vers": "--game-wreck-hull", "part": 0.25 },
+      "avion": { "jeton": "--game-tree", "vers": "--game-wreck-hull", "part": 0.45 },
+      "jerrycan": { "jeton": "--game-tree", "vers": "--game-paint-3", "part": 0.2 },
+      "toile": { "jeton": "--game-wreck-hull", "vers": "--game-tree", "part": 0.45 },
+      "pneu": { "jeton": "--game-boot", "vers": "--game-asphalt", "part": 0.6 },
+      "acier": { "jeton": "--game-metal", "vers": "--game-wall", "part": 0.35 },
+      "rouille": { "jeton": "--game-rust", "vers": "--game-wall", "part": 0.35 },
+      "bois": { "jeton": "--game-wood-dark", "vers": "--game-bark", "part": 0.5 },
+      "verre": { "jeton": "--game-wreck-glass", "vers": "--game-glass", "part": 0.25 },
+      "soie": { "jeton": "--game-wreck-metal", "vers": "--game-fog", "part": 0.35 },
+      "brule": { "jeton": "--game-car-burnt", "vers": "--game-car-soot", "part": 0.3 },
+      "suie": { "jeton": "--game-car-soot", "vers": "--game-boot", "part": 0.2 },
+      "cratere-brule": { "jeton": "--game-crater-burnt", "part": 0 },
+      "cratere-terre": { "jeton": "--game-crater-earth", "vers": "--game-soil", "part": 0.3 },
+      "bois-caisse": { "jeton": "--game-tree", "vers": "--game-paint-3", "part": 0.3 },
+      "pochoir": { "jeton": "--game-line", "vers": "--game-wreck-metal", "part": 0.2 },
+      "panneau-bois": { "jeton": "--game-wood", "vers": "--game-wood-dark", "part": 0.35 },
+      "panneau-texte": { "jeton": "--game-wreck-metal", "vers": "--game-player", "part": 0.4 },
+      "etoile-fond": { "jeton": "--game-paint-2", "vers": "--game-void", "part": 0.35 },
+      "etoile": { "jeton": "--game-wreck-metal", "vers": "--game-player", "part": 0.5 }
+    },
+    "objets": [
+      {
+        "id": "vehicule-1",
+        "type": "vehicule",
+        "variante": "melange",
+        "spec": { "id": "vehicule-1", "x": 1013, "y": 2820, "L": 92, "l": 46, "rang": 0 },
+        "remplace": "voiture-1",
+        "hauteur": 37,
+        "emprise": { "x": 967, "y": 2797, "w": 92, "h": 46 },
+        "collision": true,
+        "sol": false,
+        "triangles": 188,
+        "rects": [
+          { "id": "vehicule-1-caisse", "x": 967, "y": 2797, "w": 92, "h": 46, "hauteur": 37, "tirs": "passent" }
+        ]
+      },
+      {
+        "id": "vehicule-2",
+        "type": "vehicule",
+        "variante": "melange",
+        "spec": { "id": "vehicule-2", "x": 747, "y": 2839, "L": 92, "l": 46, "rang": 1 },
+        "remplace": "voiture-2",
+        "hauteur": 37,
+        "emprise": { "x": 701, "y": 2816, "w": 92, "h": 46 },
+        "collision": true,
+        "sol": false,
+        "triangles": 196,
+        "rects": [
+          { "id": "vehicule-2-caisse", "x": 701, "y": 2816, "w": 92, "h": 46, "hauteur": 37, "tirs": "passent" }
+        ]
+      },
+      {
+        "id": "vehicule-3",
+        "type": "vehicule",
+        "variante": "melange",
+        "spec": { "id": "vehicule-3", "x": 376, "y": 2874, "L": 92, "l": 46, "rang": 2 },
+        "remplace": "voiture-3",
+        "hauteur": 37,
+        "emprise": { "x": 330, "y": 2851, "w": 92, "h": 46 },
+        "collision": true,
+        "sol": false,
+        "triangles": 188,
+        "rects": [
+          { "id": "vehicule-3-caisse", "x": 330, "y": 2851, "w": 92, "h": 46, "hauteur": 37, "tirs": "passent" }
+        ]
+      },
+      {
+        "id": "vehicule-4",
+        "type": "vehicule",
+        "variante": "melange",
+        "spec": { "id": "vehicule-4", "x": 1919, "y": 2837, "L": 92, "l": 46, "rang": 3 },
+        "remplace": "voiture-4",
+        "hauteur": 37,
+        "emprise": { "x": 1873, "y": 2814, "w": 92, "h": 46 },
+        "collision": true,
+        "sol": false,
+        "triangles": 196,
+        "rects": [
+          { "id": "vehicule-4-caisse", "x": 1873, "y": 2814, "w": 92, "h": 46, "hauteur": 37, "tirs": "passent" }
+        ]
+      },
+      {
+        "id": "vehicule-en-flammes",
+        "type": "vehiculeFeu",
+        "variante": "jeep",
+        "spec": { "id": "vehicule-en-flammes", "x": 3345, "y": 2420 },
+        "remplace": "voiture-en-flammes",
+        "flammes": true,
+        "hauteur": 28,
+        "emprise": { "x": 3302, "y": 2397, "w": 86, "h": 46 },
+        "collision": true,
+        "sol": false,
+        "triangles": 152,
+        "rects": [
+          { "id": "vehicule-en-flammes-caisse", "x": 3302, "y": 2397, "w": 86, "h": 46, "hauteur": 28, "tirs": "passent" }
+        ]
+      },
+      {
+        "id": "avion",
+        "type": "avion",
+        "variante": "p51",
+        "spec": { "id": "avion", "x": 1690, "y": 1665, "cap": 165 },
+        "remplace": "helicoptere",
+        "fumee": true,
+        "cratere": { "rx": 170, "ry": 120 },
+        "trainee": { "longueur": 380, "largeur": 60 },
+        "hauteur": 59,
+        "emprise": { "x": 1583, "y": 1546, "w": 212, "h": 252 },
+        "collision": true,
+        "sol": false,
+        "triangles": 260,
+        "rects": [
+          { "id": "avion-fuselage", "x": 1583, "y": 1648, "w": 143, "h": 50, "hauteur": 44, "tirs": "arretes" },
+          { "id": "avion-aile", "x": 1636, "y": 1546, "w": 68, "h": 158, "hauteur": 10, "tirs": "passent" },
+          { "id": "avion-queue", "x": 1704, "y": 1595, "w": 91, "h": 93, "hauteur": 59, "tirs": "arretes" },
+          { "id": "avion-debris", "x": 1704, "y": 1697, "w": 84, "h": 101, "hauteur": 8, "tirs": "passent" }
+        ]
+      },
+      {
+        "id": "parachute",
+        "type": "parachute",
+        "variante": "deploye",
+        "spec": { "id": "parachute", "x": 1850, "y": 1200, "cap": 0 },
+        "hauteur": 85,
+        "emprise": { "x": 1805, "y": 1156, "w": 102, "h": 97 },
+        "collision": false,
+        "sol": false,
+        "triangles": 128,
+        "rects": []
+      },
+      {
+        "id": "camion",
+        "type": "camion",
+        "variante": "dodge",
+        "spec": { "id": "camion", "x": 3800, "y": 2850, "cap": 180 },
+        "hauteur": 53,
+        "emprise": { "x": 3740, "y": 2822, "w": 120, "h": 56 },
+        "collision": true,
+        "sol": false,
+        "triangles": 178,
+        "rects": [
+          { "id": "camion-caisse", "x": 3740, "y": 2822, "w": 120, "h": 56, "hauteur": 53, "tirs": "arretes" }
+        ]
+      },
+      {
+        "id": "herissons-route",
+        "type": "herissons",
+        "variante": "rangee",
+        "spec": { "id": "herissons-route", "x": 3330, "y": 2830, "cap": 0 },
+        "hauteur": 40,
+        "emprise": { "x": 3249, "y": 2809, "w": 162, "h": 47 },
+        "collision": true,
+        "sol": false,
+        "triangles": 126,
+        "rects": [
+          { "id": "herissons-route-herisson", "x": 3249, "y": 2809, "w": 162, "h": 47, "hauteur": 40, "tirs": "passent" }
+        ]
+      },
+      {
+        "id": "barbeles-route",
+        "type": "barbeles",
+        "variante": "rouleaux",
+        "spec": { "id": "barbeles-route", "x": 3570, "y": 2880, "cap": 0 },
+        "hauteur": 29,
+        "emprise": { "x": 3510, "y": 2863, "w": 123, "h": 34 },
+        "collision": true,
+        "sol": false,
+        "triangles": 246,
+        "rects": [
+          { "id": "barbeles-route-barbeles", "x": 3510, "y": 2863, "w": 123, "h": 34, "hauteur": 29, "tirs": "passent" }
+        ]
+      },
+      {
+        "id": "panneau-route",
+        "type": "panneau",
+        "variante": "deux",
+        "spec": { "id": "panneau-route", "x": 3480, "y": 2745, "cap": 0 },
+        "hauteur": 56,
+        "emprise": { "x": 3447, "y": 2743, "w": 66, "h": 15 },
+        "collision": true,
+        "sol": false,
+        "triangles": 34,
+        "rects": [
+          { "id": "panneau-route-panneau", "x": 3447, "y": 2743, "w": 66, "h": 15, "hauteur": 56, "tirs": "arretes" }
+        ]
+      },
+      {
+        "id": "jerrycans-camion",
+        "type": "jerrycans",
+        "variante": "pile",
+        "spec": { "id": "jerrycans-camion", "x": 3720, "y": 2905, "cap": 90 },
+        "hauteur": 30,
+        "emprise": { "x": 3712, "y": 2891, "w": 13, "h": 28 },
+        "collision": true,
+        "sol": false,
+        "triangles": 114,
+        "rects": [
+          { "id": "jerrycans-camion-bidons", "x": 3712, "y": 2891, "w": 13, "h": 28, "hauteur": 30, "tirs": "passent" }
+        ]
+      },
+      {
+        "id": "caisses-camion",
+        "type": "caisses",
+        "variante": "pile",
+        "spec": { "id": "caisses-camion", "x": 3935, "y": 2925, "cap": 0 },
+        "hauteur": 20,
+        "emprise": { "x": 3921, "y": 2910, "w": 32, "h": 30 },
+        "collision": true,
+        "sol": false,
+        "triangles": 32,
+        "rects": [
+          { "id": "caisses-camion-caisses", "x": 3921, "y": 2910, "w": 32, "h": 30, "hauteur": 20, "tirs": "passent" }
+        ]
+      },
+      {
+        "id": "artillerie",
+        "type": "artillerie",
+        "variante": "projecteur",
+        "spec": { "id": "artillerie", "x": 3050, "y": 1000, "cap": 210 },
+        "hauteur": 60,
+        "emprise": { "x": 2993, "y": 960, "w": 103, "h": 80 },
+        "collision": true,
+        "sol": false,
+        "triangles": 184,
+        "rects": [
+          { "id": "artillerie-piece", "x": 2993, "y": 960, "w": 103, "h": 80, "hauteur": 60, "tirs": "arretes" }
+        ]
+      },
+      {
+        "id": "caisses-artillerie",
+        "type": "caisses",
+        "variante": "pile",
+        "spec": { "id": "caisses-artillerie", "x": 3170, "y": 1080, "cap": 20 },
+        "hauteur": 20,
+        "emprise": { "x": 3151, "y": 1061, "w": 38, "h": 38 },
+        "collision": true,
+        "sol": false,
+        "triangles": 32,
+        "rects": [
+          { "id": "caisses-artillerie-caisses", "x": 3151, "y": 1061, "w": 38, "h": 38, "hauteur": 20, "tirs": "passent" }
+        ]
+      },
+      {
+        "id": "barbeles-nord",
+        "type": "barbeles",
+        "variante": "rouleaux",
+        "spec": { "id": "barbeles-nord", "x": 700, "y": 760, "cap": 0 },
+        "hauteur": 29,
+        "emprise": { "x": 640, "y": 743, "w": 123, "h": 34 },
+        "collision": true,
+        "sol": false,
+        "triangles": 246,
+        "rects": [
+          { "id": "barbeles-nord-barbeles", "x": 640, "y": 743, "w": 123, "h": 34, "hauteur": 29, "tirs": "passent" }
+        ]
+      },
+      {
+        "id": "trou-1",
+        "type": "trouObus",
+        "variante": "moyen",
+        "spec": { "id": "trou-1", "x": 1700, "y": 380, "cap": 0 },
+        "hauteur": 4,
+        "emprise": { "x": 1646, "y": 318, "w": 111, "h": 115 },
+        "collision": false,
+        "sol": true,
+        "triangles": 60,
+        "rects": []
+      },
+      {
+        "id": "trou-2",
+        "type": "trouObus",
+        "variante": "moyen",
+        "spec": { "id": "trou-2", "x": 2950, "y": 330, "cap": 0 },
+        "hauteur": 4,
+        "emprise": { "x": 2896, "y": 268, "w": 111, "h": 115 },
+        "collision": false,
+        "sol": true,
+        "triangles": 60,
+        "rects": []
+      },
+      {
+        "id": "trou-3",
+        "type": "trouObus",
+        "variante": "moyen",
+        "spec": { "id": "trou-3", "x": 3650, "y": 1150, "cap": 0 },
+        "hauteur": 4,
+        "emprise": { "x": 3596, "y": 1088, "w": 111, "h": 115 },
+        "collision": false,
+        "sol": true,
+        "triangles": 60,
+        "rects": []
+      },
+      {
+        "id": "trou-4",
+        "type": "trouObus",
+        "variante": "moyen",
+        "spec": { "id": "trou-4", "x": 480, "y": 1150, "cap": 0 },
+        "hauteur": 4,
+        "emprise": { "x": 426, "y": 1088, "w": 111, "h": 115 },
+        "collision": false,
+        "sol": true,
+        "triangles": 60,
+        "rects": []
+      },
+      {
+        "id": "trou-5",
+        "type": "trouObus",
+        "variante": "moyen",
+        "spec": { "id": "trou-5", "x": 3600, "y": 3220, "cap": 0 },
+        "hauteur": 4,
+        "emprise": { "x": 3546, "y": 3158, "w": 111, "h": 115 },
+        "collision": false,
+        "sol": true,
+        "triangles": 60,
+        "rects": []
+      },
+      {
+        "id": "trou-6",
+        "type": "trouObus",
+        "variante": "moyen",
+        "spec": { "id": "trou-6", "x": 650, "y": 3250, "cap": 0 },
+        "hauteur": 4,
+        "emprise": { "x": 596, "y": 3188, "w": 111, "h": 115 },
+        "collision": false,
+        "sol": true,
+        "triangles": 60,
+        "rects": []
+      },
+      {
+        "id": "poteau-1",
+        "type": "poteau",
+        "variante": "simple",
+        "spec": { "id": "poteau-1", "x": 227.7, "y": 2692, "cap": 0, "rang": 0 },
+        "remplace": "poteau-1",
+        "hauteur": 150,
+        "emprise": { "x": 223, "y": 2666, "w": 9, "h": 52 },
+        "collision": true,
+        "sol": false,
+        "triangles": 35,
+        "rects": [
+          { "id": "poteau-1-poteau", "x": 223, "y": 2688, "w": 9, "h": 9, "hauteur": 150, "tirs": "arretes" }
+        ]
+      },
+      {
+        "id": "poteau-2",
+        "type": "poteau",
+        "variante": "simple",
+        "spec": { "id": "poteau-2", "x": 635.6, "y": 2692, "cap": 0, "rang": 1 },
+        "remplace": "poteau-2",
+        "hauteur": 150,
+        "emprise": { "x": 631, "y": 2666, "w": 9, "h": 52 },
+        "collision": true,
+        "sol": false,
+        "triangles": 35,
+        "rects": [
+          { "id": "poteau-2-poteau", "x": 631, "y": 2688, "w": 9, "h": 9, "hauteur": 150, "tirs": "arretes" }
+        ]
+      },
+      {
+        "id": "poteau-3",
+        "type": "poteau",
+        "variante": "simple",
+        "spec": { "id": "poteau-3", "x": 1486.8, "y": 2692, "cap": 0, "rang": 2 },
+        "remplace": "poteau-3",
+        "hauteur": 150,
+        "emprise": { "x": 1482, "y": 2666, "w": 10, "h": 52 },
+        "collision": true,
+        "sol": false,
+        "triangles": 35,
+        "rects": [
+          { "id": "poteau-3-poteau", "x": 1482, "y": 2688, "w": 10, "h": 9, "hauteur": 150, "tirs": "arretes" }
+        ]
+      },
+      {
+        "id": "poteau-4",
+        "type": "poteau",
+        "variante": "simple",
+        "spec": { "id": "poteau-4", "x": 1882.3, "y": 2692, "cap": 0, "rang": 3 },
+        "remplace": "poteau-4",
+        "hauteur": 150,
+        "emprise": { "x": 1878, "y": 2666, "w": 9, "h": 52 },
+        "collision": true,
+        "sol": false,
+        "triangles": 35,
+        "rects": [
+          { "id": "poteau-4-poteau", "x": 1878, "y": 2688, "w": 9, "h": 9, "hauteur": 150, "tirs": "arretes" }
+        ]
+      },
+      {
+        "id": "poteau-5",
+        "type": "poteau",
+        "variante": "simple",
+        "spec": { "id": "poteau-5", "x": 2746.6, "y": 2692, "cap": 0, "rang": 4 },
+        "remplace": "poteau-5",
+        "hauteur": 150,
+        "emprise": { "x": 2742, "y": 2666, "w": 9, "h": 52 },
+        "collision": true,
+        "sol": false,
+        "triangles": 35,
+        "rects": [
+          { "id": "poteau-5-poteau", "x": 2742, "y": 2688, "w": 9, "h": 9, "hauteur": 150, "tirs": "arretes" }
+        ]
+      },
+      {
+        "id": "poteau-6",
+        "type": "poteau",
+        "variante": "simple",
+        "spec": { "id": "poteau-6", "x": 3157.2, "y": 2692, "cap": 0, "rang": 5 },
+        "remplace": "poteau-6",
+        "hauteur": 150,
+        "emprise": { "x": 3152, "y": 2666, "w": 10, "h": 52 },
+        "collision": true,
+        "sol": false,
+        "triangles": 35,
+        "rects": [
+          { "id": "poteau-6-poteau", "x": 3152, "y": 2688, "w": 10, "h": 9, "hauteur": 150, "tirs": "arretes" }
+        ]
+      },
+      {
+        "id": "poteau-7",
+        "type": "poteau",
+        "variante": "simple",
+        "spec": { "id": "poteau-7", "x": 4017.8, "y": 2692, "cap": 0, "rang": 6 },
+        "remplace": "poteau-7",
+        "hauteur": 150,
+        "emprise": { "x": 4013, "y": 2666, "w": 10, "h": 52 },
+        "collision": true,
+        "sol": false,
+        "triangles": 35,
+        "rects": [
+          { "id": "poteau-7-poteau", "x": 4013, "y": 2688, "w": 10, "h": 9, "hauteur": 150, "tirs": "arretes" }
+        ]
+      }
+    ],
+    "remplaces": [
+      "voiture-1",
+      "voiture-2",
+      "voiture-3",
+      "voiture-4",
+      "voiture-en-flammes",
+      "helicoptere",
+      "poteau-1",
+      "poteau-2",
+      "poteau-3",
+      "poteau-4",
+      "poteau-5",
+      "poteau-6",
+      "poteau-7"
+    ],
+    "cicatrices": [
+      { "x": 1492, "y": 1518, "w": 396, "h": 294 },
+      { "x": 1794, "y": 1571, "w": 114, "h": 102 },
+      { "x": 1886, "y": 1554, "w": 111, "h": 95 },
+      { "x": 1980, "y": 1538, "w": 107, "h": 79 },
+      { "x": 2074, "y": 1519, "w": 103, "h": 64 }
+    ],
+    "triangles": 3297
   }
 }

@@ -430,7 +430,7 @@
         "tests/unit/zones-rendu.test.js",
         "tests/unit/zones-splash.test.js",
         "tests/unit/zones.test.js", "tests/unit/tirs-traverse.test.js", "tests/unit/decor-epoque.test.js"],
-      "e2e": [],
+      "e2e": ["tests/e2e/decor-epoque-jeu.spec.js"],
       "complet": [
         "tests/e2e/atelier-carte.spec.js",
         "tests/e2e/atelier-detail.spec.js",

@@ -276,3 +276,9 @@ version: v0.9
 nom: Soldats de 1942 et zombies soldats
 description: Le Survivant devient un fantassin de 1942, le deuxième personnage un parachutiste radio ; les zombies sont des soldats variés et sans insigne. Menu et avatars suivent ; règles inchangées.
 afficher: oui
+
+[lot-9h]
+version: v0.9
+nom: Décor extérieur de 1942
+description: Dehors, Jeep, Kübelwagen et camion d'époque, chasseur écrasé et parachute dans un arbre, barbelés, hérissons, caisses, trous d'obus et poteaux télégraphiques ; les zombies arrivent comme avant.
+afficher: oui

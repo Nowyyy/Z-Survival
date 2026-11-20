@@ -54,7 +54,7 @@ test.describe('portes, hélicoptère et sol de la capture (lot 9a)', () => {
   });
 
   test('rotor de queue : figé en pause (images réelles, aucun pas de jeu), tourne en temps de jeu (step) ; aucune collision ajoutée', async ({ page }) => {
-    await open(page, '/jeu.html?test=1&seed=1&nospawn=1');
+    await open(page, '/jeu.html?test=1&seed=1&nospawn=1&decor=avant'); // lot 9h : l'hélicoptère n'existe plus que dans le décor d'avant (avion à sa place)
     // Pause : la boucle d'images continue (images réelles), le temps de jeu non ; le rotor non plus.
     await page.locator('#btn-pause').click();
     await expect(page.locator('#pause-panel')).toBeVisible();
@@ -76,7 +76,7 @@ test.describe('portes, hélicoptère et sol de la capture (lot 9a)', () => {
 
   test('mouvement réduit : rotor immobile (angle 0) même quand le temps de jeu avance', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
-    await open(page, '/jeu.html?test=1&seed=1&nospawn=1');
+    await open(page, '/jeu.html?test=1&seed=1&nospawn=1&decor=avant'); // lot 9h : rotor de l'hélicoptère du décor d'avant
     await page.evaluate(() => { window.requestAnimationFrame = () => 0; window.__zs.step(2); });
     const r = (await state(page)).scene.wrecks.rotor;
     expect(r.angle).toBe(0);

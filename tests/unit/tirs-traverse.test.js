@@ -44,7 +44,7 @@ describe('données : liste du propriétaire et fichier dérivé', () => {
     expect(gen.tirsReport.problems).toEqual([]);
     const liste = json('data/game/tirs-traversables.json').cartes['rez-de-chaussee'];
     expect([...TIRS.rdc.ids, ...TIRS.rdc.grilles.map((g) => g.id)].sort()).toEqual([...liste.rdc].sort());
-    expect(TIRS.rdc.ids).toHaveLength(13); // lot 9a-I : + sacs-1, sacs-2 (18 de haut)
+    expect(TIRS.rdc.ids).toHaveLength(26); // lot 9a-I : + sacs-1, sacs-2 (18 de haut) ; lot 9h : + 13 objets d'époque dessinés sous l'arme (véhicules aux places des voitures, voiture en flammes, ailes et débris de l'avion, hérissons, barbelés, jerrycans, caisses)
     expect(TIRS.rdc.grilles.map((g) => g.id)).toEqual(['grille-F7', 'grille-F8']);
     expect(TIRS.etage.ids).toHaveLength(5);
     // Chaque meuble listé est DESSINÉ plus bas que l'arme (mobilier.world.json, render.json → gunHeight 43) ; aucun pilier ni escalier.
@@ -54,9 +54,9 @@ describe('données : liste du propriétaire et fichier dérivé', () => {
     const dessin = (id, f) => Math.max(...pieces.filter((p) => p.obstacle === id && p.floor === f).flatMap((p) => p.boxes.map((b) => b.y1)));
     for (const [f, l, ids] of [['rdc', L.rdc, TIRS.rdc.ids], ['etage', L.etage, TIRS.etage.ids]]) {
       for (const id of ids) {
-        const m = meuble(id, l);
+        const m = meuble(id, l) ?? l.decor?.solids?.find((q) => q.id === id); // lot 9h : objets du décor extérieur (hauteur dessinée dans decor.json → epoque)
         expect(m, id).toBeTruthy();
-        expect(m.kind === 'sacs' ? m.hauteur : dessin(id, f), id).toBeLessThan(arme); // sacs de sable : dessinés à leur hauteur (sacsBoxes), sans pièce de mobilier
+        expect(m.kind === 'sacs' || l.decor?.solids?.includes(m) ? m.hauteur : dessin(id, f), id).toBeLessThan(arme); // sacs de sable : dessinés à leur hauteur (sacsBoxes), sans pièce de mobilier
         expect(['pilier', 'escalier'], id).not.toContain(m.kind);
       }
     }

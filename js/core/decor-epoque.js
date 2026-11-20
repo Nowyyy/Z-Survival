@@ -954,20 +954,22 @@ export function objet(type, variante, spec = {}) {
 export function objetsPlaces(doc, { decor, lively, choix } = {}) {
   const ch = choix ?? lireChoix(null);
   const out = [];
+  // Chaque objet garde sa spec (x, y, cap, L, l, rang, id) : la partie le reconstruit à l'identique (objet() est déterministe).
+  const poser = (type, v, spec, extra = {}) => out.push({ ...objet(type, v, spec), spec, ...extra });
   const liste = Array.isArray(doc?.objets) ? doc.objets : [];
   for (const it of liste) {
     if (!it || !CATALOGUE[it.type] || ch.gardes[it.type] === false) continue;
     const v = CATALOGUE[it.type].variantes.includes(it.variante) ? it.variante : ch.variantes[it.type];
     if (it.remplace === 'voitures') {
-      (decor?.cars ?? []).filter((c) => c.burning !== true).forEach((c, i) => out.push({ ...objet(it.type, v, { id: `${it.id}-${i + 1}`, x: c.x + c.w / 2, y: c.y + c.h / 2, L: c.w, l: c.h, rang: i }), remplace: c.id }));
+      (decor?.cars ?? []).filter((c) => c.burning !== true).forEach((c, i) => poser(it.type, v, { id: `${it.id}-${i + 1}`, x: c.x + c.w / 2, y: c.y + c.h / 2, L: c.w, l: c.h, rang: i }, { remplace: c.id }));
     } else if (it.remplace === 'voiture-en-flammes') {
       const c = (decor?.cars ?? []).find((q) => q.burning === true);
-      if (c) out.push({ ...objet(it.type, v, { id: it.id, x: c.x + c.w / 2, y: c.y + c.h / 2 }), remplace: c.id, flammes: true });
+      if (c) poser(it.type, v, { id: it.id, x: c.x + c.w / 2, y: c.y + c.h / 2 }, { remplace: c.id, flammes: true });
     } else if (it.remplace === 'poteaux-electriques') {
       const poles = Array.isArray(lively?.poles) ? lively.poles : [];
-      poles.forEach((p, i) => out.push({ ...objet(it.type, v, { id: `${it.id}-${i + 1}`, x: p.x, y: p.y, cap: num(it.cap), rang: i }), remplace: p.id ?? `poteau-${i + 1}` }));
+      poles.forEach((p, i) => poser(it.type, v, { id: `${it.id}-${i + 1}`, x: p.x, y: p.y, cap: num(it.cap), rang: i }, { remplace: p.id ?? `poteau-${i + 1}` }));
     } else if (isNum(it.x) && isNum(it.y)) {
-      out.push({ ...objet(it.type, v, { id: String(it.id ?? it.type), x: it.x, y: it.y, cap: num(it.cap) }), ...(it.remplace ? { remplace: it.remplace } : {}), ...(it.fumee ? { fumee: true } : {}), ...(it.cratere ? { cratere: { ...it.cratere } } : {}), ...(it.trainee ? { trainee: { ...it.trainee } } : {}) });
+      poser(it.type, v, { id: String(it.id ?? it.type), x: it.x, y: it.y, cap: num(it.cap) }, { ...(it.remplace ? { remplace: it.remplace } : {}), ...(it.fumee ? { fumee: true } : {}), ...(it.cratere ? { cratere: { ...it.cratere } } : {}), ...(it.trainee ? { trainee: { ...it.trainee } } : {}) });
     }
   }
   return out;
@@ -1065,7 +1067,10 @@ export function budgetPlan(objets, fils = [], retires = 0) {
 // entree : { world, decorCfg (decor.json de la carte), doc (decor-epoque.json de la carte), choixJson, geometries (layout → windowGeometries de windows.js,
 // passée par l'appelant : ce module ne dépend pas du siège), navCfg (nav.json), rayon (zombie), toutesVariantes }. → { layout, decor, lively, objets, fils, remplaces, problemes, chemins, retires, ajoutes }.
 export function controlePlan({ world, decorCfg, doc, choixJson = null, geometries = () => [], navCfg = null, rayon = 20, toutesVariantes = true } = {}) {
-  const layout = buildLayout(world, decorCfg);
+  // Plan comparé au décor d'avant : la clé epoque de decor.json (écrite par npm run carte) est ignorée ici.
+  const base = { ...(decorCfg ?? {}) };
+  delete base.epoque;
+  const layout = buildLayout(world, base);
   const decor = layout.decor;
   const lively = generateLivelyDecor({ size: world?.size, footprint: layout.floor, decor });
   const verifier = (choix) => {
@@ -1088,4 +1093,28 @@ export function controlePlan({ world, decorCfg, doc, choixJson = null, geometrie
   const chemins = cheminsZombies({ layout, geoms, retires, ajoutes, grille: { ...(navCfg ?? {}), radius: rayon } });
   for (const c of chemins) if (c.coupe) problemes.push(`chemin coupé : ${c.id} → ${c.fenetre}`);
   return { layout, decor, lively, objets: res.objets, fils: filsTelegraphe(res.objets), remplaces: [...res.remplaces], problemes: [...new Set(problemes)], chemins, retires, ajoutes };
+}
+
+// Lot 9h-C : section « epoque » de decor.json (npm run carte, jamais éditée à la main) : objets retenus (type, variante, spec, rectangles, emprise, hauteur,
+// triangles), ce qu'ils remplacent, couleurs (mélanges de jetons, data/game/decor-epoque.json), cicatrices au sol de l'avion (boîtes plates).
+// ctl : sortie de controlePlan ; footprint : rectangles du bâtiment ; scars : fonction (spec) → { boxes } (groundScarBoxes de epaves.js).
+export function sectionEpoque(ctl, { couleurs = {}, footprint = [], scars = null } = {}) {
+  const objets = ctl.objets.map((o) => ({
+    id: o.id, type: o.type, variante: o.variante, spec: { ...o.spec }, ...(o.remplace ? { remplace: o.remplace } : {}), ...(o.fumee ? { fumee: true } : {}),
+    ...(o.cratere ? { cratere: { ...o.cratere } } : {}), ...(o.trainee ? { trainee: { ...o.trainee } } : {}), ...(o.flammes ? { flammes: true } : {}),
+    hauteur: o.hauteur, emprise: { ...o.emprise }, collision: o.collision, sol: o.sol, triangles: o.compte, rects: o.rects.map((r) => ({ ...r })),
+  }));
+  const avion = objets.find((o) => o.type === 'avion' && o.cratere);
+  const cicatrices = avion && typeof scars === 'function' ? scars(specCratere(avion), footprint).boxes : [];
+  return { couleurs: JSON.parse(JSON.stringify(couleurs)), objets, remplaces: [...ctl.remplaces], cicatrices, triangles: objets.reduce((s, o) => s + o.triangles, 0) + trianglesFils(ctl.fils).length };
+}
+
+// Spec du cratère et de la traînée de l'avion (même forme que l'hélicoptère de epaves.js : unités du jeu, cap = heading).
+export function specCratere(o) {
+  return { x: num(o?.spec?.x), y: num(o?.spec?.y), heading: num(o?.spec?.cap), crater: { rx: num(o?.cratere?.rx), ry: num(o?.cratere?.ry) }, trail: { length: num(o?.trainee?.longueur), width: num(o?.trainee?.largeur) } };
+}
+
+// Objets de la section epoque reconstruits (triangles compris) pour le dessin ; mêmes rectangles que ceux écrits par npm run carte.
+export function objetsDeSection(epoque) {
+  return (Array.isArray(epoque?.objets) ? epoque.objets : []).filter((o) => o && CATALOGUE[o.type]).map((o) => ({ ...objet(o.type, o.variante, { ...o.spec, id: o.id }), spec: o.spec, remplace: o.remplace ?? null, fumee: o.fumee === true, cratere: o.cratere ?? null, trainee: o.trainee ?? null, flammes: o.flammes === true }));
 }

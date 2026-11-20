@@ -76,13 +76,23 @@ export function generateDecor(cfg, world) {
   const solids = [];
   const decorative = [];
   // Lot 5a : hélicoptère écrasé (rectangles validés par npm run carte) et voiture en flammes posée à part (retour du propriétaire) : une voiture de plus.
-  const heli = cfg?.wrecks?.helicopter;
+  // Lot 9h : décor extérieur d'époque (cfg.epoque, écrit par npm run carte d'après decor-epoque.json) : l'avion remplace l'hélicoptère, les véhicules
+  // d'époque les voitures (mêmes rectangles) et la voiture en flammes (même centre), et des objets s'ajoutent. Comme les épaves, rien ne change au tirage à
+  // graine : leurs rectangles s'ajoutent aux solides après lui, et le petit décor qui les touche est retiré (keepOut). Sans cfg.epoque : décor d'avant.
+  const epoque = cfg?.epoque && Array.isArray(cfg.epoque.objets) ? cfg.epoque : null;
+  const epoqueObjets = epoque ? epoque.objets.filter((o) => o && typeof o.id === 'string' && Array.isArray(o.rects)) : [];
+  const remplaceVoiture = new Map(epoqueObjets.filter((o) => typeof o.remplace === 'string' && (o.type === 'vehicule' || o.type === 'vehiculeFeu')).map((o) => [o.remplace, o]));
+  const heli = epoque ? null : cfg?.wrecks?.helicopter;
   const heliRects = validRects(heli?.rects).map((r) => ({ id: r.id, kind: 'helicoptere', x: r.x, y: r.y, w: r.w, h: r.h, hauteur: num(heli?.height, 60) }));
   const keepOut = heli && validRects([heli.visual]).length === 1 ? [{ id: 'helicoptere', ...heli.visual }] : [];
   validRects(heli?.scars).forEach((b, i) => keepOut.push({ id: `cratere-${i + 1}`, x: b.x, y: b.y, w: b.w, h: b.h })); // lot 5a-F : cratère et traînée (plats)
   const placed = cfg?.wrecks?.burningCar;
-  const fixedCar = placed && typeof placed === 'object' && validRects([placed]).length === 1
+  let fixedCar = placed && typeof placed === 'object' && validRects([placed]).length === 1
     ? { id: String(placed.id ?? 'voiture-en-flammes'), kind: 'voiture', x: placed.x, y: placed.y, w: placed.w, h: placed.h, hauteur: num(placed.hauteur, 55), burning: true } : null;
+  // Lot 9h : véhicule d'époque en flammes à la place de la voiture en flammes (son rectangle dessiné, même identifiant, même feu).
+  const feuEpoque = fixedCar ? remplaceVoiture.get(fixedCar.id) : null;
+  const rectFeu = feuEpoque ? validRects(feuEpoque.rects)[0] : null;
+  if (fixedCar && rectFeu) fixedCar = { ...fixedCar, x: rectFeu.x, y: rectFeu.y, w: rectFeu.w, h: rectFeu.h, hauteur: num(rectFeu.hauteur, fixedCar.hauteur), epoque: feuEpoque.id };
   if (fixedCar) keepOut.push({ id: fixedCar.id, x: fixedCar.x, y: fixedCar.y, w: fixedCar.w, h: fixedCar.h });
   const wreckSolids = [...heliRects, ...(fixedCar ? [fixedCar] : [])];
   const nearWreck = (r, m) => [...keepOut, ...wreckSolids].some((k) => rectGap(r, k) < m);
@@ -114,6 +124,12 @@ export function generateDecor(cfg, world) {
       return { id: `voiture-${n}`, kind: 'voiture', x: round(between(road.x + 40, road.x + road.w - 40 - w)), y: round(between(road.y + 10, road.y + road.h - 10 - h)), w, h, hauteur: num(s.voitures?.hauteur, 55) };
     }, solidOk)
     : [];
+  // Lot 9h : véhicules d'époque aux places des voitures (même rectangle ; hauteur dessinée du véhicule).
+  for (const c of cars) {
+    const o = remplaceVoiture.get(c.id);
+    const r = o ? validRects(o.rects)[0] : null;
+    if (r) Object.assign(c, { x: r.x, y: r.y, w: r.w, h: r.h, hauteur: num(r.hauteur, c.hauteur), epoque: o.id });
+  }
   const burningId = typeof cfg?.wrecks?.burningCar === 'string' ? cfg.wrecks.burningCar : null;
   for (const c of cars) if (c.id === burningId) {
     c.burning = true;
@@ -155,6 +171,12 @@ export function generateDecor(cfg, world) {
     return { id: `barriere-${n}`, kind: 'barriere', x: round(between(60, W - 60 - fenceLong)), y: round(between(60, H - 60 - fenceLong)), w: horizontal ? fenceLong : fenceThick, h: horizontal ? fenceThick : fenceLong, hauteur: num(s.barrieres?.hauteur, 26) };
   }, (f) => decoOk(f) && !onGround(f));
 
+  // Lot 9h : objets d'époque qui ne remplacent pas une voiture (avion, camion, barbelés, hérissons, poteaux…) : un solide par rectangle dessiné (kind
+  // « epoque », hauteur dessinée) ; emprises de tous les objets et cicatrices de l'avion dans keepOut (le petit décor qui les touche est retiré).
+  const epoqueSolids = epoqueObjets.filter((o) => o.type !== 'vehicule' && o.type !== 'vehiculeFeu').flatMap((o) => validRects(o.rects).map((r) => ({ id: r.id, kind: 'epoque', objet: o.id, x: r.x, y: r.y, w: r.w, h: r.h, hauteur: num(r.hauteur, 40), tirs: r.tirs === 'passent' ? 'passent' : 'arretes' })));
+  for (const o of epoqueObjets) if (o.type !== 'poteau' && validRects([o.emprise]).length === 1) keepOut.push({ id: o.id, ...o.emprise });
+  validRects(epoque?.cicatrices).forEach((b, i) => keepOut.push({ id: `cratere-avion-${i + 1}`, x: b.x, y: b.y, w: b.w, h: b.h }));
+  wreckSolids.push(...epoqueSolids);
   // Lot 5a : retrait de ce qui touche une épave (après le tirage : la suite à graine ne change pas), puis les épaves à la fin des solides et des voitures.
   const keptTrees = trees.filter((t) => !nearWreck(t, 40));
   const keptBushes = bushes.filter((b) => !nearWreck({ x: b.x - b.r, y: b.y - b.r, w: 2 * b.r, h: 2 * b.r }, 20));
@@ -163,7 +185,7 @@ export function generateDecor(cfg, world) {
   if (fixedCar) cars.push(fixedCar); // en dernier : les autres voitures gardent leur peinture (rang)
   const helicopter = heli && heliRects.length > 0 ? { id: 'helicoptere', x: num(heli.x), y: num(heli.y), heading: num(heli.heading), corner: heli.corner ? { ...heli.corner } : null, rects: heliRects.map((r) => ({ ...r })), visual: keepOut[0] ? { ...keepOut[0] } : null, height: num(heli.height),
     ...(heli.crater ? { crater: { ...heli.crater } } : {}), ...(heli.trail ? { trail: { ...heli.trail } } : {}), ...(Array.isArray(heli.scars) ? { scars: heli.scars.map((b) => ({ ...b })) } : {}), smoke: heli.smoke === true } : null;
-  return { ground, cars, trees: keptTrees, bushes: keptBushes, lamps, fences: keptFences, solids: finalSolids, spawnPoints, corridors, helicopter, keepOut, wreckSolids, removed: { trees: trees.length - keptTrees.length, bushes: bushes.length - keptBushes.length, fences: fences.length - keptFences.length } };
+  return { ground, cars, trees: keptTrees, bushes: keptBushes, lamps, fences: keptFences, solids: finalSolids, spawnPoints, corridors, helicopter, keepOut, wreckSolids, epoque: epoque ? { ...epoque, objets: epoqueObjets } : null, removed: { trees: trees.length - keptTrees.length, bushes: bushes.length - keptBushes.length, fences: fences.length - keptFences.length } };
 }
 
 // Problèmes de cohérence d'un décor (liste de textes, vide si tout va bien) : tout reste dans le monde, aucun obstacle plein ni

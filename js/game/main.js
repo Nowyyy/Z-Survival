@@ -212,6 +212,10 @@ export async function demarrerPartie() {
   // ?empty=1 (seulement avec ?test=1) : la salle du lot 1m sans meuble ni décor, mêmes coordonnées qu'au lot 1m.
   const zones = zonesJson ? zonesToWorld(parseZones(zonesJson), world.transform) : null;
   // Une couche de collisions par étage (lot 3e) ; layouts.rdc est la couche d'avant, qui sert aussi à la caméra et aux dimensions du monde.
+  // Lot 9h : ?test=1&decor=avant : décor extérieur d'avant le lot (hélicoptère, voitures, poteaux électriques ; clé epoque de decor.json ignorée) ;
+  // réglage de test, jamais mémorisé : référence de la trace logique.
+  const decorAvant = testMode && query.get('decor') === 'avant';
+  if (decorAvant) delete decor.epoque;
   const layouts = buildLayouts({ rdc: { world, decor }, etage: upperWorld ? { world: upperWorld } : null, zones }, { empty: emptyMode, slack: camera.slack });
   const layout = layouts.rdc;
 

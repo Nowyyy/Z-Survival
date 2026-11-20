@@ -124,17 +124,20 @@ describe('règles de la carte : extérieur et apparitions', () => {
   });
 
   // Lot 5a (retour du propriétaire) : l'hélicoptère écrasé est « tout au bord », à son bord d'epaves.json (40) ; tout autre décor solide reste à 160.
+  // Lot 9h : les objets d'époque (kind « epoque », decor.json → epoque) s'ajoutent hors de ce compte ; l'avion garde le bord de l'hélicoptère (40), les
+  // poteaux télégraphiques les pieds des poteaux électriques du décor vivant (trottoir, à 132 du mur sud) ; les autres à 160 au moins.
   it('au plus autant de décors solides que l\'ancien decor.json (36), aucun à moins de 160 du bâtiment (hélicoptère : 40, décision du propriétaire)', () => {
-    expect(layout.decor.solids.length).toBeLessThanOrEqual(36);
+    expect(layout.decor.solids.filter((s) => s.kind !== 'epoque').length).toBeLessThanOrEqual(36);
     for (const s of layout.decor.solids) {
-      const min = s.kind === 'helicoptere' ? decorCfg.wrecks.helicopter.edge : 160;
+      if (s.kind === 'epoque' && s.objet.startsWith('poteau-')) continue;
+      const min = s.kind === 'helicoptere' || s.objet === 'avion' ? decorCfg.wrecks.helicopter.edge : 160;
       for (const f of layout.floor) expect(rectGap(s, f), s.id).toBeGreaterThanOrEqual(min);
     }
   });
 
   it('aucun type de décor nouveau : les mêmes que le lot 1b, plus l\'hélicoptère écrasé du lot 5a', () => {
     const kinds = new Set([...layout.decor.solids, ...layout.decor.bushes, ...layout.decor.lamps, ...layout.decor.fences].map((o) => o.kind));
-    for (const k of kinds) expect(['voiture', 'arbre', 'buisson', 'lampadaire', 'barriere', 'helicoptere']).toContain(k); // lot 5a : hélicoptère écrasé (epaves.json)
+    for (const k of kinds) expect(['voiture', 'arbre', 'buisson', 'lampadaire', 'barriere', 'helicoptere', 'epoque']).toContain(k); // lot 5a : hélicoptère écrasé (epaves.json) ; lot 9h : objets d'époque (decor-epoque.json)
     expect(decorCfg.ground.some((g) => g.kind === 'route')).toBe(true);
   });
 

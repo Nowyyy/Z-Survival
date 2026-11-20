@@ -1,0 +1,40 @@
+# Lot 9h — Décor extérieur de la Seconde Guerre mondiale : véhicules, avion écrasé, extérieur d'époque (V0.9)
+## Base
+- `origin/dev` `7514702` (seed 0.38, bilan 9f présent, `main` ancêtre de `dev`, CI verte), arbre propre ; branche `lot-9h` (la session proposait `claude/lot-9h-decor-epoque-p1xtt4` : j'ai suivi le prompt). Commits : A `078e66e`, B `621de4d` (atelier seul fusionné dans `dev` à ta demande : PR #175, `b4b531f`), avance rapide sur `origin/dev` `d43689a` (lot 9g, sans conflit), C `1d6c171`, D `f661a08`, E (ce bilan). Fiche : `Docs/ref/decor-epoque.md`. Clone superficiel de la session : `git fetch --unshallow` (sinon `versions-schema.test` échoue).
+## Choix du propriétaire
+- « Go 9h, j'aime tout ce que tu as fait » : tout gardé, variantes proposées (`data/game/decor-epoque-choix.json` inchangé).
+## Objets
+| Objet | Variante | Place | Hauteur | Tirs | Collision | Triangles |
+|---|---|---|---|---|---|---|
+| Véhicules (4) | Jeep et Kübelwagen en alternance | places des voitures, route du sud | 37 | passent | rectangle 92 × 46 (inchangé) | 188-196 chacun |
+| Véhicule en flammes | Jeep calcinée | centre de la voiture en flammes | 28 | passent | 86 × 46 | 152 |
+| Camion | Dodge WC-51 bâché | route, barrage est (3800, 2850) | 53 | arrêtés | 120 × 56 | 178 |
+| Avion | P-51A, aile arrachée, hélice tordue | angle du L (1690, 1665), cap 165°, cratère, traînée, fumée | 59 | fuselage (44) et dérive arrêtés ; aile et aile arrachée passent | 4 rectangles | 260 |
+| Parachute ; trous d'obus (6) | voilure étalée sur un arbre mort ; moyens | (1850, 1200), à 430 de F2 ; champs | 85 ; 4 (plats) | sans effet | aucune | 128 ; 60 chacun |
+| Barbelés (2) ; hérissons | rouleaux en pyramide ; rangée de 3 | route est, champ nord-ouest ; route est | 29 ; 40 | passent | 123 × 34 ; 162 × 47 | 246 ; 126 |
+| Jerrycans, caisses (2) | pile ; pile au pochoir | près du camion et du projecteur | 30 ; 20 | passent | leur rectangle | 114 ; 32 |
+| Projecteur ; panneau | éteint sur remorque ; deux flèches « PC 2 KM » | champ nord-est (3050, 1000) ; trottoir est | 60 ; 56 | arrêtés | 104 × 80 ; 66 × 15 | 184 ; 34 |
+| Poteaux (7) | une traverse, fils | pieds des poteaux électriques | 150 | arrêtés (pied) | 10 × 9 | 35 + 72 (fils) |
+## Zombies et chemins
+- Rien dans un couloir d'approche ni à moins de 70 d'un point d'apparition, pour toutes les variantes (`npm run carte`, plan de l'atelier) ; 14 chemins intacts, aucun allongé. Arrivées (manche 10, graines 1 à 6, portes ouvertes) **identiques avant / après** : 60 zombies, médianes F1 3,3 s · F2 5,1 · F3 3,75 · F4 5,35 · F5 3,35 · F6 2,8 · F8 3,25 (étage U1 à U7 : 2,2 à 8,65). `blocage.mjs` (deux étages, graines 1 et 2) : 0 zombie coincé avant et après.
+## Feux et lumière
+- Le véhicule en flammes garde l'identifiant, le feu à deux foyers (ceux du modèle) et la source de lumière `feu:feu-voiture-en-flammes` (choisie près de l'angle sud-est, avant comme après) ; fumée de l'avion = réglage de l'hélicoptère, sans lumière. Lampes et `lumieres.json` inchangés (`lampes.md` n'a pas à changer).
+## Preuves
+- **G1** trace 6 × 600 **identique à chaque pas** à `origin/dev` `d43689a` (finales `acb2e6c1…`, `6fb89b93…`, `a5a13678…`, `9f886452…`, `7ecdd7f4…`, `287ff363…`), avec et sans `&decor=avant` : aucun écart, car rien n'entre dans un couloir et aucun tir des six scénarios ne croise un objet ; avant le GO, identique à `7514702`. **G2** ci-dessus. **G3** `mesurer.mjs --ref --ref-memes-reglages` (1 passe, 120 images) : appels −1 à +1, triangles +1 588 à +2 158 ; pire cas U4 Élevé 39 039 (37 291 avant), 92 appels ; ombres : les 4 véhicules seulement (comme les voitures) ; pixels (vue d'ensemble, onglet caché) : 36 896 changent dehors en Élevé, 33 996 en Faible ; 0 dans la vue intérieure ; 0 avec `&decor=avant`. **G4** marquages : étoile et numéro « 42-7 » inventé ; Kübelwagen et Blitz sans marquage ; pochoirs « CAL .30 », « M2 - 250 », « PC 2 KM » ; aucun symbole interdit (test) ; tout en code, atlas de 256 px, aucune image (garde-fous intacts). **G5** aucune requête externe, aucune écriture ; menu 27 fichiers (inchangé) ; partie 198 → 199 (`js/core/decor-epoque.js`) ; Lighthouse mobile 5 passes : `jeu.html` 81, 80, 80, 83, 79 → 83, 83, 83, 82, 83 ; `index.html` 90 ×5 ; CLS ≤ 0,001.
+## Tests adaptés
+- Nouveaux : `decor-epoque.test.js` (56), `decor-epoque-atelier.spec.js` (4), `decor-epoque-jeu.spec.js` (3). `&decor=avant` (référence d'avant, comme `&tirtraverse=0` au lot 8l) : `carte.spec` (épaves du lot 5a), `correctifs-9a.spec` (rotor), budgets d'`argent`, `atelier-carte`, `atelier-detail`, `lampes`. `carte.spec` : le plan montre les rectangles d'époque. `graphismes.spec` : 139 → 140 et 140 → 141 modules (`decor-epoque.js`). `tirs-traverse.test` 13 → 26. `maps-regles`, `maps-conversion`, `epaves`, `lot1-regles` : clé `epoque`, kind `epoque`, module admis. **Écarts venus du lot 9g, présents sur `origin/dev`** et corrigés ici pour la CI : `lampes.spec` (ORIGINE +16 en Élevé, +292 en Moyen et Faible), `atelier-detail.spec` (R3 +284, U1 +296, U4 +472). Journal : `data-changelog.test`, `publication.test`, `publication.spec` (+ lot-9h en tête). Aucune assertion retirée.
+## CI
+- Standard de `lot-9h` : A et B vertes ; C rouge sur les seuls écarts du lot 9g ci-dessus (corrigés en E) ; E et `dev` après fusion : dans le message de fin.
+## Points ouverts
+- Rendu jugé sur captures seulement (je ne peux ni jouer sur téléphone ni juger comme toi) ; étoile blanche de l'avion à 200 de F2 (prudence visuelle) ; barbelés discrets à la distance du jeu ; parachute gris clair.
+## Idées
+- Projecteur allumé (faisceau) ; variantes d'objets par emplacement ; décor d'époque pour les cartes 2 et 3 ; caisses fouillables (lot d'achat).
+## Entrée du journal
+- `lot-9h` (v0.9, 2026-11-20) « Décor extérieur de 1942 » (4 points) ; bloc `[lot-9h]` (`afficher: oui`).
+## Lignes à ajouter à `CLAUDE.md` et `conventions.md`
+- `CLAUDE.md` : « Décor d'époque (lot 9h) : decor-epoque.json de la carte + decor-epoque-choix.json → npm run carte → decor.json (epoque) ; js/core/decor-epoque.js (pur) ; ?test=1&decor=avant ; atelier-decor.html ; Docs/ref/decor-epoque.md. »
+- `conventions.md` : « Décor d'époque : objets solides de kind epoque (rectangle dessiné, tirs selon la hauteur, tirs-traversables.json) ; véhicules aux rectangles des voitures (mêmes identifiants) ; atlas d'époque généré (256 px, couleurs = mélanges de jetons) ; un maillage d'époque sans ombre, un maillage des véhicules avec ombre ; tests d'avant le lot : &decor=avant. »
+## Passages du seed à réécrire par le propriétaire
+- Monde et « Époque » : extérieur de 1942 (véhicules, avion P-51 et parachute, barbelés, hérissons, caisses, trous d'obus, poteaux télégraphiques, projecteur) ; plus d'hélicoptère ni de voitures modernes ; tableau des lots : 9h fait.
+## À faire par moi
+1. Sur PC et téléphone, jouer quelques manches en regardant l'extérieur (lisibilité, zombies qui arrivent bien, feux), à chaque préréglage graphique. 2. Rapporter les retours (positions : `data/game/maps/rez-de-chaussee/decor-epoque.json`, variantes : `data/game/decor-epoque-choix.json`, puis `npm run carte`).

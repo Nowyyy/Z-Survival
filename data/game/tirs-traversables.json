@@ -1,6 +1,6 @@
 {
   "_provisoire": "Liste provisoire (lot 8j), à ajuster par le propriétaire en jouant.",
-  "_note": "Lot 8j : objets par-dessus lesquels (ou à travers lesquels) passent les TIRS (balles et laser de visée) ; le joueur et les zombies restent bloqués. Par carte puis par étage (rdc, etage), les identifiants des meubles (world.json, etage.world.json → obstacles), des objets du décor extérieur (voiture-1…) et des grilles (decor-interieur.json : grille-F7, grille-F8). Règle (retour du propriétaire après le lot 8j) : les meubles DESSINÉS plus bas que l'arme du joueur (render.json → gunHeight, 43 ; hauteur lue dans mobilier.world.json) et toutes les grilles ; jamais les piliers, les escaliers ni un objet qui atteint la hauteur de l'arme. Après un changement : npm run carte (vérifie les identifiants et écrit tirs.world.json), puis npm test. Relevé et mode d'emploi : Docs/ref/correctifs-8j.md.",
+  "_note": "Lot 8j : objets par-dessus lesquels (ou à travers lesquels) passent les TIRS (balles et laser de visée) ; le joueur et les zombies restent bloqués. Par carte puis par étage (rdc, etage), les identifiants des meubles (world.json, etage.world.json → obstacles), des objets du décor extérieur (voiture-1…) et des grilles (decor-interieur.json : grille-F7, grille-F8). Règle (retour du propriétaire après le lot 8j) : les meubles DESSINÉS plus bas que l'arme du joueur (render.json → gunHeight, 43 ; hauteur lue dans mobilier.world.json) et toutes les grilles ; jamais les piliers, les escaliers ni un objet qui atteint la hauteur de l'arme. Après un changement : npm run carte (vérifie les identifiants et écrit tirs.world.json), puis npm test. Relevé et mode d'emploi : Docs/ref/correctifs-8j.md. Lot 9h (décor extérieur d'époque, même règle) : véhicules d'époque aux places des voitures (voiture-1 à voiture-4, voiture-en-flammes : dessinés sous 43), ailes et débris de l'avion, hérissons, barbelés, jerrycans et caisses ; jamais le fuselage ni la dérive de l'avion, le camion, les poteaux, le panneau ni le projecteur (Docs/ref/decor-epoque.md).",
   "cartes": {
     "rez-de-chaussee": {
       "rdc": [
@@ -18,7 +18,20 @@
         "sacs-1",
         "sacs-2",
         "grille-F7",
-        "grille-F8"
+        "grille-F8",
+        "voiture-1",
+        "voiture-2",
+        "voiture-3",
+        "voiture-4",
+        "voiture-en-flammes",
+        "avion-aile",
+        "avion-debris",
+        "herissons-route-herisson",
+        "barbeles-route-barbeles",
+        "barbeles-nord-barbeles",
+        "jerrycans-camion-bidons",
+        "caisses-camion-caisses",
+        "caisses-artillerie-caisses"
       ],
       "etage": [
         "Q2",
