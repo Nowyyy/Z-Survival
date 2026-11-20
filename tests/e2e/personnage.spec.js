@@ -22,7 +22,8 @@ test.beforeEach(async ({ page }) => {
   await poserProgression(page);
 });
 const ATTENDU = statistiquesEffectives(progressionDemo().niveaux ?? Object.fromEntries(['degats', 'portee', 'precision', 'cadence', 'vitesse', 'vie', 'regen', 'chutes', 'reparation'].map((k) => [k, 0])), creerEtatEquipement(cat, depart), cat, PARAMS).niveaux;
-const ANIMS_E9 = ['e8-coulure', 'e8-goutte', 'e9-bandana', 'e9-ombre', 'e9-projecteur', 'e9-respire', 'e9-tete', 'e9-viser']; // retour du propriétaire : coulures du bandeau commun (e8-coulure, e8-goutte)
+// Lot 9g : bandana retiré (casque M1 du soldat de 1942) : plus d'animation e9-bandana ; l'antenne (e9-antenne) n'anime que le personnage 2.
+const ANIMS_E9 = ['e8-coulure', 'e8-goutte', 'e9-ombre', 'e9-projecteur', 'e9-respire', 'e9-tete', 'e9-viser']; // retour du propriétaire : coulures du bandeau commun (e8-coulure, e8-goutte)
 
 function surveiller(page, baseURL) {
   const problemes = [];
@@ -462,7 +463,7 @@ test.describe('sous-menus Inventaire, Fusion, Personnages (E9-2 à E9-4)', () =>
     await expect(page.locator('#menu-personnages-choisir')).toHaveAttribute('aria-disabled', 'true');
     await expect(page.locator('#menu-personnages-niveau')).toHaveText('Niveau 1 · prochain niveau : 2');
     await expect(page.locator('#menu-personnages-barre')).toHaveAttribute('aria-valuenow', '1');
-    expect(await nomsAnims(page, '#menu-ecran-personnages')).toEqual(['e8-coulure', 'e8-goutte', 'e9-bandana', 'e9-filigrane', 'e9-respire', 'e9-tete', 'e9-viser']);
+    expect(await nomsAnims(page, '#menu-ecran-personnages')).toEqual(['e8-coulure', 'e8-goutte', 'e9-filigrane', 'e9-respire', 'e9-tete', 'e9-viser'] /* lot 9g : sans bandana */);
     expect(await etats(page, '#menu-ecran-personnages')).toEqual(['running']);
     // Verrouillé : sélectionnable pour sa fiche, ni choisissable ni améliorable.
     await page.locator('#menu-perso-carte-personnage-3').click();

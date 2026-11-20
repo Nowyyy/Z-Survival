@@ -28,7 +28,8 @@ const variants = load('zombie-variants');
 describe('persos-params.js : lecture des paramètres', () => {
   // Lot 3m : le défaut est la table des choix (?perso=choix ; data/game/persos-choix.json : « riche » pour les 5, sang complet).
   const choix = load('persos-choix');
-  it('défauts (choix du propriétaire, lot 3m : table des choix) : variantes riche, sang complet, usure auto ; actif', () => expect(readPersosParams('', choix)).toMatchObject({ perso: 'choix', sang: '1', usure: 'auto', active: true, slots: { joueur: 'riche', marcheur: 'riche', petit: 'riche', voute: 'riche', grand: 'riche' } }));
+  // Lot 9g (GO du propriétaire) : la table nomme « epoque » (avant : « riche ») ; la variante d'époque est résolue à l'attache (persos-runtime.js).
+  it('défauts (choix du propriétaire, lots 3m et 9g : table des choix) : variantes « epoque », sang complet, usure auto ; actif', () => expect(readPersosParams('', choix)).toMatchObject({ perso: 'choix', sang: '1', usure: 'auto', active: true, slots: { joueur: 'epoque', marcheur: 'epoque', petit: 'epoque', voute: 'epoque', grand: 'epoque' } }));
   it('?perso=actuel&sang=0 (lot 5e : valeur inconnue, plus de jeu d\'avant le lot 3j) : défaut, actif ; réduit et 0 restent disponibles pour le menu d\'options', () => {
     expect(readPersosParams('?perso=actuel&sang=0')).toMatchObject({ perso: 'choix', sang: '0', usure: 'auto', active: true });
     expect(readPersosParams('?sang=reduit').sang).toBe('reduit');
@@ -162,7 +163,7 @@ describe('persos-runtime.js : accroches (sans rendu)', () => {
     const { pv } = setup('C', '0');
     pv.impacts([{ enemyId: 1, x: 0, y: 0 }], [{ id: 1 }], [{ id: 1, x: 10, y: 0, type: 'marcheur', visual: 0 }], { x: 0, y: 0 });
     const st = pv.state({});
-    expect(Object.keys(st)).toEqual(['perso', 'sang', 'usure', 'wear', 'architecture', 'characters', 'slots', 'choix', 'blood', 'textures', 'render']); // lot 3m : slots, choix
+    expect(Object.keys(st)).toEqual(['perso', 'sang', 'usure', 'wear', 'architecture', 'characters', 'slots', 'personnage', 'choix', 'blood', 'textures', 'render']); // lot 3m : slots, choix ; lot 9g : personnage joué
     expect(st.blood).toMatchObject({ particules: 0, taches: 0, cadavres: 0 });
     after();
   });

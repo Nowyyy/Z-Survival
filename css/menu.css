@@ -2321,8 +2321,32 @@
 .e9-sil-sang { fill: var(--menu-panneau-atteint); opacity: 0.8; }
 .e9-sil-arme { fill: var(--menu-perso-arme); }
 .e9-sil-peau { fill: var(--menu-perso-peau); }
-.e9-sil-cheveux { fill: var(--menu-perso-sangle); }
-.e9-sil-bandana { fill: var(--menu-panneau-atteint); }
+/* Lot 9g : tenue d'époque (soldats américains de 1942, comme en partie ; aucun insigne). Couleurs : jetons existants mêlés aux tons sombres de la
+   silhouette ; verrouillé (sans .e9-ouvert) : tout reste de la teinte sombre. Fantassin : casque M1 gris, guêtres de toile ; parachutiste radio :
+   veste verte, casque à filet, poste radio et antenne, poches de cuisse, bottes de saut. */
+.e9-sil-casque,
+.e9-buste-casque { fill: color-mix(in srgb, var(--e9-teinte, var(--menu-perso-inconnu)) 70%, var(--menu-perso-assombri)); }
+.e9-ouvert .e9-sil-casque,
+.e9-ouvert.e9-buste .e9-buste-casque { fill: color-mix(in srgb, var(--perso-tissu-gris) 42%, var(--menu-perso-jambes)); }
+.e9-ouvert.e9-tenue-radio .e9-sil-casque,
+.e9-ouvert.e9-tenue-radio.e9-buste .e9-buste-casque { fill: color-mix(in srgb, var(--perso-tissu-olive) 36%, var(--menu-perso-jambes)); }
+.e9-sil-jugulaire,
+.e9-sil-filet { fill: none; stroke: var(--menu-perso-sangle); stroke-width: 2.4; stroke-linecap: round; }
+.e9-sil-ceinturon { fill: var(--menu-perso-sangle); }
+.e9-sil-cartouche { fill: var(--menu-perso-poche); }
+.e9-ouvert .e9-sil-ceinturon { fill: color-mix(in srgb, var(--perso-sac) 30%, var(--menu-perso-jambes)); }
+.e9-ouvert .e9-sil-cartouche { fill: color-mix(in srgb, var(--perso-sac) 40%, var(--menu-perso-jambes)); }
+.e9-sil-gourde { fill: var(--menu-perso-poche); }
+.e9-sil-guetres { fill: var(--menu-perso-poche); }
+.e9-ouvert .e9-sil-guetres { fill: color-mix(in srgb, var(--perso-pantalon-toile) 45%, var(--menu-perso-jambes)); }
+.e9-sil-radio { fill: var(--menu-perso-poche); }
+.e9-ouvert .e9-sil-radio { fill: color-mix(in srgb, var(--perso-tissu-olive) 26%, var(--menu-perso-jambes)); }
+.e9-sil-antenne,
+.e9-buste-antenne { fill: none; stroke: var(--menu-perso-arme); stroke-width: 2.4; stroke-linecap: round; }
+.e9-buste-antenne { stroke-width: 1.4; }
+.e9-ouvert.e9-tenue-radio .e9-sil-buste,
+.e9-ouvert.e9-tenue-radio.e9-buste { fill: color-mix(in srgb, var(--perso-tissu-olive) 42%, var(--menu-perso-jambes)); }
+.e9-ouvert.e9-tenue-radio .e9-sil-bras { fill: color-mix(in srgb, var(--perso-tissu-olive) 36%, var(--menu-perso-jambes)); }
 .e9-sil-jambes { fill: var(--menu-perso-jambes); }
 .e9-sil-bottes { fill: var(--menu-perso-bottes); }
 .e9-sil-ombre { fill: var(--menu-perso-ombre); }
@@ -2332,7 +2356,7 @@
    du bandana décalait le pivot et la tête sortait de son axe. */
 .e9-sil-tete { transform-box: view-box; transform-origin: 90px 72px; animation: e9-tete 5s ease-in-out infinite; }
 .e9-sil-viser { transform-box: view-box; transform-origin: 122px 86px; animation: e9-viser 2.6s ease-in-out infinite; }
-.e9-sil-pan { transform-box: fill-box; transform-origin: 0% 50%; animation: e9-bandana 1.2s ease-in-out infinite; }
+.e9-sil-antenne { transform-box: view-box; transform-origin: 108px 72px; animation: e9-antenne 1.6s ease-in-out infinite; }
 .e9-sil-ombre { transform-box: fill-box; transform-origin: 50% 50%; animation: e9-ombre 2.6s ease-in-out infinite; }
 
 @keyframes e9-respire {
@@ -2351,9 +2375,9 @@
   50% { transform: rotate(-7deg); }
 }
 
-@keyframes e9-bandana {
-  0%, 100% { transform: skewY(0deg); }
-  50% { transform: skewY(12deg); }
+@keyframes e9-antenne {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(4deg); }
 }
 
 @keyframes e9-ombre {
@@ -4743,19 +4767,22 @@
 .e10-avatar-svg .av-habit { fill: var(--av-habit); }
 .e10-avatar-svg .av-sombre { fill: var(--perso-sombre); }
 .e10-avatar-svg .av-acc { fill: var(--av-acc, var(--menu-panneau-atteint)); }
-.e10-avatar-svg .av-acc2 { fill: var(--perso-casque); }
 .e10-avatar-svg .av-yeux { fill: var(--perso-yeux); }
 .e10-avatar-svg .av-sang { fill: var(--menu-sang); }
-.e10-avatar-svg .av-lampe { fill: var(--perso-lampe); }
 .e10-avatar-svg .av-trait { fill: none; stroke: var(--perso-sombre); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
-.e10-avatar-svg .av-col { fill: var(--perso-tissu-os); }
+.e10-avatar-svg .av-col { fill: var(--av-col, var(--perso-tissu-os)); }
+/* Lot 9g : tenues d'époque (casques M1 et modèle 1935, calot, filet, camouflage, antenne du poste radio) ; aucun insigne. */
+.e10-avatar-svg .av-casque { fill: var(--av-casque, var(--perso-sombre)); }
+.e10-avatar-svg .av-camo { fill: var(--av-camo, var(--perso-cuir)); }
+.e10-avatar-svg .av-filet { fill: none; stroke: var(--perso-sombre); stroke-width: 1.2; stroke-linecap: round; }
+.e10-avatar-svg .av-antenne { fill: none; stroke: var(--perso-sombre); stroke-width: 1.6; stroke-linecap: round; }
 .e10-avatar-anonyme { --av-peau: var(--perso-anonyme-tete); --av-habit: var(--perso-anonyme); } /* par défaut : tout gris */
-.e10-avatar-survivant { --av-peau: var(--perso-peau-joueur); --av-habit: var(--perso-joueur-veste); }
-.e10-avatar-eclaireur { --av-peau: var(--perso-peau-joueur); --av-habit: var(--perso-joueur-sweat); }
-.e10-avatar-tireur { --av-peau: var(--perso-peau-joueur); --av-habit: var(--perso-joueur-vif); }
-.e10-avatar-rodeur { --av-peau: var(--perso-peau-cendre); --av-habit: var(--perso-tissu-os); }
-.e10-avatar-ouvrier { --av-peau: var(--perso-peau-verte); --av-habit: var(--perso-tissu-kaki); --av-acc: var(--perso-orange); }
-.e10-avatar-affame { --av-peau: var(--perso-peau-jaune); --av-habit: var(--perso-tissu-gris); }
+.e10-avatar-survivant { --av-peau: var(--perso-peau-joueur); --av-habit: var(--perso-tissu-sable); --av-casque: color-mix(in srgb, var(--perso-tissu-gris) 62%, var(--perso-sombre)); }
+.e10-avatar-eclaireur { --av-peau: var(--perso-peau-joueur); --av-habit: var(--perso-tissu-olive); --av-casque: color-mix(in srgb, var(--perso-tissu-olive) 55%, var(--perso-sombre)); --av-acc: var(--perso-pantalon-toile); }
+.e10-avatar-tireur { --av-peau: var(--perso-peau-joueur); --av-habit: var(--perso-tissu-olive); --av-casque: var(--perso-tissu-sable); --av-camo: color-mix(in srgb, var(--perso-cuir) 70%, var(--perso-sombre)); }
+.e10-avatar-rodeur { --av-peau: var(--perso-peau-cendre); --av-habit: var(--perso-tissu-kaki); --av-casque: color-mix(in srgb, var(--perso-tissu-kaki) 55%, var(--perso-sombre)); --av-col: color-mix(in srgb, var(--perso-tissu-olive) 50%, var(--perso-sombre)); }
+.e10-avatar-ouvrier { --av-peau: var(--perso-peau-verte); --av-habit: var(--perso-tissu-kaki); --av-casque: color-mix(in srgb, var(--perso-tissu-kaki) 70%, var(--perso-sombre)); --av-acc: var(--perso-cuir); }
+.e10-avatar-affame { --av-peau: var(--perso-peau-jaune); --av-habit: var(--perso-tissu-gris); --av-col: color-mix(in srgb, var(--perso-tissu-gris) 70%, var(--perso-sombre)); }
 
 /* Retour du propriétaire : petit menu des avatars sous le grand portrait (à la place du bouton, du pseudo et du compte) ; tuiles carrées de
    44 px au moins (cibles jointives), rond visible 4 px plus petit (l'écart entre deux ronds) ; autant de colonnes que la carte en tient (quatre dès

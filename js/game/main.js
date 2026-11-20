@@ -247,6 +247,8 @@ export async function demarrerPartie() {
     now: () => Date.now(),
   });
   const loadedSave = repository.load();
+  // Lot 9g : personnage joué (sauvegarde v2 : survivant ou personnage-2) : apparence d'époque du joueur (js/game/persos-runtime.js), lue avant la partie.
+  persos?.choisirPersonnage?.(loadedSave.status === 'ok' ? loadedSave.save?.persos?.choisi : null);
   // Lot 8d : niveaux effectifs calculés par le menu (équipement porté, capacité du personnage), reçus par l'option de démarrage (jamais par l'adresse) :
   // ils remplacent ceux de la sauvegarde pour cette partie seulement (source « menu ») ; ?lvl= garde la priorité ; rien n'est écrit (la banque ne
   // recopie que les niveaux de la sauvegarde). Partie directe : aucune option, niveaux lus comme avant.
