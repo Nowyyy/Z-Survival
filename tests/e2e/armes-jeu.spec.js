@@ -306,6 +306,9 @@ test.describe('emplacements d\'armes et rechargement sur téléphone (parties E,
     await waitReady(page);
     // Partie R : sur un écran tactile, les rappels des touches 1 et 2 ne s'affichent jamais, même avant le premier toucher.
     await expect(page.locator('#arme-slot-1 .arme-slot-touche')).toBeHidden();
+    // Partie T : un écran tactile démarre en mode tactile (bouton de rechargement, nombre de balles sous les emplacements) avant tout toucher.
+    await expect(page.locator('#game-root')).toHaveAttribute('data-input', 'touch');
+    await expect(page.locator('#btn-recharger')).toBeVisible();
     // Passage au toucher : un doigt posé puis levé sur la zone de jeu.
     await page.touchscreen.tap(200, 300);
     await expect(page.locator('#game-root')).toHaveAttribute('data-input', 'touch');
@@ -372,10 +375,10 @@ test.describe('emplacements d\'armes et rechargement sur téléphone (parties E,
       // Partie S : le nombre de balles est centré sous les emplacements, dans la marge du bas, sans les toucher ; les emplacements restent à
       // 16 px (+ zone de sécurité) du bas.
       expect(touche(bx.munitions, bx.slots), z).toBe(false);
-      expect(bx.munitions.top, z).toBeGreaterThanOrEqual(bx.slots.bottom - 0.5);
+      expect(bx.munitions.top - bx.slots.bottom, z).toBeGreaterThanOrEqual(3.5); // partie T : un petit espace (4 px)
       expect(bx.munitions.bottom, z).toBeLessThanOrEqual(bx.hauteur + 0.5);
       expect(Math.abs((bx.munitions.left + bx.munitions.right) / 2 - (bx.slots.left + bx.slots.right) / 2), z).toBeLessThanOrEqual(1);
-      expect(Math.abs(bx.hauteur - bx.slots.bottom - (16 + bas)), z).toBeLessThanOrEqual(0.5);
+      expect(Math.abs(bx.hauteur - bx.slots.bottom - (16 + bas + Math.max(0, 4 - bas))), z).toBeLessThanOrEqual(0.5); // Android : 4 px de plus
       expect(touche(bx.recharger, bx.slots), z).toBe(false);
       for (const st of bx.sticks) expect(touche(bx.slots, st), z).toBe(false);
       expect(Math.abs((bx.slots.left + bx.slots.right) / 2 - bx.largeur / 2), z).toBeLessThanOrEqual(1);
@@ -667,5 +670,49 @@ test('pas chassé : visée en haut, marche à gauche : le joueur reste tourné v
   expect(r[0].lateral * r[1].lateral).toBeLessThan(0); // côtés opposés
   expect(r[2].avant).toBeGreaterThan(0.9);
   expect(r[3].ecart).toBeLessThan(0.35); // recule en regardant devant lui
+});
+
+// Retours du propriétaire, partie T : « Recharge » dans la colonne centrale du haut (là où s'affiche le compte à rebours « À terre ») ; aura
+// blanche quand les zombies proches sont repoussés (chute, relevage).
+test('« Recharge » sous la vague, comme le compte à rebours « À terre » ; aura blanche au repoussement des zombies (puis elle s\'efface)', async ({ page }) => {
+  await page.goto('/jeu.html?test=1&seed=2&nospawn=1&map=salle&lum=off&vhs=0');
+  await waitReady(page);
+  await page.evaluate(() => {
+    const zs = window.__zs;
+    zs.donnerArme('thompson');
+    for (let i = 0; i < 30; i += 1) zs.step(0.05);
+    zs.setWaveParams({ hp: { hpLinearPerRound: 1000, hpExpStartRound: 1000, hpExpFactor: 1, hpCap: 1e9 }, damage: { factor: 1, cap: 0.0001 } });
+    const p = zs.getState().player;
+    zs.spawnEnemy(p.x + 150, p.y, { type: 'marcheur', gait: 'lent', wave: 3 });
+    for (let i = 0; i < 6; i += 1) {
+      zs.setInput({ aim: { angle: 0 } });
+      zs.step(0.05);
+    }
+    zs.killAll();
+    zs.recharger();
+    zs.step(0.05);
+  });
+  const message = page.locator('.hud-tc #hud-ammo-state');
+  await expect(message).toHaveText('Recharge');
+  await expect(message).toBeVisible();
+  const [m, vague] = await Promise.all([message.boundingBox(), page.locator('#hud-wave').boundingBox()]);
+  expect(Math.abs(m.x + m.width / 2 - (vague.x + vague.width / 2))).toBeLessThanOrEqual(2); // centré sous la vague
+  expect(m.y).toBeGreaterThanOrEqual(vague.y + vague.height - 1);
+  await page.evaluate(() => { for (let i = 0; i < 60; i += 1) window.__zs.step(0.05); });
+  await expect(page.locator('#hud-ammo-state')).toBeHidden();
+  // Aura : lancée à la chute (repoussement), visible, puis effacée après 0,5 s.
+  const aura = await page.evaluate(async () => {
+    const zs = window.__zs;
+    const image = () => new Promise((ok) => requestAnimationFrame(() => requestAnimationFrame(ok)));
+    zs.downPlayer();
+    zs.step(0.05);
+    await image();
+    const pendant = zs.getState().armes.aura;
+    for (let i = 0; i < 12; i += 1) zs.step(0.05);
+    await image();
+    return { pendant, apres: zs.getState().armes.aura };
+  });
+  expect(aura.pendant.lancees).toBe(1);
+  expect(aura.apres.visible).toBe(false);
 });
 

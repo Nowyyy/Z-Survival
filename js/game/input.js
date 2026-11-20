@@ -20,7 +20,10 @@ export function createInput(root, { onCommand = () => {}, isBlocked = () => fals
     left: { el: root.querySelector('#stick-left'), id: null, origin: null, vec: { x: 0, y: 0 } },
     right: { el: root.querySelector('#stick-right'), id: null, origin: null, vec: { x: 0, y: 0 } },
   };
-  const state = { type: 'mouse', pointer: null };
+  // Lot 9e (retour du propriétaire, iPhone : « avant que je touche l'écran, les balles sont en bas à droite comme sur PC ») : un écran tactile
+  // sans souris démarre en mode tactile (boutons, emplacements et sticks de téléphone dès l'ouverture) ; sinon la souris, comme avant.
+  const tactile = typeof window.matchMedia === 'function' && window.matchMedia('(hover: none) and (pointer: coarse)').matches;
+  const state = { type: tactile ? 'touch' : 'mouse', pointer: null };
 
   const setType = (type) => {
     if (state.type === type) return;
@@ -152,6 +155,7 @@ export function createInput(root, { onCommand = () => {}, isBlocked = () => fals
   const noMenu = (event) => event.preventDefault();
   root.addEventListener('contextmenu', noMenu);
   root.dataset.input = state.type;
+  if (tactile) showIdle();
 
   return {
     // Direction voulue : clavier d'abord, sinon stick gauche (non normalisée : un stick incliné à moitié avance à moitié vitesse).

@@ -233,6 +233,37 @@ export function createGame(ctx) {
   let armeVue = null; // arme montrée sur le personnage (identifiant)
   let lastGun = null; // bout du canon dessiné à la dernière image (tests : getState().armes.canon)
   let gesteVu = null; // geste du rechargement à la dernière image (tests : getState().armes.geste)
+  // Aura blanche (partie T, retour du propriétaire) : quand les zombies proches sont repoussés (chute, relevage, arrivée à un étage), un anneau
+  // blanc part du joueur jusqu'au rayon du repoussement et s'efface (0,5 s ; mouvement réduit : il apparaît au rayon et s'efface). Dessin seul,
+  // aucun effet de jeu ; une géométrie et une matière créées une fois (un appel tant qu'il se voit) ; couleur du joueur (--game-player).
+  const AURA_DUREE = 0.5;
+  let aura = null; // { t0, rayon } (temps de jeu)
+  let aurasLancees = 0;
+  function lancerAura(rayon) {
+    aura = { t0: sim.time, rayon: Math.max(1, num(rayon, 60)) };
+    aurasLancees += 1;
+  }
+  const auraMat = new THREE.MeshBasicMaterial({ color: palette.player, transparent: true, opacity: 0, depthWrite: false });
+  const auraMesh = new THREE.Mesh(new THREE.RingGeometry(0.6, 1, 48), auraMat);
+  auraMesh.name = 'aura-repoussement';
+  auraMesh.rotation.x = -Math.PI / 2;
+  auraMesh.visible = false;
+  auraMesh.renderOrder = 2;
+  world.dynamic.add(auraMesh);
+  function dessinerAura(p) {
+    const u = aura ? (sim.time - aura.t0) / AURA_DUREE : 1;
+    if (!aura || u >= 1 || u < 0) {
+      auraMesh.visible = false;
+      if (aura && u >= 1) aura = null;
+      return;
+    }
+    const ease = 1 - (1 - u) * (1 - u);
+    const r = reduced ? aura.rayon : num(sim.player.r, 18) + (aura.rayon - num(sim.player.r, 18)) * ease;
+    auraMesh.position.set(p.x, 1.5, p.y);
+    auraMesh.scale.set(r, r, r);
+    auraMat.opacity = 0.85 * (1 - u);
+    auraMesh.visible = true;
+  }
   // Largeur du nombre de balles (parties R et S) : le plus long « chargeur / réserve » pleins de toutes les armes utilisables (réserve
   // illimitée : « ∞ ») : le bloc des munitions garde la même taille d'une arme à l'autre.
   const largeurMunitions = tableArmes ? Math.max(...tableArmes.actives.map((id) => `${tableArmes.armes[id].chargeur} / ${tableArmes.armes[id].reserve === Infinity ? '∞' : tableArmes.armes[id].reserve}`.length)) : null;
@@ -262,7 +293,7 @@ export function createGame(ctx) {
   let armesApi = null; // méthodes de la partie (recharger, changerArme), pour les boutons de l'interface des armes
   let etaitASec = false;
   // Lot 9e : munitions du HUD, boutons tactiles près du stick droit, annonces (js/game/armes-ui.js).
-  const armesUi = tableArmes && armesCfg ? createArmesUi({ dict: ctx.dict, root: document.getElementById('game-root'), col: document.querySelector('.hud-tl'), donnees: armesCfg.donnees, choix: armesCfg.choix, annonce: (t) => ctx.ui?.setLive?.(t), onRecharger: () => armesApi?.recharger(), onChoisir: (i) => armesApi?.changerArme(i) }) : null;
+  const armesUi = tableArmes && armesCfg ? createArmesUi({ dict: ctx.dict, root: document.getElementById('game-root'), col: document.querySelector('.hud-tl'), centre: document.querySelector('.hud-tc'), donnees: armesCfg.donnees, choix: armesCfg.choix, annonce: (t) => ctx.ui?.setLive?.(t), onRecharger: () => armesApi?.recharger(), onChoisir: (i) => armesApi?.changerArme(i) }) : null;
   // Hauteur d'un étage (render.json) : le joueur reste à y = 0, c'est le monde qui descend quand il monte (world.setElevation).
   const LIFT = Number.isFinite(render.floorLift) ? render.floorLift : 0;
   const liftOf = (f) => (f === 'etage' ? LIFT : 0);
@@ -475,6 +506,7 @@ export function createGame(ctx) {
     rafraichirArme(); // lot 9e : la partie repart avec l'arme de départ
     lachers.length = 0;
     tombes?.vider();
+    aura = null;
     ejections.length = 0;
     douilles?.vider();
     sim.debris = createDebris();
@@ -555,6 +587,7 @@ export function createGame(ctx) {
     const kb = arrivalKnockback(at, stairCfg);
     const l = layoutOf(to);
     sim.enemies = knockbackZombies(sim.enemies, { ...kb.center, floor: to }, { radius: kb.radius, distance: kb.distance }, { bounds: l.bounds, inside: l.inside, furniture: [...l.furniture, ...closedDoors(l, openIds())], walls: l.walls, gaps: l.gaps });
+    lancerAura(kb.radius);
   }
 
   // Escalier physique (mise à jour du lot 3e) : le joueur marche dans l'escalier, sa position suit le chemin et sa hauteur monte (js/core/stair-walk.js) ; son étage
@@ -967,6 +1000,7 @@ export function createGame(ctx) {
       // Le repoussement de la chute et du relevage ne concerne que les zombies de l'étage du joueur.
       const l = layoutOf(pf());
       sim.enemies = knockbackZombies(sim.enemies, sim.player, pd.knockback, { bounds: l.bounds, inside: l.inside, furniture: [...l.furniture, ...closedDoors(l, openIds())], walls: l.walls, gaps: l.gaps });
+      lancerAura(pd.knockback.radius);
     }
 
     // Lot 3i : vie basse (battement de cœur) et zombies qui commencent à franchir une fenêtre (escalade, à la position de la fenêtre).
@@ -1382,6 +1416,7 @@ export function createGame(ctx) {
     playerChar.root.rotation.y = Math.PI / 2 - anim.facing;
     const gun = playerChar.muzzle?.() ?? null; // lot 3j : bout du canon du joueur v2 (laser, éclair et balles en partent à l'image)
     lastGun = gun;
+    dessinerAura(p);
     if (tombes) {
       // Pièces lâchées : elles partent de l'arme dessinée (sinon de la hauteur des mains), le clip du Garand est éjecté vers le haut et sur le
       // côté de l'arme ; un changement d'étage les retire.
@@ -1922,6 +1957,7 @@ export function createGame(ctx) {
           actif: armeActive(sim.inv)?.id ?? null, montree: armeMontree(sim.inv)?.id ?? null, emplacements: sim.inv.emplacements.map((e) => ({ id: e.id, chargeur: e.chargeur, reserve: e.reserve === Infinity ? null : e.reserve, recharge: e.recharge })),
           sortie: sim.inv.sortie ? { ...sim.inv.sortie } : null, recharge: progressionRecharge(sim.inv, tableArmes), enRecharge: enRecharge(sim.inv), attente: sim.inv.attente ?? 0, texte: texteMunitions(sim.inv), peutTirer: peutTirer(sim.inv), aSec: aSec(sim.inv), illimite: sim.inv.illimite,
           vitesse: vitesseJoueur(), bouche: eff.weapon.muzzleOffset, boucheCote: eff.weapon.muzzleSide ?? 0, plombs: eff.weapon.plombs ?? 1, damage: eff.weapon.damage, fireDelay: eff.weapon.fireDelay, fireRange: eff.weapon.fireRange, coneStill: eff.weapon.coneStill, coneMove: eff.weapon.coneMove,
+          aura: { lancees: aurasLancees, visible: auraMesh.visible },
           geste: gesteVu ? { ...gesteVu } : null, pieces: { lachees: lachesTotal, auSol: tombes?.nombre ?? 0 }, douilles: { ejectees: ejectionsTotal, visibles: douilles?.nombre ?? 0 }, manoeuvre: sim.manoeuvre ? { ...sim.manoeuvre } : null,
           canon: { logique: boucheJoueur(sim.aim.angle, eff.weapon, layout.muzzleBounds), rendu: lastGun ? { x: lastGun.x, y: lastGun.y, hauteur: lastGun.height } : null }, // bout du canon : logique et dessiné
           rendu: playerChar.arme, triangles: armeVue && armesKit ? armesKit.triangles(armeVue) : 0, emplacementsMax: 1 + (tableArmes?.emplacementsAchetes ?? 0),
