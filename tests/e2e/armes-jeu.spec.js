@@ -297,9 +297,9 @@ test.describe('emplacements et changement d\'arme (partie E)', () => {
   });
 });
 
-test.describe('bouton de changement sur téléphone (partie E)', () => {
+test.describe('emplacements d\'armes et rechargement sur téléphone (parties E, P, Q)', () => {
   test.use({ hasTouch: true, isMobile: true, viewport: { width: 812, height: 375 } });
-  test('boutons « Changer » (visuel 2D de l\'autre arme) et « Recharger » près du stick droit : 44 px au moins, dans l\'écran, actifs au doigt ; axe sans violation', async ({ page }) => {
+  test('deux emplacements centrés en bas (pistolet, arme achetée ; toucher l\'autre change d\'arme) ; « Recharger » près du stick droit, munitions collées à lui ; 44 px, dans l\'écran, rien ne se chevauche (zone de sécurité de l\'iPhone comprise) ; axe sans violation', async ({ page }) => {
     const { default: AxeBuilder } = await import('@axe-core/playwright');
     await page.addInitScript(espion);
     await page.goto('/jeu.html?test=1&seed=2&nospawn=1&map=salle&lum=off&vhs=0');
@@ -308,52 +308,77 @@ test.describe('bouton de changement sur téléphone (partie E)', () => {
     await page.touchscreen.tap(200, 300);
     await expect(page.locator('#game-root')).toHaveAttribute('data-input', 'touch');
     await expect(page.locator('#btn-recharger')).toBeVisible();
-    await expect(page.locator('#btn-changer')).toBeHidden(); // une seule arme : rien à changer
+    const slot1 = page.locator('#arme-slot-1');
+    const slot2 = page.locator('#arme-slot-2');
+    await expect(slot1).toHaveAttribute('aria-pressed', 'true'); // le Colt en main
+    await expect(slot2).toBeDisabled(); // emplacement acheté encore vide
+    await expect(slot2).toHaveAttribute('aria-label', '2 : emplacement vide');
     await page.evaluate(() => {
       window.__zs.donnerArme('thompson');
       for (let i = 0; i < 20; i += 1) window.__zs.step(0.05);
     });
-    const changer = page.locator('#btn-changer');
-    await expect(changer).toBeVisible();
-    await expect(changer).toHaveAttribute('aria-label', /Colt M1911/);
-    await expect(changer.locator('svg.arm-svg')).toHaveCount(1);
-    for (const id of ['#btn-changer', '#btn-recharger']) {
+    await expect(slot2).toHaveAttribute('aria-pressed', 'true');
+    await expect(slot2).toHaveAttribute('aria-label', '2 : Thompson M1928, en main');
+    await expect(slot1).toHaveAttribute('aria-label', '1 : prendre Colt M1911');
+    for (const sl of [slot1, slot2]) await expect(sl.locator('svg.arm-svg')).toHaveCount(1);
+    for (const id of ['#arme-slot-1', '#arme-slot-2', '#btn-recharger']) {
       const b = await page.locator(id).boundingBox();
       expect(b.width, id).toBeGreaterThanOrEqual(44);
       expect(b.height, id).toBeGreaterThanOrEqual(44);
       expect(b.x + b.width, id).toBeLessThanOrEqual(812);
       expect(b.y + b.height, id).toBeLessThanOrEqual(375);
     }
-    // Retour du propriétaire (iPhone) : munitions et boutons ne se chevauchent jamais, même avec la zone de sécurité de l'iPhone en paysage
-    // (≈ 59 px à droite, 21 px en bas, publiée par js/game/safe-area.js en --safe-right / --safe-bottom).
+    // Rien ne se chevauche, même avec la zone de sécurité de l'iPhone en paysage (≈ 59 px à droite, 21 px en bas : --safe-right,
+    // --safe-bottom de js/game/safe-area.js) ; munitions collées au bouton ; emplacements centrés.
+    const touche = (a, b) => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
     for (const [droite, bas] of [[0, 0], [59, 21]]) {
-      const boites = await page.evaluate(([d, b]) => {
+      const bx = await page.evaluate(([d, b]) => {
         const st = document.documentElement.style;
         st.setProperty('--safe-right', `${d}px`);
         st.setProperty('--safe-bottom', `${b}px`);
-        const r = (sel) => document.querySelector(sel).getBoundingClientRect();
-        return { munitions: r('#hud-ammo'), changer: r('#btn-changer'), recharger: r('#btn-recharger') };
+        const r = (sel) => document.querySelector(sel).getBoundingClientRect().toJSON();
+        const sticks = [...document.querySelectorAll('.stick:not([hidden]) .stick-base')].map((n) => n.getBoundingClientRect().toJSON());
+        return { munitions: r('#hud-ammo'), recharger: r('#btn-recharger'), slots: r('#armes-slots'), sticks, largeur: window.innerWidth };
       }, [droite, bas]);
-      for (const nom of ['changer', 'recharger']) {
-        const m = boites.munitions;
-        const k = boites[nom];
-        const chevauche = m.left < k.right && m.right > k.left && m.top < k.bottom && m.bottom > k.top;
-        expect(chevauche, `${nom}, zone de sécurité ${droite} / ${bas} px`).toBe(false);
-        expect(m.right, `${nom}, zone de sécurité ${droite} px`).toBeLessThanOrEqual(k.left);
-      }
+      const z = `zone de sécurité ${droite} / ${bas} px`;
+      expect(touche(bx.munitions, bx.recharger), z).toBe(false);
+      expect(bx.recharger.left - bx.munitions.right, z).toBeGreaterThanOrEqual(-0.5);
+      expect(bx.recharger.left - bx.munitions.right, z).toBeLessThanOrEqual(1); // collées
+      expect(touche(bx.munitions, bx.slots), z).toBe(false);
+      expect(touche(bx.recharger, bx.slots), z).toBe(false);
+      for (const st of bx.sticks) expect(touche(bx.slots, st), z).toBe(false);
+      expect(Math.abs((bx.slots.left + bx.slots.right) / 2 - bx.largeur / 2), z).toBeLessThanOrEqual(1);
     }
     await page.evaluate(() => {
       document.documentElement.style.removeProperty('--safe-right');
       document.documentElement.style.removeProperty('--safe-bottom');
     });
-    await changer.tap();
+    await slot1.tap();
     await page.evaluate(() => window.__zs.step(0.05));
     expect((await S(page)).armes.actif).toBe('m1911');
-    await expect(changer).toHaveAttribute('aria-label', /Thompson/);
-    const r = await new AxeBuilder({ page }).include('#armes-boutons').include('#hud-ammo').analyze();
+    await expect(slot1).toHaveAttribute('aria-pressed', 'true');
+    await expect(slot2).toHaveAttribute('aria-label', '2 : prendre Thompson M1928');
+    const r = await new AxeBuilder({ page }).include('#armes-boutons').include('#hud-ammo').include('#armes-slots').analyze();
     expect(r.violations.map((v) => v.id)).toEqual([]);
     expect(await page.evaluate(() => window.__ecritures.length)).toBe(0);
   });
+});
+
+test('ordinateur : emplacements centrés en bas avec les touches 1 et 2 ; un clic sur l\'autre emplacement change d\'arme (partie Q)', async ({ page }) => {
+  await page.goto('/jeu.html?test=1&seed=2&nospawn=1&map=salle&lum=off&vhs=0');
+  await waitReady(page);
+  await page.evaluate(() => {
+    window.__zs.donnerArme('garand');
+    for (let i = 0; i < 20; i += 1) window.__zs.step(0.05);
+  });
+  await expect(page.locator('#arme-slot-1 .arme-slot-touche')).toHaveText('1');
+  await expect(page.locator('#arme-slot-2 .arme-slot-touche')).toBeVisible();
+  await page.locator('#arme-slot-1').click();
+  await page.evaluate(() => window.__zs.step(0.05));
+  expect((await S(page)).armes.actif).toBe('m1911');
+  await page.locator('#arme-slot-2').click();
+  await page.evaluate(() => window.__zs.step(0.05));
+  expect((await S(page)).armes.actif).toBe('garand');
 });
 
 // Retours du propriétaire après le lot 9e : les balles partent du bout du canon ; chaque étape du rechargement a son son, la pièce lâchée tombe

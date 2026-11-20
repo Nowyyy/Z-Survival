@@ -982,12 +982,15 @@
   pointer-events: none;
 }
 
-/* Téléphone : sur la ligne des boutons, à leur gauche (sous l'anneau du stick droit au repos, jamais dessus). Même bord de référence que les
-   boutons (marge + zone de sécurité) : sur iPhone en paysage, la zone de sécurité droite (≈ 50 px) décalait les boutons sur les munitions
-   (retour du propriétaire). Boutons : « Changer » (2 cibles) + écart + « Recharger » (1 cible) ; puis 2 écarts avant le texte. */
+/* Téléphone : collées au bouton de rechargement, à sa gauche, centrées sur lui (retour du propriétaire, partie Q) ; même bord de référence
+   que le bouton (marge + zone de sécurité : sur iPhone en paysage, ≈ 59 px à droite, partie P). Le bouton montre la balle : pas d'icône ici. */
 #game-root[data-input="touch"] .hud-ammo {
-  right: calc(var(--game-margin) + var(--safe-right) + var(--hud-target) * 3 + var(--hud-gap) * 6);
-  bottom: calc(var(--game-margin) + var(--safe-bottom) + var(--hud-target) / 2 - 0.8em);
+  right: calc(var(--game-margin) + var(--safe-right) + var(--hud-target));
+  bottom: calc(var(--game-margin) + var(--safe-bottom) + var(--hud-target) / 2 - 0.6em);
+}
+
+#game-root[data-input="touch"] .hud-ammo .hud-icon {
+  display: none;
 }
 
 .hud-ammo-state {
@@ -1032,8 +1035,8 @@
 }
 
 .armes-bouton-recharger svg {
-  width: 55%;
-  height: 55%;
+  width: 62%;
+  height: 62%;
   fill: none;
   stroke: currentColor;
   stroke-width: 1.6;
@@ -1041,13 +1044,74 @@
   stroke-linejoin: round;
 }
 
-.armes-bouton-visuel {
-  width: calc(var(--hud-target) * 2);
-  border-radius: var(--hud-radius);
+/* Emplacements d'armes (partie Q) : deux cases centrées en bas de l'écran (le pistolet, l'arme achetée), entre les deux sticks sur téléphone ;
+   la case tenue est cernée, l'autre s'éclaircit à moitié ; une case libre est en pointillés. Touches 1 et 2 rappelées sur ordinateur. */
+.armes-slots {
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--game-margin) + var(--safe-bottom));
+  z-index: 3;
+  display: flex;
+  gap: calc(var(--hud-gap) * 2);
+  transform: translateX(-50%);
 }
 
-.armes-bouton-visuel svg {
-  width: 92%;
+.armes-slots[hidden] {
+  display: none;
+}
+
+.arme-slot {
+  position: relative;
+  box-sizing: border-box;
+  display: grid;
+  place-items: center;
+  width: calc(var(--hud-target) * 2);
+  height: var(--hud-target);
+  min-height: var(--hud-target);
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: var(--hud-radius);
+  background: color-mix(in srgb, var(--color-bg) 70%, transparent);
+  touch-action: manipulation;
+}
+
+.arme-slot[aria-pressed="true"] {
+  border-color: var(--color-text);
+}
+
+.arme-slot[aria-pressed="false"] .arme-slot-visuel {
+  opacity: 0.55;
+}
+
+.arme-slot[data-vide="oui"] {
+  border: 2px dashed color-mix(in srgb, var(--color-text) 45%, transparent);
+}
+
+.arme-slot-visuel {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+}
+
+.arme-slot-visuel svg {
+  width: 88%;
   height: auto;
+  max-height: 88%;
+}
+
+.arme-slot-touche {
+  position: absolute;
+  top: 1px;
+  left: 4px;
+  font-family: var(--font-sans);
+  font-size: var(--hud-fs); /* 14 px au moins (règle des lots 3a et 3l) */
+  font-weight: var(--font-weight-bold);
+  line-height: 1;
+  color: var(--color-text);
+}
+
+#game-root[data-input="touch"] .arme-slot-touche {
+  display: none;
 }
 
