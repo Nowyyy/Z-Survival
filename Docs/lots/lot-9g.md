@@ -1,6 +1,6 @@
 # Lot 9g — Personnages et zombies de la Seconde Guerre mondiale (V0.9)
 ## Base
-- `origin/dev` `622df2c` (bilan 9e, seed 0.38, `main` ancêtre de `dev`) ; branche `lot-9g` (la session proposait `claude/cool-noether-7cgj0u` : j'ai suivi le prompt). Commits : A `e3c6350` ; B `b4551af`, retours `4f66a0e`, `ea684ed`, `273ecaa` ; fusions de `origin/dev` (lot 9f) `4f62830` ; C `4b41fff` ; D `357570a` ; ce bilan (E). Atelier fusionné dans `dev` avant le GO à la demande du propriétaire (PR #171, #174). Fiche : `Docs/ref/personnages-epoque.md`.
+- `origin/dev` `622df2c` (bilan 9e, seed 0.38, `main` ancêtre de `dev`) ; branche `lot-9g` (la session proposait `claude/cool-noether-7cgj0u` : j'ai suivi le prompt). Commits : A `e3c6350` ; B `b4551af`, retours `4f66a0e`, `ea684ed`, `273ecaa` ; fusions de `origin/dev` (lot 9f) `4f62830` ; C `4b41fff` ; D `357570a` ; E `92583b2`, correctif `12fdfef`, mise à jour des fiches (« Met à jour les .md »). Atelier fusionné dans `dev` avant le GO à la demande du propriétaire (PR #171, #174) ; lot fusionné après le GO (PR #176, #177). Fiche : `Docs/ref/personnages-epoque.md`.
 ## Choix du propriétaire
 - Atelier : sections Mesures, Curseurs et Mini-arène retirées, réglages toujours visibles. **Zombies A et B gardés, toutes tenues, mélangés** ; C « boueux » gardé pour la carte 3 (marais). **Survivant A**, casque plus gris, tenue 1. **Personnage 2 redessiné** (trop proche du Survivant), puis **parachutiste radio (B), tenue 1**. « GO 9g » le 20/11/2026.
 ## Personnages jouables
@@ -19,15 +19,15 @@
 ## Tests adaptés
 - Nouveaux : `persos-epoque.test.js` (construction, budgets, contraste, contenu, textures actuelles intactes, fichier de choix, mélange, résolution en jeu, menu) ; e2e de l'atelier (section Époque, réglages collants). Adaptés avec la raison en commentaire : `persos-integres` (unitaire et e2e), `persos-integres-finitions`, `persos-jeu` (« epoque » remplace « riche »), `persos-sang` (arène retirée), `personnage.spec` (bandana retiré), `studio.spec` (antenne, « Zombie sapeur »), journal. Aucune assertion retirée sans équivalent.
 ## CI
-- Tests de `lot-9g` verts à chaque push (B à D) ; fusions dans `dev` : Tests et Pages verts. Ce bilan : voir le message de livraison.
+- Tests de `lot-9g` verts à chaque push (B à E ; le run de D, annulé par le push de E, y est contenu). Première fusion du lot (PR #176) : Pages vert, Tests rouge sur `argent.spec.js` (« budget et performance », R1 et U1 ; non sélectionné sur `lot-9g`) : `&perso=A` dessine désormais le niveau simple d'époque, + 292 triangles mesurés, appels identiques ; référence corrigée (`12fdfef`, PR #177) : Tests et Pages de `dev` verts.
 ## Points ouverts
 - Rendu jugé sur captures seulement ; teintes claires imposées par le contraste 3:1 (le gris-vert se lit mieux sous la lune que sous la lampe) ; `js/core/arena.js` n'est plus importé par l'atelier (garde son test) ; l'ancienne variante A n'est plus visible en jeu (?perso=A = niveau simple d'époque).
 ## Idées
 - Variante C boueuse pour la carte 3 ; personnages 3 à 6 dessinés ; lampe coudée (lot 9i) ; retirer `js/core/arena.js`.
 ## Entrée du journal — `lot-9g` (v0.9, 2026-11-20) « Soldats de 1942 et zombies soldats » (4 points) ; bloc `[lot-9g]` affiché.
 ## Lignes à ajouter à `CLAUDE.md` et `conventions.md`
-- `CLAUDE.md` : « Époque (lot 9g) : persos-choix.json → variante "epoque" (persos-epoque-choix.json : Survivant A, personnage 2 para-B, zombies [A, B] mélangés) ; recettes data/game/persos-epoque.json (buildEpochVariant, melangeEpoque, resoudreEpoque de persos-variants.js) ; couleurs dérivées de jetons ; aucun insigne ni symbole ; Docs/ref/personnages-epoque.md. » `conventions.md` : « atelier-personnages.html : section Époque (__zsPersos.epoque) ; getState().persos.slots = variantes résolues, personnage. »
+- **Reportées à la demande du propriétaire** (avec celles du lot 9e, restées en attente) : `CLAUDE.md` garde des renvois courts (8 366 octets sur 8 400), le texte complet et les deux lignes réécrites sont dans `conventions.md` (« Lignes des bilans des lots 9e et 9g »). Lignes proposées — `CLAUDE.md` : « Époque (lot 9g) : persos-choix.json → variante "epoque" (persos-epoque-choix.json : Survivant A, personnage 2 para-B, zombies [A, B] mélangés) ; recettes data/game/persos-epoque.json (buildEpochVariant, melangeEpoque, resoudreEpoque de persos-variants.js) ; couleurs dérivées de jetons ; aucun insigne ni symbole ; Docs/ref/personnages-epoque.md. » `conventions.md` : « atelier-personnages.html : section Époque (__zsPersos.epoque) ; getState().persos.slots = variantes résolues, personnage. »
 ## Passages du seed à réécrire par le propriétaire
 - « Personnages, animations et sang » : « À venir (V0.9) » devient fait (soldats de 1942, zombies soldats A et B mélangés, menu, avatars, ouvertures) ; « par défaut riche » devient « epoque » ; plan des lots : 9g fait.
 ## À faire par moi
-1. Sur PC et téléphone, jouer quelques manches (lisibilité des zombies d'époque sur le sol sombre, horde variée), regarder l'écran Personnage (Survivant et personnage 2), les avatars, une ouverture de caisse. 2. Rapporter les retours.
+1. Fait : jeu regardé (« ça a l'air bon »). 2. Réécrire les passages du seed ci-dessus (fichier du propriétaire, jamais modifié par l'agent). 3. En fin de version : supprimer la branche `lot-9g`.
