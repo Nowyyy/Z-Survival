@@ -233,8 +233,8 @@ export function createGame(ctx) {
   let armeVue = null; // arme montrée sur le personnage (identifiant)
   let lastGun = null; // bout du canon dessiné à la dernière image (tests : getState().armes.canon)
   let gesteVu = null; // geste du rechargement à la dernière image (tests : getState().armes.geste)
-  // Aura blanche (partie T, retour du propriétaire) : quand les zombies proches sont repoussés (chute, relevage, arrivée à un étage), un anneau
-  // blanc part du joueur jusqu'au rayon du repoussement et s'efface (0,5 s ; mouvement réduit : il apparaît au rayon et s'efface). Dessin seul,
+  // Aura blanche (parties T et U, retours du propriétaire) : quand il se relève (les zombies proches sont repoussés), un anneau blanc fin part
+  // du joueur jusqu'au rayon du repoussement et s'efface (0,5 s ; mouvement réduit : il apparaît au rayon et s'efface). Dessin seul,
   // aucun effet de jeu ; une géométrie et une matière créées une fois (un appel tant qu'il se voit) ; couleur du joueur (--game-player).
   const AURA_DUREE = 0.5;
   let aura = null; // { t0, rayon } (temps de jeu)
@@ -244,7 +244,7 @@ export function createGame(ctx) {
     aurasLancees += 1;
   }
   const auraMat = new THREE.MeshBasicMaterial({ color: palette.player, transparent: true, opacity: 0, depthWrite: false });
-  const auraMesh = new THREE.Mesh(new THREE.RingGeometry(0.6, 1, 48), auraMat);
+  const auraMesh = new THREE.Mesh(new THREE.RingGeometry(0.92, 1, 64), auraMat); // anneau fin (partie U : « moins épaisse »)
   auraMesh.name = 'aura-repoussement';
   auraMesh.rotation.x = -Math.PI / 2;
   auraMesh.visible = false;
@@ -587,7 +587,6 @@ export function createGame(ctx) {
     const kb = arrivalKnockback(at, stairCfg);
     const l = layoutOf(to);
     sim.enemies = knockbackZombies(sim.enemies, { ...kb.center, floor: to }, { radius: kb.radius, distance: kb.distance }, { bounds: l.bounds, inside: l.inside, furniture: [...l.furniture, ...closedDoors(l, openIds())], walls: l.walls, gaps: l.gaps });
-    lancerAura(kb.radius);
   }
 
   // Escalier physique (mise à jour du lot 3e) : le joueur marche dans l'escalier, sa position suit le chemin et sa hauteur monte (js/core/stair-walk.js) ; son étage
@@ -1000,7 +999,7 @@ export function createGame(ctx) {
       // Le repoussement de la chute et du relevage ne concerne que les zombies de l'étage du joueur.
       const l = layoutOf(pf());
       sim.enemies = knockbackZombies(sim.enemies, sim.player, pd.knockback, { bounds: l.bounds, inside: l.inside, furniture: [...l.furniture, ...closedDoors(l, openIds())], walls: l.walls, gaps: l.gaps });
-      lancerAura(pd.knockback.radius);
+      if (pd.knockback.reason === 'standup') lancerAura(pd.knockback.radius); // partie U : seulement quand il se relève
     }
 
     // Lot 3i : vie basse (battement de cœur) et zombies qui commencent à franchir une fenêtre (escalade, à la position de la fenêtre).
