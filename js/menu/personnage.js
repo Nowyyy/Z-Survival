@@ -1,5 +1,5 @@
 // Lot 8d : écran Personnage (E9-1, maquette Docs/maquettes-v0.8/Personnage.html ; Docs/ref/menu-principal.md), chargé à la demande au premier
-// affichage de l'onglet Personnage. Personnage animé au centre (silhouette SVG de sa teinte, sous un projecteur qui grésille ; animations e9-*, en pause
+// affichage de l'onglet Personnage. Personnage animé au centre (silhouette SVG de sa teinte, lot 9g : en soldat de 1942, sous un projecteur qui grésille ; animations e9-*, en pause
 // hors de l'écran ou page cachée, coupées sous prefers-reduced-motion) : le toucher ouvre Personnages ; lot 8h : six emplacements de survie (Tête,
 // Gants, Bottes à gauche ; Torse, Accessoire, Pantalon à droite) : en toucher un ouvre l'Inventaire filtré sur son type ; encart de capacité (ouvre
 // Personnages) ; statistiques effectives que l'équipement peut changer (vie, vitesse, réparation, régénération : js/core/equipement.js) ; boutons
@@ -52,15 +52,28 @@ const groupe = (classe, ...enfants) => {
   return g;
 };
 
-// Silhouette du personnage (maquette, 180 × 236) : jambes, bottes, buste de sa teinte (--e9-teinte, jeton --menu-perso-*), bras, arme, tête, bandana ;
-// animée seulement dans un conteneur qui porte la classe e9-anime (respiration, tête, bras armé qui vise, bandana, ombre).
+// Lot 9g : tenue d'époque dessinée d'après le personnage (soldats américains de 1942, comme en partie) : le Survivant en fantassin (casque M1 gris à
+// jugulaire, bretelles, ceinturon à cartouchières, guêtres de toile), le personnage 2 en parachutiste radio (casque à filet, poste radio dorsal et
+// antenne, harnais, poches de cuisse, bottes de saut, veste verte) ; les autres personnages (verrouillés ou à venir) : fantassin. Aucun insigne.
+export const TENUES_EPOQUE = Object.freeze({ survivant: 'fantassin', 'personnage-2': 'radio' });
+export const tenueEpoque = (perso) => TENUES_EPOQUE[perso?.id] ?? 'fantassin';
+const classeTenue = (perso) => `e9-tenue-${tenueEpoque(perso)}${perso?.debloque ? ' e9-ouvert' : ''}`;
+
+// Silhouette du personnage (maquette, 180 × 236) : jambes, bottes, buste de sa teinte (--e9-teinte, jeton --menu-perso-*), bras, arme, tête ;
+// animée seulement dans un conteneur qui porte la classe e9-anime (respiration, tête, bras armé qui vise, ombre). Lot 9g : tenue d'époque.
 export function silhouette(perso, { classe = '', complete = true } = {}) {
-  const svg = forme('svg', { viewBox: '0 0 180 236', 'aria-hidden': 'true', focusable: 'false' }, `e9-silhouette ${classe}`.trim());
+  const radio = tenueEpoque(perso) === 'radio';
+  const svg = forme('svg', { viewBox: '0 0 180 236', 'aria-hidden': 'true', focusable: 'false' }, `e9-silhouette ${classeTenue(perso)} ${classe}`.trim());
   poserTeinte(svg, perso);
+  const dos = radio ? [forme('rect', { x: 62, y: 70, width: 56, height: 64, rx: 4 }, 'e9-sil-radio'), forme('path', { d: 'M108 72 L132 8' }, 'e9-sil-antenne')] : [];
   const corps = groupe('e9-sil-respire',
+    ...dos,
     forme('path', { d: 'M56 78 Q90 64 124 78 L130 154 L50 154Z' }, 'e9-sil-buste'),
-    forme('path', { d: 'M68 80 L80 152 M112 80 L100 152' }, 'e9-sil-sangle'),
-    forme('rect', { x: 78, y: 112, width: 24, height: 16 }, 'e9-sil-poche'),
+    forme('path', { d: radio ? 'M68 80 L86 152 M112 80 L94 152' : 'M70 80 L74 146 M110 80 L106 146' }, 'e9-sil-sangle'),
+    ...(radio ? [forme('rect', { x: 64, y: 96, width: 16, height: 14, rx: 2 }, 'e9-sil-poche'), forme('rect', { x: 100, y: 96, width: 16, height: 14, rx: 2 }, 'e9-sil-poche')] : []),
+    forme('rect', { x: 50, y: 142, width: 80, height: 12, rx: 2 }, 'e9-sil-ceinturon'),
+    ...[60, 76, 92, 108].map((x) => forme('rect', { x, y: 143, width: 12, height: 10, rx: 1.5 }, 'e9-sil-cartouche')),
+    ...(radio ? [] : [forme('ellipse', { cx: 126, cy: 150, rx: 7, ry: 10 }, 'e9-sil-gourde')]),
     forme('path', { d: 'M56 82 L40 132 L52 136 L66 98Z' }, 'e9-sil-bras'),
     forme('circle', { cx: 64, cy: 140, r: 3 }, 'e9-sil-sang'),
     groupe('e9-sil-viser',
@@ -69,22 +82,30 @@ export function silhouette(perso, { classe = '', complete = true } = {}) {
       forme('rect', { x: 146, y: 110, width: 7, height: 12, rx: 1 }, 'e9-sil-arme')),
     groupe('e9-sil-tete',
       forme('circle', { cx: 90, cy: 54, r: 18 }, 'e9-sil-peau'),
-      forme('path', { d: 'M70 50 Q90 26 110 50 L110 43 Q90 22 70 43Z' }, 'e9-sil-cheveux'),
-      forme('rect', { x: 72, y: 62, width: 36, height: 8 }, 'e9-sil-bandana'),
-      forme('path', { d: 'M106 63 L126 66 L110 72Z' }, 'e9-sil-bandana e9-sil-pan')));
+      forme('path', { d: 'M75 52 L77 70 M105 52 L103 70' }, 'e9-sil-jugulaire'),
+      forme('path', { d: 'M68 52 Q68 28 90 28 Q112 28 112 52 L117 55 L63 55Z' }, 'e9-sil-casque'),
+      ...(radio ? [forme('path', { d: 'M72 46 L108 46 M70 38 L110 38 M78 31 L102 31 M82 29 L80 54 M90 28 L90 54 M98 29 L100 54' }, 'e9-sil-filet')] : [])));
   if (complete) svg.append(forme('ellipse', { cx: 90, cy: 228, rx: 64, ry: 8 }, 'e9-sil-ombre'));
   svg.append(
     forme('path', { d: 'M70 150 L64 224 L80 224 L88 162 L96 224 L112 224 L106 150Z' }, 'e9-sil-jambes'),
-    forme('rect', { x: 60, y: 220, width: 22, height: 8, rx: 2 }, 'e9-sil-bottes'),
-    forme('rect', { x: 94, y: 220, width: 22, height: 8, rx: 2 }, 'e9-sil-bottes'),
+    ...(radio
+      ? [forme('rect', { x: 60, y: 170, width: 12, height: 20, rx: 2 }, 'e9-sil-poche'), forme('rect', { x: 104, y: 170, width: 12, height: 20, rx: 2 }, 'e9-sil-poche'),
+        forme('rect', { x: 62, y: 204, width: 20, height: 24, rx: 2 }, 'e9-sil-bottes'), forme('rect', { x: 94, y: 204, width: 20, height: 24, rx: 2 }, 'e9-sil-bottes')]
+      : [forme('path', { d: 'M65 198 L81 198 L80 222 L64 222Z M95 198 L111 198 L112 222 L96 222Z' }, 'e9-sil-guetres'),
+        forme('rect', { x: 60, y: 220, width: 22, height: 8, rx: 2 }, 'e9-sil-bottes'), forme('rect', { x: 94, y: 220, width: 22, height: 8, rx: 2 }, 'e9-sil-bottes')]),
     corps);
   return svg;
 }
-// Petite silhouette de la grille des personnages (maquette Personnages.html, 40 × 54) : tête et buste de la teinte.
+// Petite silhouette de la grille des personnages (maquette Personnages.html, 40 × 54) : tête et buste de la teinte ; lot 9g : casque (filet et
+// antenne du poste radio pour le personnage 2).
 export function buste(perso) {
-  const svg = forme('svg', { viewBox: '0 0 40 54', 'aria-hidden': 'true', focusable: 'false' }, 'e9-buste');
+  const radio = tenueEpoque(perso) === 'radio';
+  const svg = forme('svg', { viewBox: '0 0 40 54', 'aria-hidden': 'true', focusable: 'false' }, `e9-buste ${classeTenue(perso)}`);
   poserTeinte(svg, perso);
-  svg.append(forme('circle', { cx: 20, cy: 10, r: 8 }), forme('path', { d: 'M6 54 C6 30 12 20 20 20 C28 20 34 30 34 54Z' }));
+  svg.append(
+    ...(radio ? [forme('path', { d: 'M27 24 L33 2' }, 'e9-buste-antenne')] : []),
+    forme('circle', { cx: 20, cy: 10, r: 8 }), forme('path', { d: 'M6 54 C6 30 12 20 20 20 C28 20 34 30 34 54Z' }),
+    forme('path', { d: 'M11 9 Q11 0 20 0 Q29 0 29 9 L31 10.5 L9 10.5Z' }, 'e9-buste-casque'));
   return svg;
 }
 // Teinte : jeton de tokens.css validé par js/core/equipement.js (--menu-perso-*) ; verrouillé : silhouette sombre (--menu-perso-inconnu).

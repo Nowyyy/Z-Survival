@@ -662,7 +662,7 @@ test.describe('Connexion et Profil (E10)', () => {
     await expect(page.locator('#menu-profil-avatar')).toBeVisible();
     const groupe = page.getByRole('radiogroup', { name: 'Choisis ton avatar' });
     await expect(groupe.getByRole('radio')).toHaveText(['', '', '', '', '', '', '']);
-    expect(await groupe.getByRole('radio').evaluateAll((ns) => ns.map((n) => n.getAttribute('aria-label')))).toEqual(['Anonyme', 'Survivant', 'Éclaireur', 'Tireur', 'Zombie rôdeur', 'Zombie de chantier', 'Zombie affamé']);
+    expect(await groupe.getByRole('radio').evaluateAll((ns) => ns.map((n) => n.getAttribute('aria-label')))).toEqual(['Anonyme', 'Survivant', 'Éclaireur', 'Tireur', 'Zombie rôdeur', 'Zombie sapeur', 'Zombie affamé'] /* lot 9g : sapeur (avant : de chantier) */);
     await expect(groupe.getByRole('radio', { name: 'Anonyme' })).toBeChecked();
     await expect(groupe.getByRole('radio', { name: 'Anonyme' })).toBeFocused();
     expect(await groupe.getByRole('radio').evaluateAll((ns) => ns.map((n) => n.tabIndex))).toEqual([0, -1, -1, -1, -1, -1, -1]); // un seul arrêt de tabulation
@@ -697,7 +697,7 @@ test.describe('Connexion et Profil (E10)', () => {
     await expect(page.locator('#menu-profil-annonce')).toHaveText('Avatar changé : Éclaireur.');
     await expect(page.locator('#menu-entete-avatar')).toHaveClass(/e10-avatar-eclaireur/);
     expect(await page.evaluate(() => window.__zsMenu.etat().menu.compte)).toMatchObject({ avatar: 'eclaireur', choix: null });
-    expect(await page.locator('#menu-profil-avatar .av-lampe').count()).toBe(1); // lampe frontale du joueur B
+    expect(await page.locator('#menu-profil-avatar .av-antenne').count()).toBe(1); // lot 9g : antenne du poste radio (avant : lampe frontale du joueur B)
     expect(await page.locator('#menu-profil-avatar .av-peau').first().evaluate((n) => getComputedStyle(n).fill)).toBe('rgb(232, 201, 168)'); // --perso-peau-joueur
     await page.locator('#menu-profil-pseudo-modifier').click();
     const champ = page.locator('#menu-profil-pseudo-champ');
@@ -723,7 +723,7 @@ test.describe('Connexion et Profil (E10)', () => {
     await expect(page.locator('#menu-entete-pseudo')).toHaveText('Le Chef');
     await expect(page.locator('#menu-profil')).toHaveAttribute('aria-label', 'Profil : Le Chef');
     await expect(page.locator('#menu-entete-avatar')).toHaveClass(/e10-avatar-eclaireur/);
-    expect(await page.locator('#menu-entete-avatar .av-lampe').count()).toBe(1);
+    expect(await page.locator('#menu-entete-avatar .av-antenne').count()).toBe(1); // lot 9g : antenne du poste radio
     // Lot 8h : gardés en quittant et en revenant ; deux écritures dans zs.save.v2 (avatar validé, pseudo validé), rien d'autre ne change.
     await page.locator('#menu-ecran-profil-retour').click();
     await page.locator('#menu-profil').click();

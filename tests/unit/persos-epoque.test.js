@@ -255,3 +255,23 @@ describe('fichier de choix (data/game/persos-epoque-choix.json)', () => {
     }
   });
 });
+
+// Lot 9g (partie D) : menu à l'époque (écran Personnage, grille, avatars du Profil) ; identifiants d'avatar inchangés (sauvegarde).
+describe('menu à l\'époque', () => {
+  it('avatars : mêmes identifiants, tenues d\'époque (trois soldats américains, trois zombies soldats), défaut gris inchangé', async () => {
+    const { AVATARS } = await import('../../js/menu/avatar.js');
+    expect(AVATARS.map((a) => a.id)).toEqual(['anonyme', 'survivant', 'eclaireur', 'tireur', 'rodeur', 'ouvrier', 'affame']);
+    expect(AVATARS.map((a) => a.tenue)).toEqual(['silhouette', 'fantassin', 'radio', 'camoufle', 'casque35', 'sapeur', 'capote']);
+    const fr = JSON.parse(readFileSync('data/i18n/fr.json', 'utf8'));
+    expect(fr['game.menu.profil.avatar.ouvrier']).toBe('Zombie sapeur');
+  });
+  it('silhouette et buste : casque d\'époque, parachutiste radio pour le personnage 2, aucun bandana ni insigne', () => {
+    const src = readFileSync('js/menu/personnage.js', 'utf8');
+    expect(src).toMatch(/TENUES_EPOQUE = Object\.freeze\(\{ survivant: 'fantassin', 'personnage-2': 'radio' \}\)/);
+    for (const c of ['e9-sil-casque', 'e9-sil-radio', 'e9-sil-antenne', 'e9-sil-guetres', 'e9-buste-casque']) expect(src).toContain(c);
+    expect(src).not.toMatch(/e9-sil-bandana|e9-sil-cheveux/);
+    const css = readFileSync('css/menu.css', 'utf8');
+    expect(css).toMatch(/\.e9-ouvert\.e9-tenue-radio \.e9-sil-buste/);
+    for (const f of ['js/menu/personnage.js', 'js/menu/avatar.js']) expect(readFileSync(f, 'utf8')).not.toMatch(/gamm|swastika|\brune|aigle|insigne de|ecusson|écusson/i);
+  });
+});
