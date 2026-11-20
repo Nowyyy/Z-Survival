@@ -10,13 +10,14 @@ import { boxTriangles, lookOf, pieceBoxes } from '../js/core/mobilier-aspect.js'
 import { analyzeMap, planToWorld } from '../js/core/maps.js';
 import { decorProblems, generateDecor } from '../js/core/decor.js';
 import { firesToWorld, lampsToWorld, lampTriangles } from '../js/core/lamps.js';
-import { polygonRects } from '../js/core/shape.js';
+import { polygonRects, segmentRects } from '../js/core/shape.js';
 import { rectGap } from '../js/core/collision.js';
 import { parseZones, zonesToWorld } from '../js/core/zones.js';
 import { buildLayouts, windowsWithGaps } from '../js/core/layout.js';
 import { windowGeometries } from '../js/core/windows.js';
 import { tirsMonde } from '../js/core/tir-traverse.js';
 import { controlePlan, sectionEpoque } from '../js/core/decor-epoque.js';
+import { recalerObstacles } from '../js/core/collisions-dessin.js';
 import { groundScarBoxes } from '../js/core/epaves.js';
 
 const ROOT = new URL('../data/game/maps/', import.meta.url);
@@ -113,7 +114,7 @@ export function generateMapFiles(id = 'rez-de-chaussee') {
       result.world = `${formatJson(out.world)}\n`;
       if (etageWorldOut) result.etage = `${formatJson(etageWorldOut)}\n`;
     }
-    const doc = { _provisoire: 'Décor léger intérieur généré par npm run carte (scripts/plan-vers-monde.mjs) d\'après decor-interieur.json : ne jamais éditer à la main. Unités du jeu ; non solide (aucune collision, aucun effet sur le chemin, les tirs ni les règles). Les genres solides (sacs de sable, lot 9a-I) n\'y sont pas : ils sont écrits dans world.json comme obstacles. Valeurs provisoires.', triangles: totalTriangles(legers), items: legers };
+    const doc = { _provisoire: 'Décor léger intérieur généré par npm run carte (scripts/plan-vers-monde.mjs) d\'après decor-interieur.json : ne jamais éditer à la main. Unités du jeu ; non solide (aucune collision, aucun effet sur le chemin, les tirs ni les règles). Les genres solides (sacs de sable, lot 9a-I) n\'y sont pas : ils sont écrits dans world.json comme obstacles ; les bidons (lot 9h) sont aussi des obstacles de world.json mais restent dessinés ici. Valeurs provisoires.', triangles: totalTriangles(legers), items: legers };
     result.decorInterieur = `${formatJson(doc)}\n`;
     result.decorReport = { warnings: conv.warnings, removed: placed.removed, count: legers.length, triangles: doc.triangles, solides: solides.map((x) => x.obstacle.id) };
   }
@@ -148,6 +149,23 @@ export function generateMapFiles(id = 'rez-de-chaussee') {
     }
     result.mobilier = `${formatJson({ _provisoire: 'Aspect du mobilier généré par npm run carte (scripts/plan-vers-monde.mjs) d\'après plan.json, etage.json et releve.json (objets du modèle associés à chaque pièce) : ne jamais éditer à la main. Dessin seulement (unités du jeu ; y = hauteur, z = y du jeu) : les collisions gardent les rectangles de world.json. Valeurs provisoires.', triangles, pieces })}\n`;
     result.mobilierReport = { count: Object.keys(pieces).length, triangles };
+    // Lot 9h (retours du propriétaire, intérieur) : collisions recalées sur le dessin : meubles (rectangle des boîtes dessinées, plus de mur invisible) et
+    // marches des escaliers physiques du rez-de-chaussée (js/core/collisions-dessin.js) ; world.json et etage.world.json réécrits.
+    const zw = zonesToWorld(zones, out.world.transform);
+    const zr = (z) => (z ? { x: z.x, y: z.y, w: z.w, h: z.h } : null);
+    const escaliers = (out.world.stairs ?? []).map((s) => {
+      const z = zw.stairs.find((q) => q.id === s.role);
+      return { id: s.id, walk: z?.walk, interdits: [zr(z?.floors?.rdc?.trigger)].filter(Boolean) };
+    }).filter((e) => e.walk);
+    result.collisionsReport = [];
+    for (const [floor, w] of [['rdc', out.world], ['etage', etageWorldOut]]) {
+      if (!w) continue;
+      const r = recalerObstacles(w.obstacles, { pieces: Object.values(pieces).filter((p) => p.floor === floor), escaliers: floor === 'rdc' ? escaliers : [], murs: segmentRects(w.walls, params.wallThickness), min: w.minCorridor ?? 50 });
+      w.obstacles = r.obstacles;
+      result.collisionsReport.push(...r.rapport.map((x) => ({ floor, ...x })));
+    }
+    result.world = `${formatJson(out.world)}\n`;
+    if (etageWorldOut) result.etage = `${formatJson(etageWorldOut)}\n`;
   }
   // Lot 5k : lampes à huile (décor non solide) d'après lampes.json (pixels) : collées à leur pilier ou à leur mur, portée sûre de la lumière (jamais
   // l'autre étage). Écrit lampes.world.json (jamais édité à la main) ; une lampe sans support, hors du bâtiment ou sur une fenêtre est un problème.
@@ -218,7 +236,7 @@ if (isMain) {
   const args = process.argv.slice(2);
   const check = args.includes('--verifie');
   const id = args.find((a) => !a.startsWith('--')) ?? 'rez-de-chaussee';
-  const { world, decor, etage, report, etageReport, problems, decorInterieur, decorReport, mobilier, mobilierReport, wrecksReport, lampes, lampesReport, tirs, tirsReport, decorEpoqueReport } = generateMapFiles(id);
+  const { world, decor, etage, report, etageReport, problems, decorInterieur, decorReport, mobilier, mobilierReport, wrecksReport, lampes, lampesReport, tirs, tirsReport, decorEpoqueReport, collisionsReport } = generateMapFiles(id);
   const files = [['world.json', world], ['decor.json', decor], ...(etage === null ? [] : [['etage.world.json', etage]]), ...(decorInterieur === null ? [] : [['decor-interieur.world.json', decorInterieur]]), ...(mobilier ? [['mobilier.world.json', mobilier]] : []), ...(lampes ? [['lampes.world.json', lampes]] : []), ...(tirs ? [['tirs.world.json', tirs]] : [])].map(([name, text]) => [name, text, new URL(`${id}/${name}`, ROOT)]);
   if (check) {
     const stale = files.filter(([, text, url]) => !existsSync(url) || readFileSync(url, 'utf8') !== text).map(([name]) => name);
@@ -253,6 +271,7 @@ if (isMain) {
     for (const w of lampesReport.warnings) console.log(`Lampes : ${w}`);
   }
   if (tirsReport) console.log(`Tirs : ${Object.entries(tirsReport.counts).map(([f, t]) => `${f} ${t}`).join(' ; ')} traversables.`);
+  for (const c of collisionsReport ?? []) console.log(`Collision recalée sur le dessin (${c.floor}) : ${c.id} ${typeof c.avant === 'number' ? `${c.avant} → ${c.apres} rectangles (marches)` : `${JSON.stringify(c.avant)} → ${JSON.stringify(c.apres)}`}.`);
   if (decorEpoqueReport) console.log(`Décor d'époque : ${decorEpoqueReport.objets} objets dont ${decorEpoqueReport.solides} solides, ${decorEpoqueReport.triangles} triangles ; ${decorEpoqueReport.chemins} chemins de zombies, ${decorEpoqueReport.allonges} allongés, ${decorEpoqueReport.problems.length} problème(s).`);
   if (wrecksReport) {
     const { car, helicopter: h } = wrecksReport;

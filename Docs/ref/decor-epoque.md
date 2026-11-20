@@ -38,8 +38,8 @@ Carte 1 (« Night of the Undead », 1942). Base : `origin/dev` `7514702` (seed 0
 - Composition : barrage routier abandonné sur la route du sud (hérissons, barbelés, panneau, jerrycans, camion), avion et parachute dans l'angle du L, pièce d'artillerie ou projecteur dans le champ du nord-est, trous d'obus dans les champs, poteaux télégraphiques le long du trottoir.
 - Positions : `data/game/maps/rez-de-chaussee/decor-epoque.json` (unités du jeu), vérifiées par `npm run carte` (sans écrire de fichier lu par la partie avant le « GO 9h »).
 
-## Budget visé
-- Au plus +4 appels et +3 000 triangles au pire cas : un maillage fusionné de plus (atlas d'époque, sans ombre portée), moins les deux de l'hélicoptère (tôle et rotor) ; véhicules abandonnés dans le maillage à ombre des voitures (même nombre d'ombres) ; trous d'obus dans le sol (aucun appel) ; feu, fumée et lumière du véhicule en flammes et fumée de l'avion gardés.
+## Retours du propriétaire (intérieur, après la fusion)
+- `npm run carte` recale les collisions sur le dessin (`js/core/collisions-dessin.js`) : escalier de l'aile = un rectangle, celui de ses marches (920-1050 × 2084,5-2316,5 : on n'entre plus dans son bout sud, 10 de moins sur le côté) ; escalier courbe = 40 tranches de ses marches (on ne le traverse plus) ; meubles : bord reculé d'au moins 6 (M26+M28+M29+M31, M32) ; interstices de moins de 50 refermés au contact (règle de la carte), zones de déclenchement libres. Bidons solides (28 de haut, tirs par-dessus), dessinés comme avant, deux déplacés de 5 et 10. Laser identique à la V0.8 (2 296 positions × 8 directions) : le mur percé autour du joueur et les murs jusqu'au plafond trompent l'œil.
 
 ## Atelier et plan (partie B)
 - `atelier-decor.html` (`js/atelier-decor/main.js`, lien du menu de débogage) : vue du jeu 667 × 375 et 1920 × 1080 (caméra du jeu, herbe, lune, brouillard, feu, repère zombie de 61), gros plan qui tourne (immobile en mouvement réduit), planche des 38 variantes, budget, plan (emprises, hauteurs, tirs, collisions, arbres gardés, chemins avant / après), revue du contenu, choix à recopier.

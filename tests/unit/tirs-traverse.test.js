@@ -44,9 +44,9 @@ describe('données : liste du propriétaire et fichier dérivé', () => {
     expect(gen.tirsReport.problems).toEqual([]);
     const liste = json('data/game/tirs-traversables.json').cartes['rez-de-chaussee'];
     expect([...TIRS.rdc.ids, ...TIRS.rdc.grilles.map((g) => g.id)].sort()).toEqual([...liste.rdc].sort());
-    expect(TIRS.rdc.ids).toHaveLength(26); // lot 9a-I : + sacs-1, sacs-2 (18 de haut) ; lot 9h : + 13 objets d'époque dessinés sous l'arme (véhicules aux places des voitures, voiture en flammes, ailes et débris de l'avion, hérissons, barbelés, jerrycans, caisses)
+    expect(TIRS.rdc.ids).toHaveLength(28); // lot 9h (retours) : + bidon-salle, bidon-poche (28 de haut) ; lot 9a-I : + sacs-1, sacs-2 (18 de haut) ; lot 9h : + 13 objets d'époque dessinés sous l'arme (véhicules aux places des voitures, voiture en flammes, ailes et débris de l'avion, hérissons, barbelés, jerrycans, caisses)
     expect(TIRS.rdc.grilles.map((g) => g.id)).toEqual(['grille-F7', 'grille-F8']);
-    expect(TIRS.etage.ids).toHaveLength(5);
+    expect(TIRS.etage.ids).toHaveLength(6); // lot 9h (retours) : + bidon-etage
     // Chaque meuble listé est DESSINÉ plus bas que l'arme (mobilier.world.json, render.json → gunHeight 43) ; aucun pilier ni escalier.
     const arme = json('data/game/render.json').gunHeight;
     expect(arme).toBe(43);

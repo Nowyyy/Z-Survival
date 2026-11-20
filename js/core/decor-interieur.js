@@ -22,7 +22,9 @@ export const CATALOGUE = Object.freeze({
   // de genre « sacs », hauteur z1) : ils bloquent le joueur et les zombies à tous les réglages, les tirs passent par-dessus (tirs-traversables.json) ;
   // dessinés avec le mobilier (sacsBoxes, texture « toile-jute »), plus dans le décor léger.
   sacs: Object.freeze({ wall: false, z0: 0, z1: 18, tris: 10, region: 'bois', scale: 40, solide: true }),
-  bidon: Object.freeze({ wall: false, z0: 0, z1: 28, tris: 10, region: 'barriere', scale: 40 }),
+  // Lot 9h (retour du propriétaire : « l'objet dans lequel je suis n'a pas de hitbox ») : bidons SOLIDES (obstacles de world.json, comme les sacs), dessinés
+  // comme avant dans le décor léger (dessinLeger) ; 28 de haut : les tirs passent par-dessus (tirs-traversables.json).
+  bidon: Object.freeze({ wall: false, z0: 0, z1: 28, tris: 10, region: 'barriere', scale: 40, solide: true, dessinLeger: true }),
   // Lot 3g (retour du propriétaire) : ouverture à barreaux du modèle (à la place de F7, et à l'ouest de F8). Le jeu coupe le mur et dessine de vrais barreaux
   // (js/game/world.js, js/core/portes-aspect.js : grilleBoxes) ; itemQuads n'en donne qu'un aperçu plat (8 barreaux, 2 traverses), non dessiné dans le jeu.
   grille: Object.freeze({ wall: true, z0: 0, z1: 58, depth: 3, tris: 20, region: 'tole', scale: 40 }),
@@ -237,6 +239,7 @@ export function solidesDecor(items) {
   const legers = [];
   for (const it of list(items)) {
     if (!isObject(it) || !CATALOGUE[it.kind]?.solide || CATALOGUE[it.kind].wall) { legers.push(it); continue; }
+    if (CATALOGUE[it.kind].dessinLeger) legers.push(it); // lot 9h : solide, mais dessiné par le décor léger (bidons)
     const rot = (num(it.rot, 0) * Math.PI) / 180;
     const c = Math.abs(Math.cos(rot));
     const sn = Math.abs(Math.sin(rot));
