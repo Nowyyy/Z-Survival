@@ -13,22 +13,22 @@ Carte 1 (« Night of the Undead », 1942). Base : `origin/dev` `7514702` (seed 0
 - Trace `trace-logique.mjs` 6 × 600 : finales `409ba42b…`, `d35b3564…`, `f68e7922…`, `8541f81b…`, `11477f95…`, `7e7b3937…` (chaînes `ba1fdc84…`, `a20f7972…`, `3121245c…`, `55cf7f58…`, `f9647b35…`, `da4ed5fd…`).
 - Arrivées (`scripts/perf/arrivees.mjs`, manche 10, graines 1 à 6, 3 000 pas, portes ouvertes) : 60 zombies, 60 arrivés ; médianes F1 3,3 s · F2 5,1 · F3 3,75 · F4 5,35 · F5 3,35 · F6 2,8 · F8 3,25 (étage U1 à U7 : 2,2 à 8,65).
 
-## Objets proposés (échelle : 28 unités par mètre, soit 35 × 0,8 comme les armes ; hauteurs plafonnées, véhicules ≤ 55)
-| Objet | Variantes | Réel → jeu (L × l × h) | Tirs (arme 43) | Collision | Triangles visés |
+## Objets proposés (mesurés à la partie B ; 28 unités par mètre, soit 35 × 0,8 comme les armes ; hauteurs plafonnées)
+| Objet | Variantes (triangles) | Jeu (emprise) | Hauteur | Tirs (arme 43) | Collision |
 |---|---|---|---|---|---|
-| Véhicules abandonnés (4, places des voitures) | Jeep Willys MB · Kübelwagen · mélange | 3,4 × 1,6 × 1,3 m → 92 × 46 × 40 | arrêtés | rectangle 92 × 46 (inchangé) | ≤ 200 chacun |
-| Camion (nouveau) | Dodge WC-51 · Opel Blitz (sans insigne) | 4,2-6 × 2,1-2,3 × 2,1 m → 120-150 × 56 × 55 | arrêtés | son rectangle | ≤ 300 |
-| Véhicule en flammes (même place) | Jeep · Kübelwagen · camion | → 92 × 46 (camion 120 × 56, même centre) | arrêtés | son rectangle | ≤ 200 |
-| Avion écrasé (angle du L) | P-51A Mustang (aile arrachée) · P-47 Thunderbolt · P-40 Warhawk | 9,8 × 11,3 m → ≈ 216 × 248 à 22 u/m ; dérive ≤ 60 | fuselage et dérive : arrêtés ; aile (≈ 15) : passent | 3 rectangles (fuselage, aile, queue) | ≤ 700 ; hélice tordue immobile |
-| Parachute dans un arbre mort | déployé sur la couronne · pendu à une branche · à moitié au sol | voilure 7 m → ≈ 100 | sans effet | aucune | ≤ 200 |
-| Barbelés | rouleaux (concertina) · piquets et fils croisés · rouleau simple | 0,9 m → 25 | passent | rectangle dessiné | ≤ 150 par groupe |
-| Hérissons tchèques | seul · rangée de 3 · rouillé penché | 1,4 m → 38 | passent | rectangle dessiné | 30 chacun |
-| Jerrycans | pile · rangée · renversés | 0,47 m → 13-26 | passent | rectangle dessiné | ≤ 120 |
-| Caisses de munitions au pochoir | pile 2 + 1 · rangée · ouverte | 0,9 m → 25-30 | passent | rectangle dessiné | ≤ 80 |
-| Trous d'obus | petit · moyen · double | 2-5 m → 60-140 | sans effet (plats) | aucune | ≤ 50 chacun |
-| Poteaux télégraphiques (remplacent les poteaux électriques) | une traverse · deux traverses · penché, fils cassés | 7 m → 150 (inchangé) | arrêtés | 10 × 10 | ≤ 30 chacun + fils |
-| Panneaux militaires fléchés | poteau à 2 flèches · 3 flèches · panneau tombé | 2 m → 56 | arrêtés (poteau seul) | 10 × 10 | ≤ 40 |
-| Projecteur de DCA ou pièce d'artillerie | projecteur sur remorque (éteint) · obusier 105 · canon antichar 57 | 2 m → 56 · 1,6 → 45 · 1,3 → 36 | arrêtés · arrêtés · passent | rectangle dessiné | ≤ 300 |
+| Véhicules abandonnés (4, places des voitures) | Jeep 188 · Kübelwagen 196 · mélange (défaut) | 92 × 46 (inchangé) | 37 | passent | rectangle 92 × 46 |
+| Camion (nouveau, barrage de la route) | Dodge WC-51 178 · Opel Blitz 216 | 120 × 56 · 150 × 58 | 53-54 | arrêtés | son rectangle |
+| Véhicule en flammes (même centre) | Jeep 152 · Kübelwagen 164 · Dodge 164 | 86-120 × 46-56 | 28-34 | passent | son rectangle |
+| Avion (angle du L, cap 165°) | P-51A 260 (aile arrachée) · P-47 256 · P-40 233 (queue cassée) | ≈ 214 × 260 | 52-59 | fuselage et dérive arrêtés (P-40 : fuselage 40, passent) ; ailes et débris passent | 3 ou 4 rectangles (fuselage, aile, queue, débris) |
+| Parachute dans un arbre mort | déployé 128 · pendu 78 · au sol 106 | ≈ 100 | 85 | sans effet | aucune |
+| Barbelés | rouleaux 246 · piquets 182 · simple 104 | 123 × 34 | 22-30 | passent | rectangle dessiné |
+| Hérissons tchèques | seul 42 · rangée de 3 126 · rouillé 40 | 42-162 × 42-47 | 40 | passent | rectangle dessiné |
+| Jerrycans | pile 114 · rangée 110 · renversés 88 | 28-56 × 13-33 | 15-30 | passent | rectangle dessiné |
+| Caisses au pochoir | pile 32 · rangée 40 · ouverte 44 | 32-120 × 21-43 | 10-20 | passent | rectangle dessiné |
+| Trous d'obus (6) | petit 50 · moyen 60 · double 90 | 73-111 | 5 (plats) | sans effet | aucune |
+| Poteaux télégraphiques (7, pieds des poteaux électriques) | une traverse 35 · deux 59 · un sur deux penché 35 ; fils 4 par portée | 10 × 9 (pied ; traverse à 140 sans collision) | 150 | arrêtés | pied |
+| Panneau fléché | deux flèches 34 · trois 46 · tombé 40 | 66 × 15-43 | 56 (tombé 14) | arrêtés (tombé : sans effet) | rectangle dessiné (tombé : aucune) |
+| Projecteur ou artillerie (champ du nord-est) | projecteur éteint 184 · obusier 105 120 · antichar 57 120 | 104-142 × 50-60 | 60 · 50 · 36 | arrêtés · arrêtés · passent | rectangle dessiné |
 - Marquages : numéros et bandes inventés, étoile américaine permise (avion, Jeep, camion) ; **aucun symbole nazi ni politique, aucune marque** (Kübelwagen et Blitz sans croix ni plaque d'unité).
 - Tout en code : formes de triangles (comme `epaves.js`) et une texture générée de 256 px (« atlas d'époque » : tôle olive, toile, bois au pochoir, acier brut) ; aucune image importée.
 
@@ -41,8 +41,11 @@ Carte 1 (« Night of the Undead », 1942). Base : `origin/dev` `7514702` (seed 0
 ## Budget visé
 - Au plus +4 appels et +3 000 triangles au pire cas : un maillage fusionné de plus (atlas d'époque, sans ombre portée), moins les deux de l'hélicoptère (tôle et rotor) ; véhicules abandonnés dans le maillage à ombre des voitures (même nombre d'ombres) ; trous d'obus dans le sol (aucun appel) ; feu, fumée et lumière du véhicule en flammes et fumée de l'avion gardés.
 
-## Atelier prévu (partie B)
-- `atelier-decor.html` (page technique, lien dans le menu de débogage) : chaque objet en variantes, vue du jeu (667 × 375 et 1920 × 1080 : caméra du jeu, sol extérieur, lune, brouillard, lumière de feu), gros plan qui tourne (immobile en mouvement réduit), budget par variante ; plan de placement (carte entière, emprises, hauteurs, collisions, tirs ; chemins des zombies avant / après, longueurs) ; choix à recopier dans `data/game/decor-epoque-choix.json` (invalide = défaut).
+## Atelier et plan (partie B)
+- `atelier-decor.html` (`js/atelier-decor/main.js`, lien du menu de débogage) : vue du jeu 667 × 375 et 1920 × 1080 (caméra du jeu, herbe, lune, brouillard, feu, repère zombie de 61), gros plan qui tourne (immobile en mouvement réduit), planche des 38 variantes, budget, plan (emprises, hauteurs, tirs, collisions, arbres gardés, chemins avant / après), revue du contenu, choix à recopier.
+- Plan (choix par défaut) : 29 objets dont 22 solides, 0 problème pour **toutes** les variantes ; 14 chemins de zombies intacts, aucun allongé ; `npm run carte -- --verifie` contrôle le plan sans écrire de fichier lu par la partie.
+- Budget : plan +3 297 triangles (objets et fils), −1 322 retirés (hélicoptère 310, voitures 632, voiture en flammes 158, poteaux et câbles 222) : **solde +1 975** (≤ +3 000) ; appels : +1 maillage d'époque, −2 de l'hélicoptère.
+- Jeu inchangé : trace 6 × 600 identique à chaque pas à `origin/dev` ; la partie ne charge aucun module du décor d'époque (test).
 
 ## Tests prévus
 - Unitaires (`decor-epoque.test.js`) : modèles purs et déterministes, budgets, hauteurs, tirs (< 43 traversable), emprises, fichier de choix (invalide = défaut), placement (couloirs, apparitions, bâtiment, fenêtres), chemins de chaque point d'apparition vers sa fenêtre jamais coupés, contenu (aucun symbole interdit dans les données).

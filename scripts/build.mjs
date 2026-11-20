@@ -14,6 +14,7 @@ ENTRIES.push('noms-versions-et-lots.txt'); // lot 5h : fichier des noms (lu par 
 ENTRIES.push('assets'); // lot 8g : logo du studio (assets/studio/ : original fourni par le propriétaire et sa copie fixe dérivée par script)
 ENTRIES.push('atelier-sons-menu.html'); // lot 8i : page d'écoute des sons du menu (page technique)
 ENTRIES.push('atelier-armes.html'); // lot 9c : atelier des armes (page technique, à retirer au lot 13)
+ENTRIES.push('atelier-decor.html'); // lot 9h : atelier du décor extérieur d'époque (page technique)
 for (const entry of ENTRIES) {
   if (existsSync(entry)) cpSync(entry, `${OUT}/${entry}`, { recursive: true });
 }

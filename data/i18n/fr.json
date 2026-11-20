@@ -529,6 +529,8 @@
   "game.debug.sonsMenu.lien": "Page d'écoute",
   "game.debug.armes": "Atelier des armes",
   "game.debug.armes.lien": "Ouvrir l'atelier",
+  "game.debug.decor": "Atelier du décor extérieur",
+  "game.debug.decor.lien": "Ouvrir l'atelier",
   "game.debug.section.armes": "Armes",
   "game.debug.armes.note": "Effet immédiat sur la partie en cours ; rien n'est gardé.",
   "game.debug.armes.donner": "Donner une arme",

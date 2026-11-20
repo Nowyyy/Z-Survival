@@ -13,8 +13,10 @@ import { firesToWorld, lampsToWorld, lampTriangles } from '../js/core/lamps.js';
 import { polygonRects } from '../js/core/shape.js';
 import { rectGap } from '../js/core/collision.js';
 import { parseZones, zonesToWorld } from '../js/core/zones.js';
-import { buildLayouts } from '../js/core/layout.js';
+import { buildLayouts, windowsWithGaps } from '../js/core/layout.js';
+import { windowGeometries } from '../js/core/windows.js';
 import { tirsMonde } from '../js/core/tir-traverse.js';
+import { controlePlan } from '../js/core/decor-epoque.js';
 
 const ROOT = new URL('../data/game/maps/', import.meta.url);
 const isPrimitive = (v) => v === null || typeof v !== 'object';
@@ -171,6 +173,20 @@ export function generateMapFiles(id = 'rez-de-chaussee') {
     result.tirsReport = { counts: Object.fromEntries(Object.entries(conv.doc).map(([f, d]) => [f, `${d.ids.length} objets, ${d.grilles.length} grilles`])), problems: conv.problems };
     result.problems.push(...conv.problems.map((v) => `tirs : ${v}`));
   }
+  // Lot 9h : décor extérieur d'époque (decor-epoque.json de la carte, unités du jeu ; choix : data/game/decor-epoque-choix.json). Contrôle seulement :
+  // aucun fichier écrit (la partie ne le lit pas avant le « GO 9h »). Problème : couloir, point d'apparition, bâtiment, fenêtre, décor gardé, chemin coupé.
+  result.decorEpoqueReport = null;
+  const epoqueUrl = new URL(`${id}/decor-epoque.json`, ROOT);
+  if (existsSync(epoqueUrl)) {
+    const lireData = (nom) => {
+      const url = new URL(`../${nom}`, ROOT);
+      return existsSync(url) ? JSON.parse(readFileSync(url, 'utf8')) : null;
+    };
+    const ctl = controlePlan({ world: out.world, decorCfg: out.decor, doc: JSON.parse(readFileSync(epoqueUrl, 'utf8')), choixJson: lireData('decor-epoque-choix.json'), geometries: (layout) => windowGeometries(windowsWithGaps(layout), lireData('windows.json')), navCfg: lireData('nav.json') });
+    const allonges = ctl.chemins.filter((c) => c.avant && c.apres && c.apres.longueur !== c.avant.longueur).length;
+    result.decorEpoqueReport = { objets: ctl.objets.length, solides: ctl.objets.filter((o) => o.collision).length, triangles: ctl.objets.reduce((n, o) => n + o.compte, 0), chemins: ctl.chemins.length, allonges, problems: ctl.problemes };
+    result.problems.push(...ctl.problemes.map((v) => `décor d'époque : ${v}`));
+  }
   return result;
 }
 
@@ -195,7 +211,7 @@ if (isMain) {
   const args = process.argv.slice(2);
   const check = args.includes('--verifie');
   const id = args.find((a) => !a.startsWith('--')) ?? 'rez-de-chaussee';
-  const { world, decor, etage, report, etageReport, problems, decorInterieur, decorReport, mobilier, mobilierReport, wrecksReport, lampes, lampesReport, tirs, tirsReport } = generateMapFiles(id);
+  const { world, decor, etage, report, etageReport, problems, decorInterieur, decorReport, mobilier, mobilierReport, wrecksReport, lampes, lampesReport, tirs, tirsReport, decorEpoqueReport } = generateMapFiles(id);
   const files = [['world.json', world], ['decor.json', decor], ...(etage === null ? [] : [['etage.world.json', etage]]), ...(decorInterieur === null ? [] : [['decor-interieur.world.json', decorInterieur]]), ...(mobilier ? [['mobilier.world.json', mobilier]] : []), ...(lampes ? [['lampes.world.json', lampes]] : []), ...(tirs ? [['tirs.world.json', tirs]] : [])].map(([name, text]) => [name, text, new URL(`${id}/${name}`, ROOT)]);
   if (check) {
     const stale = files.filter(([, text, url]) => !existsSync(url) || readFileSync(url, 'utf8') !== text).map(([name]) => name);
@@ -230,6 +246,7 @@ if (isMain) {
     for (const w of lampesReport.warnings) console.log(`Lampes : ${w}`);
   }
   if (tirsReport) console.log(`Tirs : ${Object.entries(tirsReport.counts).map(([f, t]) => `${f} ${t}`).join(' ; ')} traversables.`);
+  if (decorEpoqueReport) console.log(`Décor d'époque (atelier, non branché) : ${decorEpoqueReport.objets} objets dont ${decorEpoqueReport.solides} solides, ${decorEpoqueReport.triangles} triangles ; ${decorEpoqueReport.chemins} chemins de zombies, ${decorEpoqueReport.allonges} allongés, ${decorEpoqueReport.problems.length} problème(s).`);
   if (wrecksReport) {
     const { car, helicopter: h } = wrecksReport;
     if (car) console.log(`Épaves : voiture en flammes ${car.id} (${car.x}, ${car.y}), à ${car.gap} du bâtiment.`);

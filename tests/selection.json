@@ -351,6 +351,9 @@
         "js/core/decor-interieur.js",
         "js/core/decor-vivant.js",
         "js/core/epaves.js",
+        "js/core/decor-epoque.js",
+        "data/game/decor-epoque.json",
+        "data/game/decor-epoque-choix.json",
         "js/core/lamps.js",
         "js/core/furniture-model.js",
         "js/core/movement.js",
@@ -426,7 +429,7 @@
         "tests/unit/zones-porte-chemin.test.js",
         "tests/unit/zones-rendu.test.js",
         "tests/unit/zones-splash.test.js",
-        "tests/unit/zones.test.js", "tests/unit/tirs-traverse.test.js"],
+        "tests/unit/zones.test.js", "tests/unit/tirs-traverse.test.js", "tests/unit/decor-epoque.test.js"],
       "e2e": [],
       "complet": [
         "tests/e2e/atelier-carte.spec.js",
@@ -974,6 +977,10 @@
         "js/atelier-sons-menu/**",
         "data/i18n/atelier-sons-menu.json",
         "atelier-armes.html",
+        "atelier-decor.html",
+        "js/atelier-decor/**",
+        "data/i18n/atelier-decor.json",
+        "css/atelier-decor.css",
         "js/armes/atelier.js",
         "js/armes/rendu.js",
         "js/armes/tenue.js",
@@ -1034,7 +1041,7 @@
         "tests/unit/armes.test.js",
         "tests/unit/armes-poses.test.js"
       ],
-      "e2e": ["tests/e2e/sons-menu-page.spec.js", "tests/e2e/armes-atelier.spec.js"],
+      "e2e": ["tests/e2e/sons-menu-page.spec.js", "tests/e2e/armes-atelier.spec.js", "tests/e2e/decor-epoque-atelier.spec.js"],
       "complet": [
         "tests/e2e/atelier-carte.spec.js",
         "tests/e2e/atelier-choix.spec.js",
