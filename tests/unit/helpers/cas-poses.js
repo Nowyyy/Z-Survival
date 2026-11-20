@@ -9,7 +9,17 @@ import { SPECIAL, stream } from './cas-collision.js';
 
 const load = (name) => JSON.parse(readFileSync(`data/game/${name}.json`, 'utf8'));
 export const characters = load('characters-v2');
-export const poses = load('poses-v2');
+// Lot 9e (partie V) : attack.rentre (ajout du lot, inconnu de l'oracle figé) est retiré des styles ; son effet seul (bras ramenés de rentre
+// à la garde, à l'élan et au coup, mains jamais croisées) est vérifié par tests/unit/gabarit.test.js.
+function sansRentre(p) {
+  const styles = {};
+  for (const [id, st] of Object.entries(p.styles ?? {})) {
+    const { rentre, ...attack } = st.attack ?? {}; // eslint-disable-line no-unused-vars
+    styles[id] = st.attack ? { ...st, attack } : st;
+  }
+  return { ...p, styles };
+}
+export const poses = sansRentre(load('poses-v2'));
 export const skeletons = poses.skeletons;
 
 const pick = (rnd, list) => list[Math.floor(rnd() * list.length)];

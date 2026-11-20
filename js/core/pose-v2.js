@@ -89,6 +89,7 @@ const POOL = Symbol('tableaux réutilisés');
 const clamp2 = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 const has = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
 const ZERO3 = Object.freeze([0, 0, 0]);
+const AUCUN = Object.freeze([]);
 const DEF_ARM = Object.freeze([0.6, 0.2, 0.3]);
 const DEF_ARMS = Object.freeze([0.6, 0.4]);
 const DEF_PROP = Object.freeze([-1.5, -4, 13]);
@@ -589,13 +590,16 @@ function enjamber(pose, work, rig, t, params, data) {
 function attaque(pose, work, rig, phase, params, data) {
   const st = styleOf(rig, data, 'attack');
   const amp = 1 + macro(params, data, 'amplitude');
+  // Lot 9e (retour du propriétaire, partie V : « quand ils tapent, ils croisent les bras ») : attack.rentre (garde, élan, coup ; radians de
+  // bras ramenés vers l'axe du corps) ; absent : 0,35, 0,45, 0,55 comme avant. Au corps long, les bras plus longs croisaient les mains devant.
+  const rentre = Array.isArray(st.rentre) ? st.rentre : AUCUN;
   const guard = temp(work, 0);
   stand(rig, guard, 0.18, 0.08);
   setA(guard, 'spine', 0.15, 0, 0);
   for (let i = 0; i < 2; i += 1) {
     const s = i === 0 ? 'L' : 'R';
     const side = i === 0 ? 1 : -1;
-    sideSetA(guard, 'shoulder', s, side, -0.7, -0.35, 0.1);
+    sideSetA(guard, 'shoulder', s, side, -0.7, -num(rentre[0], 0.35), 0.1);
     sideSetA(guard, 'elbow', s, side, -0.7, 0, 0);
   }
   const wind = temp(work, 1);
@@ -605,7 +609,7 @@ function attaque(pose, work, rig, phase, params, data) {
   for (let i = 0; i < 2; i += 1) {
     const s = i === 0 ? 'L' : 'R';
     const side = i === 0 ? 1 : -1;
-    sideSetA(wind, 'shoulder', s, side, -num(st.windup, 1.5) * amp, -0.45, 0.1);
+    sideSetA(wind, 'shoulder', s, side, -num(st.windup, 1.5) * amp, -num(rentre[1], 0.45), 0.1);
     sideSetA(wind, 'elbow', s, side, -1.7, 0, 0);
   }
   const strike = temp(work, 2);
@@ -617,7 +621,7 @@ function attaque(pose, work, rig, phase, params, data) {
   for (let i = 0; i < 2; i += 1) {
     const s = i === 0 ? 'L' : 'R';
     const side = i === 0 ? 1 : -1;
-    sideSetA(strike, 'shoulder', s, side, -num(st.strike, 0.6), -0.55, 0.05);
+    sideSetA(strike, 'shoulder', s, side, -num(st.strike, 0.6), -num(rentre[2], 0.55), 0.05);
     sideSetA(strike, 'elbow', s, side, -0.15, 0, 0);
   }
   return keyedTo(pose, phase, 5, 0, guard, 0.35, wind, 0.5, strike, 0.62, strike, 1, guard);

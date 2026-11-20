@@ -14,7 +14,7 @@ const show = (path) => {
   }
 };
 const now = (path) => JSON.parse(readFileSync(path, 'utf8'));
-const AJOUTS = { 'data/game/windows.json': ['slotMains'], 'data/game/enemies.json': ['rampant'] };
+const AJOUTS = { 'data/game/windows.json': ['slotMains'], 'data/game/enemies.json': ['rampant'], 'data/game/player-down.json': ['standUpToEdge'] };
 
 describe('lot 9e : données de règles changées, seulement par ajout', () => {
   it.each(Object.entries(AJOUTS))('%s : clés ajoutées %j, le reste identique à main', (path, keys) => {

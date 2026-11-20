@@ -239,6 +239,14 @@ export function createGame(ctx) {
   const AURA_DUREE = 0.5;
   let aura = null; // { t0, rayon } (temps de jeu)
   let aurasLancees = 0;
+  // Partie V (« les zombies expulsés à la même distance que l'aura ») : au relevage, ils sont repoussés jusqu'au bord du rayon de l'aura
+  // (player-down.json → standUpToEdge) ; dessinés glissant de leur place jusque-là au rythme de l'anneau (même courbe, même durée ; mouvement
+  // réduit : déjà au bord). id → { ox, oy } : décalage de départ par rapport à leur position logique.
+  const reculs = new Map();
+  const glissement = () => {
+    const u = aura ? (sim.time - aura.t0) / AURA_DUREE : 1;
+    return reduced || u >= 1 || u < 0 ? 0 : (1 - u) * (1 - u); // 1 − (1 − (1 − u)²)
+  };
   function lancerAura(rayon) {
     aura = { t0: sim.time, rayon: Math.max(1, num(rayon, 60)) };
     aurasLancees += 1;
@@ -998,8 +1006,23 @@ export function createGame(ctx) {
     if (pd.knockback) {
       // Le repoussement de la chute et du relevage ne concerne que les zombies de l'étage du joueur.
       const l = layoutOf(pf());
+      const avant = new Map(sim.enemies.map((e) => [e.id, e]));
       sim.enemies = knockbackZombies(sim.enemies, sim.player, pd.knockback, { bounds: l.bounds, inside: l.inside, furniture: [...l.furniture, ...closedDoors(l, openIds())], walls: l.walls, gaps: l.gaps });
-      if (pd.knockback.reason === 'standup') lancerAura(pd.knockback.radius); // partie U : seulement quand il se relève
+      if (pd.knockback.reason === 'standup') {
+        lancerAura(pd.knockback.radius); // partie U : seulement quand il se relève
+        // Partie V : chaque zombie repoussé est dessiné glissant de sa place jusqu'au bord, au rythme de l'anneau (sa logique y est déjà).
+        reculs.clear();
+        for (const e of sim.enemies) {
+          const o = avant.get(e.id);
+          if (!o || (o.x === e.x && o.y === e.y)) continue;
+          reculs.set(e.id, { ox: o.x - e.x, oy: o.y - e.y });
+          const z = zombies.get(e.id);
+          if (z) {
+            z.x = e.x; // sans pas de marche pour le saut
+            z.y = e.y;
+          }
+        }
+      }
     }
 
     // Lot 3i : vie basse (battement de cœur) et zombies qui commencent à franchir une fenêtre (escalade, à la position de la fenêtre).
@@ -1484,6 +1507,12 @@ export function createGame(ctx) {
       // dans la partie découverte (le sol de l'étage les cache ailleurs) ; depuis le rez-de-chaussée ceux de l'étage ne sont pas dessinés (ni ombrés). Leur logique continue.
       const zf = floorOf(e);
       let at = { x: e.x, y: e.y, h: zf === pf() ? 0 : liftOf(zf) - liftOf(pf()) };
+      const recul = reculs.get(e.id);
+      if (recul) {
+        const k = glissement();
+        if (k > 0) at = { x: e.x + recul.ox * k, y: e.y + recul.oy * k, h: at.h };
+        else reculs.delete(e.id);
+      }
       let face = null;
       const visible = drawnOf(e);
       if (e.mode === 'escalier') {
@@ -1956,7 +1985,7 @@ export function createGame(ctx) {
           actif: armeActive(sim.inv)?.id ?? null, montree: armeMontree(sim.inv)?.id ?? null, emplacements: sim.inv.emplacements.map((e) => ({ id: e.id, chargeur: e.chargeur, reserve: e.reserve === Infinity ? null : e.reserve, recharge: e.recharge })),
           sortie: sim.inv.sortie ? { ...sim.inv.sortie } : null, recharge: progressionRecharge(sim.inv, tableArmes), enRecharge: enRecharge(sim.inv), attente: sim.inv.attente ?? 0, texte: texteMunitions(sim.inv), peutTirer: peutTirer(sim.inv), aSec: aSec(sim.inv), illimite: sim.inv.illimite,
           vitesse: vitesseJoueur(), bouche: eff.weapon.muzzleOffset, boucheCote: eff.weapon.muzzleSide ?? 0, plombs: eff.weapon.plombs ?? 1, damage: eff.weapon.damage, fireDelay: eff.weapon.fireDelay, fireRange: eff.weapon.fireRange, coneStill: eff.weapon.coneStill, coneMove: eff.weapon.coneMove,
-          aura: { lancees: aurasLancees, visible: auraMesh.visible },
+          aura: { lancees: aurasLancees, visible: auraMesh.visible, reculs: reculs.size },
           geste: gesteVu ? { ...gesteVu } : null, pieces: { lachees: lachesTotal, auSol: tombes?.nombre ?? 0 }, douilles: { ejectees: ejectionsTotal, visibles: douilles?.nombre ?? 0 }, manoeuvre: sim.manoeuvre ? { ...sim.manoeuvre } : null,
           canon: { logique: boucheJoueur(sim.aim.angle, eff.weapon, layout.muzzleBounds), rendu: lastGun ? { x: lastGun.x, y: lastGun.y, hauteur: lastGun.height } : null }, // bout du canon : logique et dessiné
           rendu: playerChar.arme, triangles: armeVue && armesKit ? armesKit.triangles(armeVue) : 0, emplacementsMax: 1 + (tableArmes?.emplacementsAchetes ?? 0),
