@@ -1105,7 +1105,7 @@
   top: 1px;
   left: 4px;
   font-family: var(--font-sans);
-  font-size: calc(var(--hud-fs) * 0.7);
+  font-size: var(--hud-fs); /* 14 px au moins (règle des lots 3a et 3l) */
   font-weight: var(--font-weight-bold);
   line-height: 1;
   color: var(--color-text);
