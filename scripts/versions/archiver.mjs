@@ -85,7 +85,9 @@ export function readBuildScript(srcDir) {
 }
 
 // npm ci (si un verrou existe, sinon npm install sans écrire le verrou) puis npm run build ; sortie attendue dans _site/.
-export function buildSource(srcDir, { install = true, log = () => {} } = {}) {
+// Lot 9f : ZS_BUILD_SHA = commit archivé (git archive ne donne pas de .git) : un build qui met ses adresses à l'empreinte (scripts/build.mjs depuis
+// le lot 9f, Docs/ref/cache.md) prend ainsi la même version que le sha de build-info.json ; un build plus ancien ignore la variable.
+export function buildSource(srcDir, { install = true, log = () => {}, sha = '' } = {}) {
   const script = readBuildScript(srcDir);
   const started = Date.now();
   if (install) {
@@ -94,7 +96,7 @@ export function buildSource(srcDir, { install = true, log = () => {} } = {}) {
   }
   const installMs = Date.now() - started;
   log(`build : ${script}`);
-  run('npm', ['run', 'build', '--silent'], { cwd: srcDir });
+  run('npm', ['run', 'build', '--silent'], { cwd: srcDir, env: { ...process.env, ZS_BUILD_SHA: REF_RE.test(sha) ? sha : '' } });
   const out = join(srcDir, BUILD_OUT);
   if (!existsSync(out)) throw new ArchiveError(`le build ne produit pas ${BUILD_OUT}/`);
   return { out, script, installMs, buildMs: Date.now() - started - installMs };
@@ -179,7 +181,7 @@ export function archiveVersion(version, {
     extractSource(repo, ref, src);
     let built;
     try {
-      built = buildSource(src, { install, log });
+      built = buildSource(src, { install, log, sha: ref });
     } catch (error) {
       return { ...report, status: 'indisponible', note: `Build impossible : ${error.message}`.slice(0, 300) };
     }

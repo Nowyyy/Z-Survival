@@ -20,6 +20,10 @@ import { startServer } from './serve.mjs';
 
 const SKIP = new Set(['.git', 'node_modules', '_site', '.lots', 'Docs', 'tests', 'test-results', 'playwright-report', 'lighthouse-report', 'blob-report', 'coverage']);
 export const DEV_SHA = 'abcdef1234567890abcdef1234567890abcdef12';
+export const MAIN_SHA = 'fedcba9876543210fedcba9876543210fedcba98';
+// Lot 9f : deux déploiements successifs du même arbre (versions N et N+1, données de test) pour le scénario de cache de tests/e2e/cache.spec.js :
+// cache-a/ et cache-b/ (Recette/ et dev/ à l'empreinte de leur sha), servis par un mandataire du test qui renvoie Cache-Control: max-age=600.
+export const CACHE_SHAS = Object.freeze({ a: '1111111aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', b: '2222222bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb' });
 export const DEV_DATE = '2026-11-02T12:00:00Z';
 export const GENERE = '2026-11-06T12:00:00Z';
 // Lot 5i : description FICTIVE de la Recette (V0.6) de 200 caractères, la borne du fichier des noms : la carte « Version actuelle » doit l'afficher en entier.
@@ -76,26 +80,47 @@ export function buildTestSites(repo, www) {
     const src = join(tmp, 'src');
     mkdirSync(src);
     for (const name of readdirSync(repo)) if (!SKIP.has(name)) cpSync(join(repo, name), join(src, name), { recursive: true });
-    const build = spawnSync('node', ['scripts/build.mjs'], { cwd: src, encoding: 'utf8' });
-    if (build.status !== 0) throw new Error(`build : ${build.stderr}`);
+    // Lot 9f : deux builds, chacun à l'empreinte du sha que son build-info.json publiera (ZS_BUILD_SHA ; la copie n'a pas de .git) : Recette
+    // (main) et dev ; sinon la vérification de version de jeu.html rechargerait la page (Docs/ref/cache.md).
+    const construire = (sha) => {
+      const build = spawnSync('node', ['scripts/build.mjs'], { cwd: src, encoding: 'utf8', env: { ...process.env, ZS_BUILD_SHA: sha } });
+      if (build.status !== 0) throw new Error(`build : ${build.stderr}`);
+    };
+    const caches = {};
+    for (const [nom, sha] of Object.entries(CACHE_SHAS)) {
+      construire(sha);
+      caches[nom] = join(tmp, `cache-${nom}`);
+      cpSync(join(src, '_site'), caches[nom], { recursive: true });
+      rmSync(join(caches[nom], NOMS_FICHIER), { force: true });
+    }
+    construire(DEV_SHA);
+    const devDir = join(tmp, 'dev');
+    cpSync(join(src, '_site'), devDir, { recursive: true });
+    rmSync(join(devDir, NOMS_FICHIER), { force: true });
+    construire(MAIN_SHA);
     const mainDir = join(src, '_site');
     rmSync(join(mainDir, NOMS_FICHIER), { force: true });
     const nomsDev = join(tmp, 'dev-noms');
-    cpSync(mainDir, nomsDev, { recursive: true });
+    cpSync(devDir, nomsDev, { recursive: true });
     writeFileSync(join(nomsDev, NOMS_FICHIER), NOMS_TEST);
     const versions = testVersions(JSON.parse(readFileSync(join(repo, 'versions.json'), 'utf8')));
     const archive = join(tmp, 'archive');
     for (const v of versions.versions.filter((x) => x.status === 'archive')) fakeArchive(archive, v);
     rmSync(www, { recursive: true, force: true });
-    const main = { branch: 'main', sha: 'fedcba9876543210fedcba9876543210fedcba98', date: '2026-11-02T10:00:00Z' };
+    const main = { branch: 'main', sha: MAIN_SHA, date: '2026-11-02T10:00:00Z' };
     const dev = { sha: DEV_SHA, date: DEV_DATE };
-    assembleSite({ mainDir, devDir: mainDir, archiveDir: archive, versions, out: join(www, 'full'), main, dev, genere: GENERE });
+    assembleSite({ mainDir, devDir, archiveDir: archive, versions, out: join(www, 'full'), main, dev, genere: GENERE });
     assembleSite({ mainDir, versions, out: join(www, 'bare'), main, genere: GENERE });
     assembleSite({ mainDir, devDir: nomsDev, archiveDir: archive, versions, out: join(www, 'noms'), main, dev, genere: GENERE });
     const many = manyVersions();
     const manyArchive = join(tmp, 'archive-many');
     for (const v of many.versions.filter((x) => x.status === 'archive')) fakeArchive(manyArchive, v);
-    assembleSite({ mainDir, devDir: mainDir, archiveDir: manyArchive, versions: many, out: join(www, 'many'), main, dev, genere: GENERE });
+    assembleSite({ mainDir, devDir, archiveDir: manyArchive, versions: many, out: join(www, 'many'), main, dev, genere: GENERE });
+    // Lot 9f : déploiements N (cache-a) et N+1 (cache-b) : Recette/ et dev/ du même build, build-info.json au sha du build.
+    for (const [nom, dir] of Object.entries(caches)) {
+      const meta = { sha: CACHE_SHAS[nom], date: '2026-11-19T12:00:00Z' };
+      assembleSite({ mainDir: dir, devDir: dir, versions, out: join(www, `cache-${nom}`), main: { branch: 'main', ...meta }, dev: meta, genere: GENERE });
+    }
     // Lot 5l : canaux archive et prod (le build courant, sa balise zs-canal réécrite) ; ni dev ni autres archives.
     const canauxArchive = join(tmp, 'archive-canaux');
     cpSync(mainDir, join(canauxArchive, 'v0.5'), { recursive: true });

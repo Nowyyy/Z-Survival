@@ -4,6 +4,20 @@
 // États : « ok » (site assemblé), « source » (site-info.json de l'arbre du dépôt servi en local), « error » (fichier absent ou invalide) ;
 // dans les deux derniers cas, la page garde ses liens statiques : « Jouer » (jeu.html) et « Dernier build de développement » (../dev/jeu.html).
 export const DEV_HREF = '../dev/jeu.html';
+
+// Lot 9f (Docs/ref/cache.md) : adresse unique d'un lien vers le jeu, posée au clic par main.js : paramètre r=<maintenant> (ms) ajouté ou remplacé,
+// autres paramètres et fragment gardés. La page jeu.html (gardée 10 minutes par le navigateur sur GitHub Pages) est ainsi toujours relue ; le
+// paramètre est retiré par jeu.html avant tout module (jamais un paramètre de partie).
+export function adresseUnique(href, maintenant) {
+  const s = typeof href === 'string' ? href : '';
+  const f = s.indexOf('#');
+  const fragment = f >= 0 ? s.slice(f) : '';
+  const base = f >= 0 ? s.slice(0, f) : s;
+  const q = base.indexOf('?');
+  const gardes = (q >= 0 ? base.slice(q + 1) : '').split('&').filter((m) => m !== '' && m.split('=')[0] !== 'r');
+  const r = Number.isFinite(maintenant) ? Math.max(0, Math.floor(maintenant)) : 0;
+  return `${q >= 0 ? base.slice(0, q) : base}?${[...gardes, `r=${r}`].join('&')}${fragment}`;
+}
 export const MAX_EVOLUTIONS = 20;
 export const MAX_PREVIOUS = 200;
 // Lot 5i : description d'une version jusqu'à 200 caractères (borne de « description » du fichier des noms ; avant : 120, comme versions.json).

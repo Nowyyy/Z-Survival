@@ -264,3 +264,9 @@ version: v0.9
 nom: Armes en main
 description: Huit armes à tenir et à recharger, chacune avec sa puissance, ses munitions et son poids ; on change d'arme à la molette ou d'un bouton. Les zombies ont des bras plus longs qui touchent vraiment.
 afficher: oui
+
+[lot-9f]
+version: v0.9
+nom: Toujours la dernière version déployée
+description: Lot technique : après un déploiement, le jeu s'ouvre directement dans sa dernière version, sans avoir à forcer le rechargement du navigateur. Le jeu ne change pas.
+afficher: non

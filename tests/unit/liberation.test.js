@@ -144,6 +144,6 @@ describe('menu détruit à « JOUER », menu neuf au retour', () => {
     expect(lire('js/menu/progression-etat.js')).toMatch(/fermer\(\) \{\n\s+abonnes\.clear\(\);\n\s+for \(const f of ouverts\.splice\(0\)\) f\(\);/);
     const d = lire('js/menu/demarrage.js');
     expect(d).toContain('chargerMenu(null);');
-    expect(d).toContain("ecran = m.creerChargement({ phase: 'menu', jouer, son: { lire: reglagesSon, poser: poserSon }, contexteAudio });");
+    expect(d).toContain("ecran = m.creerChargement({ phase: 'menu', jouer, son: { lire: reglagesSon, poser: poserSon }, contexteAudio, info: deploiement });"); // lot 9f : info (build-info.json déjà lu par la vérification de version)
   });
 });
