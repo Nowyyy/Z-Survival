@@ -164,3 +164,4 @@ Rayon du grand aligné sur son dessin (×1,11) ; recharge cartouche par cartouch
 
 ## Fin du lot
 - Le propriétaire a jugé les parties H à N sur `/dev/` (« c'est tout bon ») ; bilan : `Docs/lots/lot-9e.md` (valeurs finales de la table, difficulté remesurée avec le délai après le rechargement, preuves, points ouverts).
+- **Partie P (iPhone)** : munitions et boutons des armes se chevauchaient : les boutons sont placés depuis le bord plus la zone de sécurité (≈ 59 px à droite en paysage sur iPhone), les munitions depuis 16 px seulement. Les munitions prennent maintenant le même bord de référence que les boutons (`css/game-ui.css`) ; test du téléphone avec la zone de sécurité simulée (0 et 59 / 21 px).

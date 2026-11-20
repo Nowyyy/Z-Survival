@@ -324,6 +324,28 @@ test.describe('bouton de changement sur téléphone (partie E)', () => {
       expect(b.x + b.width, id).toBeLessThanOrEqual(812);
       expect(b.y + b.height, id).toBeLessThanOrEqual(375);
     }
+    // Retour du propriétaire (iPhone) : munitions et boutons ne se chevauchent jamais, même avec la zone de sécurité de l'iPhone en paysage
+    // (≈ 59 px à droite, 21 px en bas, publiée par js/game/safe-area.js en --safe-right / --safe-bottom).
+    for (const [droite, bas] of [[0, 0], [59, 21]]) {
+      const boites = await page.evaluate(([d, b]) => {
+        const st = document.documentElement.style;
+        st.setProperty('--safe-right', `${d}px`);
+        st.setProperty('--safe-bottom', `${b}px`);
+        const r = (sel) => document.querySelector(sel).getBoundingClientRect();
+        return { munitions: r('#hud-ammo'), changer: r('#btn-changer'), recharger: r('#btn-recharger') };
+      }, [droite, bas]);
+      for (const nom of ['changer', 'recharger']) {
+        const m = boites.munitions;
+        const k = boites[nom];
+        const chevauche = m.left < k.right && m.right > k.left && m.top < k.bottom && m.bottom > k.top;
+        expect(chevauche, `${nom}, zone de sécurité ${droite} / ${bas} px`).toBe(false);
+        expect(m.right, `${nom}, zone de sécurité ${droite} px`).toBeLessThanOrEqual(k.left);
+      }
+    }
+    await page.evaluate(() => {
+      document.documentElement.style.removeProperty('--safe-right');
+      document.documentElement.style.removeProperty('--safe-bottom');
+    });
     await changer.tap();
     await page.evaluate(() => window.__zs.step(0.05));
     expect((await S(page)).armes.actif).toBe('m1911');
