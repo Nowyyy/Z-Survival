@@ -25,3 +25,14 @@ export function stepFootsteps(state, prev, next, speed, time, maxSpeed, cfg) {
   const index = b > a ? b : a;
   return { state: { lastTime: time }, step: { foot: index % 2 === 0 ? 'gauche' : 'droit', volume } };
 }
+
+// Lot 9e (pas chassé, parties L et S) : rythme des pas (1 : marche) pour une marche dans la direction `marche` en visant `visee` (radians).
+// Entre `seuil` et π − seuil d'écart (pas chassé), le corps reste tourné vers la visée (`tourne` rad vers la marche) et le rythme baisse avec
+// la part de la marche sur le côté : 1 − lenteur × |sin|. Sert aux pas dessinés et aux pas entendus (même rythme).
+export function rythmePasChasse(marche, visee, { seuil = (50 * Math.PI) / 180, lenteur = 0.35, tourne = 0.3 } = {}) {
+  if (!isNum(marche) || !isNum(visee)) return 1;
+  const rel = Math.atan2(Math.sin(marche - visee), Math.cos(marche - visee));
+  if (Math.abs(rel) <= seuil || Math.abs(rel) >= Math.PI - seuil) return 1;
+  return 1 - lenteur * Math.abs(Math.sin(rel - Math.sign(rel) * tourne));
+}
+
