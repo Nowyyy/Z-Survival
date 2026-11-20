@@ -47,15 +47,16 @@ describe('data/changelog.json', () => {
 
   // Lot 5q : lot-5q ajouté en dernier, après lot-5p (avant : lot-5p en dernier ; les rangs suivants décalés d'un cran). Lot 5p : lot-5p ajouté en dernier, après lot-5o (avant : lot-5o en dernier ; les rangs suivants décalés d'un cran). Lot 5o : lot-5o ajouté en dernier, après lot-5n (avant : lot-5n en dernier ; les rangs suivants décalés d'un cran). Lot 5n : lot-5n ajouté en dernier, après lot-5m (avant : lot-5m en dernier ; les rangs suivants décalés d'un cran). Lot 5m : lot-5m ajouté en dernier, après lot-5l (avant : lot-5l en dernier ; les rangs suivants décalés d'un cran). Lot 5l : lot-5l ajouté en dernier, après lot-5k (avant : lot-5k en dernier ; les rangs suivants décalés d'un cran). Lot 5k : lot-5k ajouté en dernier, après lot-5j (avant : lot-5j en dernier). Lot 5j : lot-5j ajouté en dernier, après lot-5i (avant : lot-5i en dernier). Lot 5i : lot-5i ajouté en dernier, après lot-5f ; avant (lot 5f) : lot-5f en dernier, après lot-5h (publié après les lots 5g et 5h) ;
   // (lot 5h : lot-5h en dernier, après lot-5g ; lot 5g : lot-5g en dernier, après lot-5e ; lot 5e : lot-5e en dernier, après lot-5d).
-  it('le fichier est dans l\'ordre chronologique : lot-0 en premier, lot-9g en dernier puis lot-9f (lot 9g : après lot-9f ; lot 9f : après lot-9e ; lot 9e : après lot-9d ; lot 9d : après lot-9c ; lot 9c : après lot-9b ; lot 9b : après lot-9a ; lot 9a : après lot-8m ; lot 8m : après lot-8l ; lot 8l : après lot-8k ; lot 8k : après lot-8j ; lot 8j : après lot-8h ; lot 8h : après lot-8i ; lot 8i : après lot-8g ; lot 8g : après lot-8f ; lot 8f : après lot-8e ; lot 8e : après lot-8d ; lot 8d : après lot-8c ; lot 8c : après lot-8b ; lot 8b : après lot-8a ; lot 8a : après lot-5q, lot-5p, lot-5o, lot-5n, lot-5m, lot-5l, lot-5k, lot-5j, lot-5i, lot-5f, lot-5h, lot-5g, lot-5e, lot-5d, lot-5c, lot-5b, lot-5a, lot-4g, lot-4f, lot-4e, lot-4c et lot-4b)', () => {
+  it('le fichier est dans l\'ordre chronologique : lot-0 en premier, lot-9h en dernier puis lot-9g (lot 9h : après lot-9g ; lot 9g : après lot-9f ; lot 9f : après lot-9e ; lot 9e : après lot-9d ; lot 9d : après lot-9c ; lot 9c : après lot-9b ; lot 9b : après lot-9a ; lot 9a : après lot-8m ; lot 8m : après lot-8l ; lot 8l : après lot-8k ; lot 8k : après lot-8j ; lot 8j : après lot-8h ; lot 8h : après lot-8i ; lot 8i : après lot-8g ; lot 8g : après lot-8f ; lot 8f : après lot-8e ; lot 8e : après lot-8d ; lot 8d : après lot-8c ; lot 8c : après lot-8b ; lot 8b : après lot-8a ; lot 8a : après lot-5q, lot-5p, lot-5o, lot-5n, lot-5m, lot-5l, lot-5k, lot-5j, lot-5i, lot-5f, lot-5h, lot-5g, lot-5e, lot-5d, lot-5c, lot-5b, lot-5a, lot-4g, lot-4f, lot-4e, lot-4c et lot-4b)', () => {
     expect(lots[0].name).toBe('lot-0');
-    expect(lots.at(-1).name).toBe('lot-9g'); // lot 9g (avant : lot-9f en dernier ; les rangs suivants décalés d'un cran)
-    expect(lots.at(-2).name).toBe('lot-9f'); // lot 9f (avant : lot-9e en dernier ; les rangs suivants décalés d'un cran)
-    expect(lots.at(-3).name).toBe('lot-9e'); // lot 9e (avant : lot-9d en dernier ; les rangs suivants décalés d'un cran)
-    expect(lots.at(-4).name).toBe('lot-9d'); // lot 9d (avant : lot-9c en dernier) ; lot 9c (avant : lot-9b en dernier ; lot 9b : lot-9a ; lot 9a : avant, lot-8m ; les assertions suivantes portent sur le journal sans la V0.9)
-    expect(lots.at(-5).name).toBe('lot-9c'); // lot 9d
-    expect(lots.at(-6).name).toBe('lot-9b'); // lot 9d (lot 9c : lot-9b en avant-dernier ; lot 9b : lot-9a ; lot 9a : lot-8m)
-    expect(lots.at(-7).name).toBe('lot-9a'); // lot 9d (lot 9c : en antépénultième)
+    expect(lots.at(-1).name).toBe('lot-9h'); // lot 9h (avant : lot-9g en dernier ; les rangs suivants décalés d'un cran)
+    expect(lots.at(-2).name).toBe('lot-9g'); // lot 9g (avant : lot-9f en dernier ; les rangs suivants décalés d'un cran)
+    expect(lots.at(-3).name).toBe('lot-9f'); // lot 9f (avant : lot-9e en dernier ; les rangs suivants décalés d'un cran)
+    expect(lots.at(-4).name).toBe('lot-9e'); // lot 9e (avant : lot-9d en dernier ; les rangs suivants décalés d'un cran)
+    expect(lots.at(-5).name).toBe('lot-9d'); // lot 9d (avant : lot-9c en dernier) ; lot 9c (avant : lot-9b en dernier ; lot 9b : lot-9a ; lot 9a : avant, lot-8m ; les assertions suivantes portent sur le journal sans la V0.9)
+    expect(lots.at(-6).name).toBe('lot-9c'); // lot 9d
+    expect(lots.at(-7).name).toBe('lot-9b'); // lot 9d (lot 9c : lot-9b en avant-dernier ; lot 9b : lot-9a ; lot 9a : lot-8m)
+    expect(lots.at(-8).name).toBe('lot-9a'); // lot 9d (lot 9c : en antépénultième)
     expect(lots8.at(-1).name).toBe('lot-8m'); // lot 8m (avant : lot-8l en dernier ; les rangs suivants décalés d'un cran)
     expect(lots8.at(-2).name).toBe('lot-8l'); // lot 8l (avant : lot-8k en dernier ; les rangs suivants décalés d'un cran)
     expect(lots8.at(-3).name).toBe('lot-8k'); // lot 8k (avant : lot-8j en dernier ; les rangs suivants décalés d'un cran)
@@ -120,8 +121,8 @@ describe('data/changelog.json', () => {
     expect(lots.find((e) => e.name === 'lot-8k')?.version).toBe('v0.8'); // lot 8k
     expect(lots.find((e) => e.name === 'lot-8l')?.version).toBe('v0.8'); // lot 8l
     expect(lots.find((e) => e.name === 'lot-8m')?.version).toBe('v0.8'); // lot 8m
-    expect(lots.filter((e) => ['lot-9a', 'lot-9b', 'lot-9c', 'lot-9d', 'lot-9e', 'lot-9f', 'lot-9g'].includes(e.name)).map((e) => e.version)).toEqual(['v0.9', 'v0.9', 'v0.9', 'v0.9', 'v0.9', 'v0.9', 'v0.9']); // lot 9a : premier lot de la V0.9 ; lots 9b, 9c, 9d, 9e, 9f et 9g
-    expect(lots.filter((e) => !/^lot-5/.test(e.name) && !['lot-8a', 'lot-8b', 'lot-8c', 'lot-8d', 'lot-8e', 'lot-8f', 'lot-8g', 'lot-8i', 'lot-8h', 'lot-8j', 'lot-8k', 'lot-8l', 'lot-8m', 'lot-9a', 'lot-9b', 'lot-9c', 'lot-9d', 'lot-9e', 'lot-9f', 'lot-9g'].includes(e.name) && 'version' in e)).toEqual([]); // lots 8a à 8m (v0.8), 9a, 9b et 9c (v0.9) exceptés
+    expect(lots.filter((e) => ['lot-9a', 'lot-9b', 'lot-9c', 'lot-9d', 'lot-9e', 'lot-9f', 'lot-9g', 'lot-9h'].includes(e.name)).map((e) => e.version)).toEqual(['v0.9', 'v0.9', 'v0.9', 'v0.9', 'v0.9', 'v0.9', 'v0.9', 'v0.9']); // lot 9a : premier lot de la V0.9 ; lots 9b, 9c, 9d, 9e, 9f, 9g et 9h
+    expect(lots.filter((e) => !/^lot-5/.test(e.name) && !['lot-8a', 'lot-8b', 'lot-8c', 'lot-8d', 'lot-8e', 'lot-8f', 'lot-8g', 'lot-8i', 'lot-8h', 'lot-8j', 'lot-8k', 'lot-8l', 'lot-8m', 'lot-9a', 'lot-9b', 'lot-9c', 'lot-9d', 'lot-9e', 'lot-9f', 'lot-9g', 'lot-9h'].includes(e.name) && 'version' in e)).toEqual([]); // lots 8a à 8m (v0.8), 9a, 9b et 9c (v0.9) exceptés
   });
 
   it('champ « date » (facultatif) : AAAA-MM-JJ quand il est présent, jamais dans le futur du lot suivant (ordre chronologique)', () => {
@@ -144,7 +145,7 @@ describe('data/changelog.json', () => {
     expect(published).toContain('v0.6');
     expect(published).toContain('v0.7');
     expect(published).toContain('v0.8'); // lot 8m
-    expect(readEvolutions(changelog, published).map((e) => [e.id, e.version])).toEqual([['lot-9g', 'v0.9'], ['lot-9f', 'v0.9'], ['lot-9e', 'v0.9'], ['lot-9d', 'v0.9'], ['lot-9c', 'v0.9'], ['lot-9b', 'v0.9'], ['lot-9a', 'v0.9']]); // lot 9g : lot-9g en tête ; lot 9f : lot-9f en tête // lot 9e : lot-9e en tête // lot 9d : lot-9d en tête ; lot 9c : lot-9c en tête (masqué par « afficher: non », page technique) ; lot 9b : lot-9b devant lot-9a (lot 9a : son premier lot seul ; journal réel, l'accueil masque lot-9b par « afficher: non »)
+    expect(readEvolutions(changelog, published).map((e) => [e.id, e.version])).toEqual([['lot-9h', 'v0.9'], ['lot-9g', 'v0.9'], ['lot-9f', 'v0.9'], ['lot-9e', 'v0.9'], ['lot-9d', 'v0.9'], ['lot-9c', 'v0.9'], ['lot-9b', 'v0.9'], ['lot-9a', 'v0.9']]); // lot 9h : lot-9h en tête ; lot 9g : lot-9g en tête ; lot 9f : lot-9f en tête // lot 9e : lot-9e en tête // lot 9d : lot-9d en tête ; lot 9c : lot-9c en tête (masqué par « afficher: non », page technique) ; lot 9b : lot-9b devant lot-9a (lot 9a : son premier lot seul ; journal réel, l'accueil masque lot-9b par « afficher: non »)
     expect(readEvolutions(changelog8, published)).toEqual([]); // lot 8m : V0.8 publiée, aucune évolution (avant : lot-8l à lot-5q, v0.8)
     const avantV08 = published.filter((id) => id !== 'v0.8');
     expect(readEvolutions(changelog8, avantV08).map((e) => [e.id, e.version])).toEqual([['lot-8m', 'v0.8'], ['lot-8l', 'v0.8'], ['lot-8k', 'v0.8'], ['lot-8j', 'v0.8'], ['lot-8h', 'v0.8'], ['lot-8i', 'v0.8'], ['lot-8g', 'v0.8'], ['lot-8f', 'v0.8'], ['lot-8e', 'v0.8'], ['lot-8d', 'v0.8'], ['lot-8c', 'v0.8'], ['lot-8b', 'v0.8'], ['lot-8a', 'v0.8'], ['lot-5q', 'v0.8']]); // lot 8m : cas d'avant la publication gardé, lot-8m en tête (masqué par le fichier des noms)

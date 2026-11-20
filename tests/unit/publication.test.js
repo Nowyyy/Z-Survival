@@ -999,27 +999,31 @@ describe('site-info.json au début de la V0.9 (lot 9a)', () => {
     expect(siteInfo.evolutions.filter((e) => e.version === 'v0.8')).toEqual([]);
     // Lot 9d : lot-9d (afficher: oui) en tête, devant lot-9a ; lot-9b et lot-9c restent masqués (afficher: non). Lot 9e : lot-9e (afficher: oui) en tête.
     // Lot 9g : lot-9g (afficher: oui) en tête ; les rangs suivants décalés d'un cran.
-    expect(siteInfo.evolutions.map((e) => [e.id, e.version])).toEqual([['lot-9g', 'v0.9'], ['lot-9e', 'v0.9'], ['lot-9d', 'v0.9'], ['lot-9a', 'v0.9']]);
+    // Lot 9h : lot-9h (afficher: oui) en tête ; les rangs suivants décalés d'un cran.
+    expect(siteInfo.evolutions.map((e) => [e.id, e.version])).toEqual([['lot-9h', 'v0.9'], ['lot-9g', 'v0.9'], ['lot-9e', 'v0.9'], ['lot-9d', 'v0.9'], ['lot-9a', 'v0.9']]);
     expect(siteInfo.evolutions.find((e) => e.id === 'lot-9a')).toMatchObject({ title: bloc.nom, text: bloc.description, date: '2026-11-15' });
     const bloc9d = parseNoms(texte).blocs.find((b) => b.id === 'lot-9d');
     expect(bloc9d).toMatchObject({ type: 'lot', version: 'v0.9', afficher: true });
-    expect(siteInfo.evolutions[2]).toMatchObject({ title: bloc9d.nom, text: bloc9d.description, date: '2026-11-17' }); // lot 9e : en deuxième ; lot 9g : en troisième
+    expect(siteInfo.evolutions[3]).toMatchObject({ title: bloc9d.nom, text: bloc9d.description, date: '2026-11-17' }); // lot 9e : en deuxième ; lot 9g : en troisième ; lot 9h : en quatrième
     const bloc9e = parseNoms(texte).blocs.find((b) => b.id === 'lot-9e');
     expect(bloc9e).toMatchObject({ type: 'lot', version: 'v0.9', afficher: true });
-    expect(siteInfo.evolutions[1]).toMatchObject({ title: bloc9e.nom, text: bloc9e.description, date: '2026-11-18' }); // lot 9g : en deuxième
+    expect(siteInfo.evolutions[2]).toMatchObject({ title: bloc9e.nom, text: bloc9e.description, date: '2026-11-18' }); // lot 9g : en deuxième ; lot 9h : en troisième
     const bloc9g = parseNoms(texte).blocs.find((b) => b.id === 'lot-9g');
     expect(bloc9g).toMatchObject({ type: 'lot', version: 'v0.9', afficher: true });
-    expect(siteInfo.evolutions[0]).toMatchObject({ title: bloc9g.nom, text: bloc9g.description, date: '2026-11-20' });
+    expect(siteInfo.evolutions[1]).toMatchObject({ title: bloc9g.nom, text: bloc9g.description, date: '2026-11-20' }); // lot 9h : en deuxième
+    const bloc9h = parseNoms(texte).blocs.find((b) => b.id === 'lot-9h');
+    expect(bloc9h).toMatchObject({ type: 'lot', version: 'v0.9', afficher: true });
+    expect(siteInfo.evolutions[0]).toMatchObject({ title: bloc9h.nom, text: bloc9h.description, date: '2026-11-20' });
     expect(siteInfo.recette.id).toBe('v0.8');
     expect(validateSiteInfo(siteInfo)).toEqual({ ok: true, errors: [] });
   });
 
   // Lot 9b : sans le fichier des noms, rien ne masque lot-9b (« afficher: non » dans le fichier réel) : il apparaît devant lot-9a. Lot 9c : de même, lot-9c en tête.
   // Lot 9d : lot-9d en tête.
-  it('sans le fichier des noms : lot-9g, lot-9f, lot-9e, lot-9d, lot-9c, lot-9b puis lot-9a apparaissent avec le titre et le premier point du journal ; aucun lot de v0.8', () => {
+  it('sans le fichier des noms : lot-9h, lot-9g, lot-9f, lot-9e, lot-9d, lot-9c, lot-9b puis lot-9a apparaissent avec le titre et le premier point du journal ; aucun lot de v0.8', () => {
     const { siteInfo } = siteDe(journal, '# vide\n');
-    const [entree, b9, c9, d9, e9, f9, g9] = ['lot-9a', 'lot-9b', 'lot-9c', 'lot-9d', 'lot-9e', 'lot-9f', 'lot-9g'].map((n) => journal.lots.find((l) => l.name === n));
-    expect(siteInfo.evolutions).toEqual([{ id: 'lot-9g', title: g9.titre, text: g9.points[0], date: '2026-11-20', version: 'v0.9' }, { id: 'lot-9f', title: f9.titre, text: f9.points[0], date: '2026-11-19', version: 'v0.9' }, { id: 'lot-9e', title: e9.titre, text: e9.points[0], date: '2026-11-18', version: 'v0.9' }, { id: 'lot-9d', title: d9.titre, text: d9.points[0], date: '2026-11-17', version: 'v0.9' }, { id: 'lot-9c', title: c9.titre, text: c9.points[0], date: '2026-11-17', version: 'v0.9' }, { id: 'lot-9b', title: b9.titre, text: b9.points[0], date: '2026-11-16', version: 'v0.9' }, { id: 'lot-9a', title: entree.titre, text: entree.points[0], date: '2026-11-15', version: 'v0.9' }]);
+    const [entree, b9, c9, d9, e9, f9, g9, h9] = ['lot-9a', 'lot-9b', 'lot-9c', 'lot-9d', 'lot-9e', 'lot-9f', 'lot-9g', 'lot-9h'].map((n) => journal.lots.find((l) => l.name === n));
+    expect(siteInfo.evolutions).toEqual([{ id: 'lot-9h', title: h9.titre, text: h9.points[0], date: '2026-11-20', version: 'v0.9' }, { id: 'lot-9g', title: g9.titre, text: g9.points[0], date: '2026-11-20', version: 'v0.9' }, { id: 'lot-9f', title: f9.titre, text: f9.points[0], date: '2026-11-19', version: 'v0.9' }, { id: 'lot-9e', title: e9.titre, text: e9.points[0], date: '2026-11-18', version: 'v0.9' }, { id: 'lot-9d', title: d9.titre, text: d9.points[0], date: '2026-11-17', version: 'v0.9' }, { id: 'lot-9c', title: c9.titre, text: c9.points[0], date: '2026-11-17', version: 'v0.9' }, { id: 'lot-9b', title: b9.titre, text: b9.points[0], date: '2026-11-16', version: 'v0.9' }, { id: 'lot-9a', title: entree.titre, text: entree.points[0], date: '2026-11-15', version: 'v0.9' }]);
   });
 });
 

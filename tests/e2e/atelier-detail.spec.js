@@ -88,7 +88,10 @@ test.describe('budgets de rendu avec le détail (27 300 triangles et 84 appels a
       expect(on.triangles - off.triangles).toBeLessThanOrEqual(1500 + MOBILIER + 4000);
       // Lot 9a : la tôle et le rotor de l'hélicoptère (HELI_TOLE) ne sont plus dans le décor dessiné partout : comptés seulement s'il est dans le champ.
       // Lot 9a-I : les sacs de sable (SACS, toile de jute) sont dessinés à tous les réglages, comptés quand ils sont dans le champ.
-      const ecarts = [EPAVES, EPAVES - HELI_TOLE].flatMap((e) => [e, e + SACS]).map((e) => Math.abs(off.triangles - e - ref[1]));
+      // Lot 9h : personnages d'époque du lot 9g (&perso=A = niveau simple des soldats) : + 284 (R3), + 296 (U1), + 472 (U4) triangles mesurés sur origin/dev
+      // d43689a (écart présent avant ce lot, comme EPOQUE_SIMPLE d'argent.spec.js) ; les autres scènes restent dans la tolérance.
+      const LOT_9G = { R3: 284, U1: 296, U4: 472 }[id] ?? 0;
+      const ecarts = [EPAVES, EPAVES - HELI_TOLE].flatMap((e) => [e, e + SACS]).flatMap((e) => [e, e + LOT_9G]).map((e) => Math.abs(off.triangles - e - ref[1]));
       expect(Math.min(...ecarts)).toBeLessThanOrEqual(80); // lot 5a : + les triangles des épaves
       expect(off.calls).toBeLessThanOrEqual(ref[0] + 3);
       expect(off.calls).toBeGreaterThanOrEqual(ref[0] - 1);

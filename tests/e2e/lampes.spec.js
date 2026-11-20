@@ -51,10 +51,12 @@ const pixels = (page, x, y, w, h) => page.evaluate(({ x, y, w, h }) => {
 // apparaît à 40 du joueur et le touche tout de suite (sa zone couvre maintenant tout son corps couché, décision du propriétaire). Programmes inchangés.
 // Retours du propriétaire après le lot 9e : + 1 programme de shaders (matière instanciée des douilles éjectées et des chargeurs qui tombent,
 // compilée au premier tir) ; appels et triangles inchangés au moment de la mesure. Avant : programmes 18 (Élevé, Moyen) et 16 (Faible).
+// Lot 9h : remesuré (avec &decor=avant, identique à origin/dev d43689a) : les personnages d'époque du lot 9g ajoutent 16 triangles en Élevé et 292 en Moyen et
+// Faible (avant : 38 385, 39 827 ; 23 773, 25 215 ; 19 179, 19 831), mêmes appels et programmes ; écart présent sur origin/dev, hors de ce lot.
 const ORIGINE = {
-  eleve: { R1: [64, 38385, 19], U1: [71, 39827, 19] },
-  moyen: { R1: [62, 23773, 19], U1: [69, 25215, 19] },
-  faible: { R1: [44, 19179, 17], U1: [50, 19831, 17] },
+  eleve: { R1: [64, 38401, 19], U1: [71, 39843, 19] },
+  moyen: { R1: [62, 24065, 19], U1: [69, 25507, 19] },
+  faible: { R1: [44, 19471, 17], U1: [50, 20123, 17] },
 };
 const SCENES = {
   R1: { url: '&nospawn=1', at: [U(300), U(300)], floor: 'rdc', wave: 10 },
