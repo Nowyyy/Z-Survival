@@ -303,6 +303,9 @@ describe('ouvertures : Garand et caisses d\'époque', () => {
     expect(d.couches[0].recette).toEqual(armesSons.recettes.find((r) => r.id === `tir-garand-${armesSons.choix.garand}`));
     expect(d.dur).toBe(d.couches[0].recette.duration);
     expect(lire('data/menu/sons-choix.json').choix['ouv-tir']).toBe('D');
+    // Moteur de la partie jamais importé par la synthèse du menu (fichiers du démarrage inchangés) : chargé à la demande par le calculateur et le repli.
+    expect(code('js/menu/sons/synthese.js')).not.toMatch(/^import .*synth\.js/m);
+    for (const f of ['js/menu/sons/calcul.js', 'js/menu/sons/moteur.js']) expect(code(f)).toMatch(/import\('\.\.\/\.\.\/core\/synth\.js'\)/);
   });
   it('trois caisses d\'époque : mêmes dimensions et mêmes places des « ? » que les caisses actuelles', () => {
     expect(FORMES_EPOQUE).toEqual({ militaire: 'munitions', veterans: 'cantine', tenues: 'valise' });

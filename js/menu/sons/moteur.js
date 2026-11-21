@@ -50,6 +50,7 @@ export async function creerMoteur({ ctx, faits, volumes }) {
   let prochain = 0;
   const attente = new Map();
   let surPlace = null;
+  let moteurJeu = null; // lot 9i : js/core/synth.js, chargé au premier son qui le demande
   function calculateur() {
     if (worker !== null) return worker || null;
     try {
@@ -74,10 +75,12 @@ export async function creerMoteur({ ctx, faits, volumes }) {
   // Repli sans calculateur : synthèse chargée ici, un tampon par image (le menu reste réactif entre deux tampons).
   async function rendreSurPlace(son, variante, version) {
     surPlace ??= import('./synthese.js');
-    const { rendreSon } = await surPlace;
+    const { besoinJeu, rendreSon } = await surPlace;
+    // Lot 9i : moteur de la partie chargé à la demande (tir du Garand des ouvertures), comme dans le calculateur.
+    const outils = besoinJeu(son, variante) ? { rendreJeu: (await (moteurJeu ??= import('../../core/synth.js'))).renderSound } : {};
     await imageSuivante();
     const t0 = performance.now();
-    const r = rendreSon(son, variante, version);
+    const r = rendreSon(son, variante, version, undefined, outils);
     return { samples: r.samples, sampleRate: r.sampleRate, ms: performance.now() - t0 };
   }
   function rendre(son, variante, version) {
