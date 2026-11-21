@@ -1,5 +1,5 @@
 {
-  "_provisoire": "Lot 9i (atelier, provisoire jusqu'au « GO 9i ») : places des objets d'époque de l'intérieur, en unités du jeu (x, y : centre ; cap : degrés, 0 = est ; carte : point du mur et face visible s, e, n ou o). floor : rdc ou etage ; sur : meuble porteur (identifiant d'obstacle de world.json ou etage.world.json : l'objet est posé sur son dessus, aucune collision nouvelle) ; variante facultative (sinon celle de data/game/interieur-epoque-choix.json). Objets à la taille × 2 (retour du propriétaire, data/game/interieur-epoque-choix.json → taille) : poste de commandement dans la salle de départ (table P12, 40 de haut : rien au-dessus de 70) et à l'étage gauche (Q4) ; infirmerie de fortune dans la salle de départ (contre P9) et à l'étage droit (contre Q6). Vérifié par js/core/interieur-epoque.js (controlePlan : pièce, fenêtres, portes, escaliers, lampes, interstices, chemins des zombies).",
+  "_provisoire": "Lot 9i (atelier, provisoire jusqu'au « GO 9i ») : places des objets d'époque de l'intérieur, en unités du jeu (x, y : centre ; cap : degrés, 0 = est ; carte : point du mur et face visible s, e, n ou o). floor : rdc ou etage ; sur : meuble porteur (identifiant d'obstacle de world.json ou etage.world.json : l'objet est posé sur son dessus, aucune collision nouvelle) ; variante facultative (sinon celle de data/game/interieur-epoque-choix.json). Objets à la taille × 2 (retour du propriétaire, data/game/interieur-epoque-choix.json → taille) : poste de commandement dans la salle de départ (table P12, 40 de haut : rien au-dessus de 70) et à l'étage gauche (Q4) ; infirmerie de fortune dans la salle de départ (brancard contre P9, caisse contre le flanc sud de M10) et à l'étage droit (brancard contre Q6, caisse contre le brancard) ; objets solides au contact exact (écart 0) ou à 50 au moins de tout meuble. Vérifié par js/core/interieur-epoque.js (controlePlan : pièce, fenêtres, portes, escaliers, lampes, interstices, chemins des zombies).",
   "objets": [
     {
       "id": "radio-salle",
@@ -53,16 +53,16 @@
       "id": "brancard-salle",
       "type": "brancard",
       "floor": "rdc",
-      "x": 2414.5,
-      "y": 2296.3,
+      "x": 2414,
+      "y": 2297.4,
       "cap": 0
     },
     {
       "id": "caisse-medicale-salle",
       "type": "caisseMedicale",
       "floor": "rdc",
-      "x": 2497.7,
-      "y": 2301.5
+      "x": 2650,
+      "y": 2356.4
     },
     {
       "id": "casques-poche",
@@ -144,7 +144,7 @@
       "id": "brancard-etage",
       "type": "brancard",
       "floor": "etage",
-      "x": 1633.8,
+      "x": 1633.4,
       "y": 2224,
       "cap": 90
     },
@@ -152,7 +152,7 @@
       "id": "caisse-medicale-etage",
       "type": "caisseMedicale",
       "floor": "etage",
-      "x": 1636.2,
+      "x": 1636,
       "y": 2149
     },
     {

@@ -401,8 +401,8 @@ export function modeleBrancard(variante) {
   m.plaque('toile', 'toile', 'brancard', [[-25, y + 1.2, -7], [25, y + 1.2, -7], [25, y + 0.7, 7], [-25, y + 0.7, 7]], [0, 1, 0]);
   for (const x of [-22, 22]) {
     if (v === 'treteaux') {
-      for (const s of [-1, 1]) m.barre(`pied-${x}-${s}`, 'bois', 'brancard', [x + s * 5, 0, -8], [x, y, -8], 1.2).barre(`pied-${x}-${s}-s`, 'bois', 'brancard', [x + s * 5, 0, 8], [x, y, 8], 1.2);
-      m.boite(`traverse-${x}`, 'bois', 'brancard', [x - 0.8, x + 0.8], [y - 1.2, y], [-8.6, 8.6]);
+      for (const s of [-1, 1]) m.barre(`pied-${x}-${s}`, 'bois', 'brancard', [x + s * 5, 0, -7.4], [x, y, -7.4], 1.2).barre(`pied-${x}-${s}-s`, 'bois', 'brancard', [x + s * 5, 0, 7.4], [x, y, 7.4], 1.2);
+      m.boite(`traverse-${x}`, 'bois', 'brancard', [x - 0.8, x + 0.8], [y - 1.2, y], [-7.8, 7.8]);
     } else for (const z of [-7.4, 7.4]) m.boite(`etrier-${x}-${z}`, 'acier', 'brancard', [x - 0.5, x + 0.5], [0, y], [z - 0.5, z + 0.5]);
   }
   if (v === 'couverture') m.boite('couverture', 'couverture', 'brancard', [6, 22], [y + 1.2, y + 4.4], [-6.2, 6.2], { ry: 6 });
@@ -421,12 +421,12 @@ export function modeleCaisseMedicale(variante) {
   };
   if (v === 'pile') {
     caisse('c0', 0, 10);
-    caisse('c1', 10, 9, 4, [0.6, -0.8]);
+    caisse('c1', 10, 9, 0, [1.2, 0]); // décalée vers l'est seulement : même profondeur que la caisse du dessous (contacts exacts)
   } else if (v === 'ouverte') {
     caisse('corps', 0, 8);
     m.boite('fond', 'pansement', 'caisse', [-7.6, 7.6], [0, 6.5], [-4.6, 4.6]);
     for (let i = 0; i < 4; i += 1) m.cylindre(`rouleau-${i}`, 'pansement', 'caisse', { r0: 1.6, len: 3, cotes: 6 }, { ry: 90, t: [-5.5 + i * 3.6, 7.6, -1.5] });
-    m.boite('couvercle', 'medical', 'caisse', [-8.5, 8.5], [0, 1.2], [-5.5, 5.5], { t: [19.5, 0, 0] });
+    m.boite('couvercle', 'medical', 'caisse', [-8.5, 8.5], [0, 1.2], [-5.5, 5.5], { t: [19.5, 0, 0] }); // couvercle posé à l'est de la caisse
   } else caisse('c0', 0, 10);
   return { modele: m };
 }
@@ -565,7 +565,7 @@ export function objetsPlaces(doc, { choix, obstacles = {} } = {}) {
     if (!it || !CATALOGUE[it.type] || ch.gardes[it.type] === false || !isNum(it.x) || !isNum(it.y)) continue;
     const floor = it.floor === 'etage' ? 'etage' : 'rdc';
     const porteur = it.sur ? (obstacles[floor] ?? []).find((o) => o.id === it.sur) ?? null : null;
-    const spec = { id: String(it.id ?? it.type), x: it.x, y: it.y, cap: num(it.cap), face: it.face, floor, base: porteur ? num(porteur.hauteur) : 0, taille: ch.taille ?? TAILLE_DEFAUT };
+    const spec = { id: String(it.id ?? it.type), x: it.x, y: it.y, cap: num(it.cap), ...(typeof it.face === 'string' ? { face: it.face } : {}), floor, base: porteur ? num(porteur.hauteur) : 0, taille: ch.taille ?? TAILLE_DEFAUT };
     const v = CATALOGUE[it.type].variantes.includes(it.variante) ? it.variante : ch.variantes[it.type];
     out.push({ ...objet(it.type, v, spec), spec, sur: it.sur ?? null, porteur });
   }
@@ -573,9 +573,9 @@ export function objetsPlaces(doc, { choix, obstacles = {} } = {}) {
 }
 
 // Contrôles du placement (liste de textes, vide si tout va bien). couches : { rdc: { contour, obstacles, windows, openings, lamps, stairs }, etage: … } ;
-// regles : { fenetre 150, porte 40, escalier 40, lampe 40, interstice 50, mur 2 }.
+// regles : { fenetre 150, porte 100 (règle des pièces de l'étage), escalier 40, lampe 40, interstice 50, mur 3 } ; murs pleins (coins compris) : contact ou 50.
 export function problemesPlacement(objets, couches = {}, regles = {}) {
-  const r = { fenetre: 150, porte: 40, escalier: 40, lampe: 40, interstice: 50, mur: 3, ...regles };
+  const r = { fenetre: 150, porte: 100, escalier: 40, lampe: 40, interstice: 50, mur: 3, ...regles };
   const out = [];
   const pt = (p) => ({ x: p.x, y: p.y, w: 0.01, h: 0.01 });
   for (const o of objets) {
@@ -608,9 +608,11 @@ export function problemesPlacement(objets, couches = {}, regles = {}) {
     // Objets solides : ni dans un meuble ni dans un mur ; écart à chaque meuble ou mur nul (contact) ou d'au moins 50 (pas de passage étroit).
     // Un écart comblé par un troisième solide qui touche les deux (brancard entre un meuble et la caisse médicale) n'est pas un passage.
     const autres = objets.filter((o2) => o2 !== o && o2.floor === o.floor).flatMap((o2) => o2.rects.map((q2) => ({ ...q2, objet: o2 })));
-    const solides = [...(c.obstacles ?? []), ...(c.wallFaces ?? [])];
+    const solides = [...(c.obstacles ?? []), ...(c.wallFaces ?? []), ...(c.murs ?? [])];
     for (const q of o.rects) {
       const comble = (s) => [...solides, ...autres].some((t) => t !== s && t.id !== q.id && rectGap(t, q) <= 1 && rectGap(t, s) <= 1);
+      const recouvre = (s) => Math.min(q.x + q.w, s.x + s.w) - Math.max(q.x, s.x) > 0.01 && Math.min(q.y + q.h, s.y + s.h) - Math.max(q.y, s.y) > 0.01;
+      for (const s of [...solides, ...autres]) if (recouvre(s)) out.push(`${o.id} recouvre ${s.objet?.id ?? s.id ?? 'un mur'}`);
       for (const s of solides) {
         const g = rectGap(q, s);
         if (g < -0.01 || (g > 1 && g < r.interstice && !comble(s))) out.push(`${o.id} : interstice de ${Math.round(g)} avec ${s.id ?? 'un mur'}`);
@@ -693,7 +695,8 @@ export const NORMALES = Object.freeze({ nord: { x: 0, y: -1 }, sud: { x: 0, y: 1
 // Couche de contrôle d'un étage d'après son monde (world.json ou etage.world.json), ses lampes et les zones (escaliers, portes) :
 // { contour, obstacles (meubles, piliers, escaliers), windows (avec normale), openings, lamps, stairs, wallFaces }.
 export function coucheDe(world, { lamps = [], floor = 'rdc' } = {}) {
-  const obstacles = (world?.obstacles ?? []).map((o) => ({ id: o.id, x: o.x, y: o.y, w: o.w, h: o.h, hauteur: o.hauteur, kind: o.kind }));
+  // Obstacles d'avant le lot : ceux de kind « epoque » (écrits par npm run carte d'après ce plan) sont ceux du plan lui-même.
+  const obstacles = (world?.obstacles ?? []).filter((o) => o.kind !== 'epoque').map((o) => ({ id: o.id, x: o.x, y: o.y, w: o.w, h: o.h, hauteur: o.hauteur, kind: o.kind }));
   return {
     floor,
     size: world?.size,
@@ -703,6 +706,7 @@ export function coucheDe(world, { lamps = [], floor = 'rdc' } = {}) {
     openings: (world?.openings ?? []).map((o) => ({ id: o.id, x: Math.min(o.x1, o.x2), y: Math.min(o.y1, o.y2), w: Math.max(1, Math.abs(o.x2 - o.x1)), h: Math.max(1, Math.abs(o.y2 - o.y1)) })),
     lamps: lamps.filter((l) => (l.floor ?? 'rdc') === floor).map((l) => ({ id: l.id, x: l.x, y: l.y })),
     stairs: obstacles.filter((o) => o.kind === 'escalier'),
+    murs: mursPleins(world),
     wallFaces: [...facesMurs(world?.contour, num(world?.wallThickness, 40)), ...(world?.walls ?? []).filter((w) => String(w.id).startsWith('mur-interieur')).map((w) => ({ id: w.id, x: Math.min(w.x1, w.x2) - 20, y: Math.min(w.y1, w.y2) - 20, w: Math.abs(w.x2 - w.x1) + 40, h: Math.abs(w.y2 - w.y1) + 40 }))],
   };
 }
@@ -752,4 +756,25 @@ export function controlePlan({ mondes = {}, lampes = [], doc, choixJson = null, 
     for (const ch of chemins[floor]) if (ch.coupees > 0) problemes.push(`chemin coupé : ${ch.coupees} cellule(s) depuis ${ch.fenetre}`);
   }
   return { couches, objets: res.objets, problemes: [...new Set(problemes)], chemins, budget: budgetPlan(res.objets), choix };
+}
+
+// Lot 9i-C : section « interieur » de decor.json (npm run carte, jamais éditée à la main) : taille, couleurs (mélanges de jetons), objets retenus (type,
+// variante, étage, spec, rectangles solides, hauteur, triangles). ctl : sortie de controlePlan.
+export function sectionInterieur(ctl, { couleurs = {} } = {}) {
+  const objets = ctl.objets.map((o) => ({
+    id: o.id, type: o.type, variante: o.variante, floor: o.floor, spec: { ...o.spec }, ...(o.sur ? { sur: o.sur } : {}),
+    hauteur: o.hauteur, emprise: { ...o.emprise }, collision: o.collision, triangles: o.compte, rects: o.rects.map((r) => ({ ...r })),
+  }));
+  return { taille: ctl.choix?.taille ?? TAILLE_DEFAUT, couleurs: JSON.parse(JSON.stringify(couleurs)), objets, triangles: objets.reduce((s, o) => s + o.triangles, 0) };
+}
+
+// Obstacles du monde d'un étage pour les objets solides de la section (kind « epoque » : bloquent le joueur et les zombies ; les tirs suivent
+// tirs-traversables.json) ; mêmes rectangles que le dessin.
+export function obstaclesInterieur(section, floor) {
+  return (Array.isArray(section?.objets) ? section.objets : []).filter((o) => o?.floor === floor).flatMap((o) => (o.rects ?? []).map((r) => ({ id: r.id, x: r.x, y: r.y, w: r.w, h: r.h, hauteur: r.hauteur, kind: 'epoque' })));
+}
+
+// Objets de la section reconstruits (triangles compris) pour le dessin ; mêmes rectangles que ceux écrits par npm run carte (objet() est déterministe).
+export function objetsDeSection(section) {
+  return (Array.isArray(section?.objets) ? section.objets : []).filter((o) => o && CATALOGUE[o.type]).map((o) => ({ ...objet(o.type, o.variante, { ...o.spec, id: o.id }), spec: o.spec }));
 }

@@ -55,7 +55,10 @@ describe('fidélité au modèle : contour, murs, ouvertures', () => {
   });
 
   it('aucune porte, aucune barrière achetable, aucun étage', () => {
-    const text = JSON.stringify(world) + JSON.stringify(decorCfg);
+    // Lot 9i : la clé interieur de decor.json liste les objets d'époque des deux étages (champ floor « etage ») ; l'étage reste dans etage.world.json.
+    const { interieur, ...decorSansInterieur } = decorCfg;
+    void interieur;
+    const text = JSON.stringify(world.obstacles.filter((o) => o.kind !== 'epoque')) + JSON.stringify({ ...world, obstacles: [] }) + JSON.stringify(decorSansInterieur);
     expect(text).not.toMatch(/\b(porte|door|achat|prix|price|etage|étage|niveau)\b/i);
     expect(world.playerBarriers.every((b) => /^barriere-F[1-8]$/.test(b.id))).toBe(true);
     expect(world.obstacles.every((o) => o.kind !== 'porte')).toBe(true);

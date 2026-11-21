@@ -264,23 +264,24 @@ describe('ouvertures : Garand et caisses d\'époque', () => {
   });
 });
 
-describe('jeu et menu inchangés avant le GO', () => {
+describe('modules du lot 9i dans la partie et le menu', () => {
   const fichiers = (dir) => readdirSync(dir, { recursive: true }).filter((f) => f.endsWith('.js')).map((f) => `${dir}/${f}`);
-  it('ni la partie ni le menu n\'importent les modules du lot 9i (scène des ouvertures : import dynamique sous l\'option epoque seulement)', () => {
-    const interdits = /interieur-epoque|lampe-coudee|caisses-epoque|garand\.js|atelier-interieur/;
+  it('la partie n\'importe que les modules purs (intérieur, lampe coudée) aux endroits prévus ; jamais l\'atelier ; le menu charge les modules 3D des ouvertures à la demande seulement', () => {
+    const permis = { 'js/game/world.js': ['interieur-epoque'], 'js/game/persos-runtime.js': ['lampe-coudee'], 'js/core/decor.js': [] };
+    const motif = /interieur-epoque|lampe-coudee|caisses-epoque|ouverture\/garand\.js|\.\/garand\.js|atelier-interieur/g;
     for (const f of [...fichiers('js/game'), ...fichiers('js/menu'), 'js/main.js', ...fichiers('js/core')]) {
       if (f === 'js/core/interieur-epoque.js' || f === 'js/core/lampe-coudee.js' || f.endsWith('caisses-epoque.js') || f.endsWith('ouverture/garand.js')) continue;
       const src = code(f);
       if (f.endsWith('ouverture/scene.js')) {
-        expect(src).toMatch(/epoque\?\.caisses === true \? await import\('\.\/caisses-epoque\.js'\)/);
-        expect(src).toMatch(/epoque\?\.arme === 'garand' \? await import\('\.\/garand\.js'\)/);
+        expect(src).toMatch(/await import\('\.\/caisses-epoque\.js'\)/);
+        expect(src).toMatch(/await import\('\.\/garand\.js'\)/);
         expect(src).not.toMatch(/^import .*(caisses-epoque|garand)/m);
         continue;
       }
-      const imports = [...src.matchAll(/(?:from|import\()\s*'([^']+)'/g)].map((m) => m[1]).join(' ');
-      expect(interdits.test(imports), f).toBe(false);
+      const statiques = [...src.matchAll(/^import [^;]*from '([^']+)'/gm)].map((m) => m[1]).join(' ');
+      const trouves = [...new Set((statiques.match(motif) ?? []))];
+      expect(trouves, f).toEqual(permis[f] ?? []);
+      expect(/atelier-interieur/.test(statiques), f).toBe(false);
     }
-    // Le menu ne passe jamais l'option epoque à la scène (ouverture.js).
-    expect(code('js/menu/ouverture/ouverture.js')).not.toMatch(/epoque/);
   });
 });

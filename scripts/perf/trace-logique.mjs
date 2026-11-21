@@ -3,7 +3,7 @@
 //
 // Usage : node scripts/perf/trace-logique.mjs [--base http://localhost:4180 (sinon un serveur local est lancé depuis le dossier courant)]
 //         [--out dossier] [--scenarios 1,2,3,4,5,6] [--steps 600] [--os (matrices des os aux pas 100, 300 et 600, voir plus bas)]
-//         [--relance N (lot 9d : partie libérée puis recréée N fois dans la page avant les pas)]
+//         [--extra '&decor=avant' (lot 9i : paramètres ajoutés à chaque adresse)] [--relance N (lot 9d : partie libérée puis recréée N fois dans la page avant les pas)]
 //         node scripts/perf/trace-logique.mjs --compare dossierA dossierB  (compare deux exécutions pas à pas ; code 1 au premier écart)
 //
 // Six scénarios (jeu.html?test=1&seed=1…, 667 × 375, onglet « caché » : la boucle d'images ne démarre jamais, seul step() fait avancer la
@@ -29,6 +29,11 @@ const opt = (name, fallback) => {
   return i >= 0 && i + 1 < args.length ? args[i + 1] : fallback;
 };
 const flag = (name) => args.includes(`--${name}`);
+// Lot 9i : --extra '&decor=avant' : paramètres ajoutés à l'adresse de chaque scénario (références d'avant un lot).
+const EXTRA = (() => {
+  const i = args.indexOf('--extra');
+  return i >= 0 && i + 1 < args.length ? args[i + 1] : '';
+})();
 const sha = (s) => createHash('sha256').update(s).digest('hex');
 
 // --- Comparaison de deux exécutions ----------------------------------------------------------------------------------------------------
@@ -108,7 +113,7 @@ async function run(sc) {
   page.on('pageerror', (e) => errors.push(e.message));
   // Onglet « caché » : requestAnimationFrame ne fait jamais tourner la boucle d'images (même méthode que tests/e2e/graphismes.spec.js).
   await page.addInitScript(() => Object.defineProperty(Document.prototype, 'hidden', { get: () => true, configurable: true }));
-  await page.goto(`${BASE}/jeu.html?test=1&seed=1${sc.query}`);
+  await page.goto(`${BASE}/jeu.html?test=1&seed=1${sc.query}${EXTRA}`);
   await page.waitForFunction(() => window.__zs || document.getElementById('game-error')?.hidden === false, null, { timeout: 180000 });
   // Lot 9d : --relance N : la partie est libérée puis recréée N fois dans la même page (window.__zsCycle) avant les pas : la trace doit rester
   // identique à celle d'une première partie (garantie « deuxième partie = première »).

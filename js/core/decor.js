@@ -185,7 +185,8 @@ export function generateDecor(cfg, world) {
   if (fixedCar) cars.push(fixedCar); // en dernier : les autres voitures gardent leur peinture (rang)
   const helicopter = heli && heliRects.length > 0 ? { id: 'helicoptere', x: num(heli.x), y: num(heli.y), heading: num(heli.heading), corner: heli.corner ? { ...heli.corner } : null, rects: heliRects.map((r) => ({ ...r })), visual: keepOut[0] ? { ...keepOut[0] } : null, height: num(heli.height),
     ...(heli.crater ? { crater: { ...heli.crater } } : {}), ...(heli.trail ? { trail: { ...heli.trail } } : {}), ...(Array.isArray(heli.scars) ? { scars: heli.scars.map((b) => ({ ...b })) } : {}), smoke: heli.smoke === true } : null;
-  return { ground, cars, trees: keptTrees, bushes: keptBushes, lamps, fences: keptFences, solids: finalSolids, spawnPoints, corridors, helicopter, keepOut, wreckSolids, epoque: epoque ? { ...epoque, objets: epoqueObjets } : null, removed: { trees: trees.length - keptTrees.length, bushes: bushes.length - keptBushes.length, fences: fences.length - keptFences.length } };
+  // Lot 9i : section « interieur » (décor intérieur d'époque) transmise telle quelle au dessin (js/game/world.js) ; ses obstacles sont dans world.json.
+  return { ground, cars, trees: keptTrees, bushes: keptBushes, lamps, fences: keptFences, solids: finalSolids, spawnPoints, corridors, helicopter, keepOut, wreckSolids, epoque: epoque ? { ...epoque, objets: epoqueObjets } : null, interieur: cfg?.interieur && Array.isArray(cfg.interieur.objets) ? cfg.interieur : null, removed: { trees: trees.length - keptTrees.length, bushes: bushes.length - keptBushes.length, fences: fences.length - keptFences.length } };
 }
 
 // Problèmes de cohérence d'un décor (liste de textes, vide si tout va bien) : tout reste dans le monde, aucun obstacle plein ni

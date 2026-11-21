@@ -253,7 +253,9 @@
     { "id": "sacs-1", "x": 1655, "y": 1910, "w": 60, "h": 32.5, "hauteur": 18, "kind": "sacs", "source": "modele" },
     { "id": "sacs-2", "x": 1715, "y": 1910, "w": 57.5, "h": 32.5, "hauteur": 18, "kind": "sacs", "source": "modele" },
     { "id": "bidon-salle", "x": 3000, "y": 2165, "w": 20, "h": 20, "hauteur": 28, "kind": "bidon" },
-    { "id": "bidon-poche", "x": 1110, "y": 2300, "w": 20, "h": 20, "hauteur": 28, "kind": "bidon" }
+    { "id": "bidon-poche", "x": 1110, "y": 2300, "w": 20, "h": 20, "hauteur": 28, "kind": "bidon" },
+    { "id": "brancard-salle-brancard", "x": 2350, "y": 2280, "w": 128, "h": 34, "hauteur": 14, "kind": "epoque" },
+    { "id": "caisse-medicale-salle-caisse", "x": 2631, "y": 2345, "w": 38, "h": 23, "hauteur": 20, "kind": "epoque" }
   ],
   "generation": {
     "shifts": [],

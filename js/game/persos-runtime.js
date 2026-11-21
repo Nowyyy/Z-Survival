@@ -4,6 +4,7 @@
 import { settings, woundTier } from '../core/blood.js';
 import { floorOf } from '../core/floors.js';
 import { resoudreEpoque, wearTier } from '../core/persos-variants.js';
+import { avecLampeCoudee } from '../core/lampe-coudee.js';
 import { createV2Kit } from './character-v2.js';
 import { createTokenLookup } from './palette.js';
 
@@ -97,6 +98,9 @@ export function createPersos(params, data) {
         // selon le personnage joué ; zombies A et B mélangés en une variante (tenues des deux). params.slots et data.characters reçoivent les
         // variantes résolues (game.js : tenue des armes du joueur, état des tests).
         const ep = resoudreEpoque({ characters: data.characters, epoque: data.epoque, choixJson: data.epoqueChoix, table: data.choices, perso: params.perso, slots: params.slots, personnage });
+        // Lot 9i : lampe coudée (TL-122) sur la gauche de la poitrine du joueur de 1942 (variantes d'époque de l'emplacement joueur), à la place de la
+        // frontale de l'ancienne variante B ; lentille dans la matière « glow » (aucune lumière dynamique) ; ?test=1&decor=avant : sans elle.
+        if (!params.sansLampe) ep.characters = { ...ep.characters, slots: ep.characters.slots.map((s) => (s.id === 'joueur' ? { ...s, variants: s.variants.map((v) => (v.epoque === true ? avecLampeCoudee(v) : v)) } : s)) };
         params.slots = ep.slots;
         this.data.characters = ep.characters;
         const options = choiceOptions(params, data.choices);

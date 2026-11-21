@@ -527,5 +527,325 @@
       { "x": 2074, "y": 1519, "w": 103, "h": 64 }
     ],
     "triangles": 3297
+  },
+  "interieur": {
+    "taille": 2,
+    "couleurs": {
+      "olive": { "jeton": "--game-tree", "vers": "--game-paint-3", "part": 0.35 },
+      "acier": { "jeton": "--game-metal", "vers": "--game-wall", "part": 0.35 },
+      "bois": { "jeton": "--game-wood-dark", "vers": "--game-wood", "part": 0.35 },
+      "toile": { "jeton": "--game-wreck-hull", "vers": "--game-tree", "part": 0.5 },
+      "cuir": { "jeton": "--game-bark", "vers": "--game-wood-dark", "part": 0.3 },
+      "bakelite": { "jeton": "--game-boot", "vers": "--game-lamp-metal", "part": 0.5 },
+      "couverture": { "jeton": "--game-tree", "vers": "--game-wreck-hull", "part": 0.3 },
+      "couverture-bande": { "jeton": "--game-plank-dark", "vers": "--game-tree", "part": 0.3 },
+      "verre": { "jeton": "--game-lamp-light", "vers": "--game-lamp-core", "part": 0.3 },
+      "verre-coeur": { "jeton": "--game-lamp-core", "part": 0 },
+      "cadran-vitre": { "jeton": "--game-plank", "vers": "--game-wreck-hull", "part": 0.4 },
+      "touche": { "jeton": "--game-pip-off", "vers": "--game-plank", "part": 0.3 },
+      "papier": { "jeton": "--game-plank", "vers": "--game-wreck-hull", "part": 0.35 },
+      "encre": { "jeton": "--game-lamp-metal", "vers": "--game-boot", "part": 0.3 },
+      "relief": { "jeton": "--game-plank-dark", "vers": "--game-rust", "part": 0.3 },
+      "riviere": { "jeton": "--game-paint-2", "vers": "--game-plank", "part": 0.35 },
+      "route": { "jeton": "--game-paint-1", "vers": "--game-plank-dark", "part": 0.45 },
+      "punaise": { "jeton": "--game-paint-1", "vers": "--game-boot", "part": 0.45 },
+      "ficelle": { "jeton": "--game-plank-dark", "vers": "--game-plank", "part": 0.3 },
+      "pansement": { "jeton": "--game-plank", "vers": "--game-pip-on", "part": 0.5 },
+      "medical-vert": { "jeton": "--game-tree", "vers": "--game-zombie", "part": 0.25 },
+      "medical-blanc": { "jeton": "--game-pip-on", "vers": "--game-plank", "part": 0.2 }
+    },
+    "objets": [
+      {
+        "id": "radio-salle",
+        "type": "radio",
+        "variante": "caisse",
+        "floor": "rdc",
+        "spec": { "id": "radio-salle", "x": 1690, "y": 2205, "cap": 0, "floor": "rdc", "base": 40, "taille": 2 },
+        "sur": "P12",
+        "hauteur": 70,
+        "emprise": { "x": 1677, "y": 2192, "w": 26, "h": 22 },
+        "collision": false,
+        "triangles": 52,
+        "rects": []
+      },
+      {
+        "id": "telephone-salle",
+        "type": "telephone",
+        "variante": "ouvert",
+        "floor": "rdc",
+        "spec": { "id": "telephone-salle", "x": 1755, "y": 2205, "cap": 0, "floor": "rdc", "base": 40, "taille": 2 },
+        "sur": "P12",
+        "hauteur": 52,
+        "emprise": { "x": 1748, "y": 2196, "w": 25, "h": 19 },
+        "collision": false,
+        "triangles": 50,
+        "rects": []
+      },
+      {
+        "id": "machine-salle",
+        "type": "machine",
+        "variante": "papier",
+        "floor": "rdc",
+        "spec": { "id": "machine-salle", "x": 1720, "y": 2245, "cap": 0, "floor": "rdc", "base": 40, "taille": 2 },
+        "sur": "P12",
+        "hauteur": 63,
+        "emprise": { "x": 1706, "y": 2236, "w": 25, "h": 18 },
+        "collision": false,
+        "triangles": 52,
+        "rects": []
+      },
+      {
+        "id": "carte-poche",
+        "type": "carte",
+        "variante": "grande",
+        "floor": "rdc",
+        "spec": { "id": "carte-poche", "x": 920, "y": 2355, "cap": 0, "face": "e", "floor": "rdc", "base": 0, "taille": 2 },
+        "hauteur": 58,
+        "emprise": { "x": 921, "y": 2321, "w": 1, "h": 68 },
+        "collision": false,
+        "triangles": 2,
+        "rects": []
+      },
+      {
+        "id": "carte-aile",
+        "type": "carte",
+        "variante": "grande",
+        "floor": "rdc",
+        "spec": { "id": "carte-aile", "x": 1470, "y": 1240, "cap": 0, "face": "o", "floor": "rdc", "base": 0, "taille": 2 },
+        "hauteur": 58,
+        "emprise": { "x": 1468, "y": 1206, "w": 1, "h": 68 },
+        "collision": false,
+        "triangles": 2,
+        "rects": []
+      },
+      {
+        "id": "carte-salle",
+        "type": "carte",
+        "variante": "grande",
+        "floor": "rdc",
+        "spec": { "id": "carte-salle", "x": 3110, "y": 2025, "cap": 0, "face": "o", "floor": "rdc", "base": 0, "taille": 2 },
+        "hauteur": 58,
+        "emprise": { "x": 3108, "y": 1991, "w": 1, "h": 68 },
+        "collision": false,
+        "triangles": 2,
+        "rects": []
+      },
+      {
+        "id": "brancard-salle",
+        "type": "brancard",
+        "variante": "couverture",
+        "floor": "rdc",
+        "spec": { "id": "brancard-salle", "x": 2414, "y": 2297.4, "cap": 0, "floor": "rdc", "base": 0, "taille": 2 },
+        "hauteur": 14,
+        "emprise": { "x": 2350, "y": 2280, "w": 128, "h": 34 },
+        "collision": true,
+        "triangles": 72,
+        "rects": [
+          { "id": "brancard-salle-brancard", "x": 2350, "y": 2280, "w": 128, "h": 34, "hauteur": 14, "tirs": "passent" }
+        ]
+      },
+      {
+        "id": "caisse-medicale-salle",
+        "type": "caisseMedicale",
+        "variante": "une",
+        "floor": "rdc",
+        "spec": { "id": "caisse-medicale-salle", "x": 2650, "y": 2356.4, "cap": 0, "floor": "rdc", "base": 0, "taille": 2 },
+        "hauteur": 20,
+        "emprise": { "x": 2631, "y": 2345, "w": 38, "h": 23 },
+        "collision": true,
+        "triangles": 30,
+        "rects": [
+          { "id": "caisse-medicale-salle-caisse", "x": 2631, "y": 2345, "w": 38, "h": 23, "hauteur": 20, "tirs": "passent" }
+        ]
+      },
+      {
+        "id": "casques-poche",
+        "type": "casques",
+        "variante": "deux",
+        "floor": "rdc",
+        "spec": { "id": "casques-poche", "x": 1320, "y": 2400, "cap": 20, "floor": "rdc", "base": 0, "taille": 2 },
+        "hauteur": 9,
+        "emprise": { "x": 1304, "y": 2394, "w": 36, "h": 17 },
+        "collision": false,
+        "triangles": 76,
+        "rects": []
+      },
+      {
+        "id": "casques-salle",
+        "type": "casques",
+        "variante": "deux",
+        "floor": "rdc",
+        "spec": { "id": "casques-salle", "x": 2540, "y": 2400, "cap": -30, "floor": "rdc", "base": 0, "taille": 2 },
+        "hauteur": 9,
+        "emprise": { "x": 2524, "y": 2387, "w": 30, "h": 32 },
+        "collision": false,
+        "triangles": 76,
+        "rects": []
+      },
+      {
+        "id": "ampoule-aile",
+        "type": "ampoules",
+        "variante": "fil",
+        "floor": "rdc",
+        "spec": { "id": "ampoule-aile", "x": 1260, "y": 1700, "cap": 0, "floor": "rdc", "base": 0, "taille": 2 },
+        "hauteur": 69,
+        "emprise": { "x": 1257, "y": 1697, "w": 6, "h": 6 },
+        "collision": false,
+        "triangles": 58,
+        "rects": []
+      },
+      {
+        "id": "ampoule-poche",
+        "type": "ampoules",
+        "variante": "fil",
+        "floor": "rdc",
+        "spec": { "id": "ampoule-poche", "x": 1250, "y": 2230, "cap": 0, "floor": "rdc", "base": 0, "taille": 2 },
+        "hauteur": 69,
+        "emprise": { "x": 1247, "y": 2227, "w": 6, "h": 6 },
+        "collision": false,
+        "triangles": 58,
+        "rects": []
+      },
+      {
+        "id": "ampoule-salle-1",
+        "type": "ampoules",
+        "variante": "fil",
+        "floor": "rdc",
+        "spec": { "id": "ampoule-salle-1", "x": 1650, "y": 2060, "cap": 0, "floor": "rdc", "base": 0, "taille": 2 },
+        "hauteur": 69,
+        "emprise": { "x": 1647, "y": 2057, "w": 6, "h": 6 },
+        "collision": false,
+        "triangles": 58,
+        "rects": []
+      },
+      {
+        "id": "ampoule-salle-2",
+        "type": "ampoules",
+        "variante": "fil",
+        "floor": "rdc",
+        "spec": { "id": "ampoule-salle-2", "x": 2600, "y": 2200, "cap": 0, "floor": "rdc", "base": 0, "taille": 2 },
+        "hauteur": 69,
+        "emprise": { "x": 2597, "y": 2197, "w": 6, "h": 6 },
+        "collision": false,
+        "triangles": 58,
+        "rects": []
+      },
+      {
+        "id": "radio-etage",
+        "type": "radio",
+        "variante": "caisse",
+        "floor": "etage",
+        "spec": { "id": "radio-etage", "x": 1095, "y": 1372, "cap": 0, "floor": "etage", "base": 40, "taille": 2 },
+        "sur": "Q4",
+        "hauteur": 70,
+        "emprise": { "x": 1082, "y": 1359, "w": 26, "h": 22 },
+        "collision": false,
+        "triangles": 52,
+        "rects": []
+      },
+      {
+        "id": "telephone-etage",
+        "type": "telephone",
+        "variante": "ouvert",
+        "floor": "etage",
+        "spec": { "id": "telephone-etage", "x": 1150, "y": 1372, "cap": 0, "floor": "etage", "base": 40, "taille": 2 },
+        "sur": "Q4",
+        "hauteur": 52,
+        "emprise": { "x": 1143, "y": 1363, "w": 25, "h": 19 },
+        "collision": false,
+        "triangles": 50,
+        "rects": []
+      },
+      {
+        "id": "machine-etage",
+        "type": "machine",
+        "variante": "papier",
+        "floor": "etage",
+        "spec": { "id": "machine-etage", "x": 1125, "y": 1410, "cap": 0, "floor": "etage", "base": 40, "taille": 2 },
+        "sur": "Q4",
+        "hauteur": 63,
+        "emprise": { "x": 1111, "y": 1401, "w": 25, "h": 18 },
+        "collision": false,
+        "triangles": 52,
+        "rects": []
+      },
+      {
+        "id": "carte-etage",
+        "type": "carte",
+        "variante": "grande",
+        "floor": "etage",
+        "spec": { "id": "carte-etage", "x": 1070, "y": 1465, "cap": 0, "face": "e", "floor": "etage", "base": 0, "taille": 2 },
+        "hauteur": 58,
+        "emprise": { "x": 1071, "y": 1431, "w": 1, "h": 68 },
+        "collision": false,
+        "triangles": 2,
+        "rects": []
+      },
+      {
+        "id": "brancard-etage",
+        "type": "brancard",
+        "variante": "couverture",
+        "floor": "etage",
+        "spec": { "id": "brancard-etage", "x": 1633.4, "y": 2224, "cap": 90, "floor": "etage", "base": 0, "taille": 2 },
+        "hauteur": 14,
+        "emprise": { "x": 1616, "y": 2160, "w": 34, "h": 128 },
+        "collision": true,
+        "triangles": 72,
+        "rects": [
+          { "id": "brancard-etage-brancard", "x": 1616, "y": 2160, "w": 34, "h": 128, "hauteur": 14, "tirs": "passent" }
+        ]
+      },
+      {
+        "id": "caisse-medicale-etage",
+        "type": "caisseMedicale",
+        "variante": "une",
+        "floor": "etage",
+        "spec": { "id": "caisse-medicale-etage", "x": 1636, "y": 2149, "cap": 0, "floor": "etage", "base": 0, "taille": 2 },
+        "hauteur": 20,
+        "emprise": { "x": 1617, "y": 2138, "w": 38, "h": 22 },
+        "collision": true,
+        "triangles": 30,
+        "rects": [
+          { "id": "caisse-medicale-etage-caisse", "x": 1617, "y": 2138, "w": 38, "h": 22, "hauteur": 20, "tirs": "passent" }
+        ]
+      },
+      {
+        "id": "casques-etage",
+        "type": "casques",
+        "variante": "deux",
+        "floor": "etage",
+        "spec": { "id": "casques-etage", "x": 1760, "y": 2460, "cap": 60, "floor": "etage", "base": 0, "taille": 2 },
+        "hauteur": 9,
+        "emprise": { "x": 1747, "y": 2446, "w": 32, "h": 30 },
+        "collision": false,
+        "triangles": 76,
+        "rects": []
+      },
+      {
+        "id": "ampoule-etage-gauche",
+        "type": "ampoules",
+        "variante": "fil",
+        "floor": "etage",
+        "spec": { "id": "ampoule-etage-gauche", "x": 1250, "y": 1700, "cap": 0, "floor": "etage", "base": 0, "taille": 2 },
+        "hauteur": 69,
+        "emprise": { "x": 1247, "y": 1697, "w": 6, "h": 6 },
+        "collision": false,
+        "triangles": 58,
+        "rects": []
+      },
+      {
+        "id": "ampoule-etage-droite",
+        "type": "ampoules",
+        "variante": "fil",
+        "floor": "etage",
+        "spec": { "id": "ampoule-etage-droite", "x": 1650, "y": 2130, "cap": 0, "floor": "etage", "base": 0, "taille": 2 },
+        "hauteur": 69,
+        "emprise": { "x": 1647, "y": 2127, "w": 6, "h": 6 },
+        "collision": false,
+        "triangles": 58,
+        "rects": []
+      }
+    ],
+    "triangles": 1096
   }
 }

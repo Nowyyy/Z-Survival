@@ -31,7 +31,9 @@
       "bidon-salle",
       "bidon-poche",
       "P3",
-      "M29"
+      "M29",
+      "brancard-salle-brancard",
+      "caisse-medicale-salle-caisse"
     ],
     "grilles": [
       {
@@ -48,5 +50,5 @@
       }
     ]
   },
-  "etage": { "ids": ["Q2", "Q3", "Q4", "Q5", "Q6", "bidon-etage"], "grilles": [] }
+  "etage": { "ids": ["Q2", "Q3", "Q4", "Q5", "Q6", "bidon-etage", "brancard-etage-brancard", "caisse-medicale-etage-caisse"], "grilles": [] }
 }

@@ -16,6 +16,7 @@ import { createTokenLookup } from './palette.js';
 import { parseColor } from '../core/color.js';
 import { angleRotor, burntCarParts, carFireSpots, craterTriangles, helicopterRotor, placeHelicopter, reglagesRotor, ROTOR_PIECES, teinteAcier, toleHelicoptere, trailTriangles, uvTole } from '../core/epaves.js';
 import { MATIERES, atlasEpoque, couleursEpoque, filsTelegraphe, objetsDeSection, specCratere, trianglesFils } from '../core/decor-epoque.js';
+import { MATIERES as MATIERES_INTERIEUR, atlasInterieur, objetsDeSection as objetsInterieur } from '../core/interieur-epoque.js';
 import { plankSettings } from '../core/plank-layout.js';
 import { plankSheet } from '../core/texgen.js';
 import { createDebrisMeshes, createWindowMeshes } from './windows-mesh.js';
@@ -704,6 +705,7 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
     l.furniture.forEach((fu, i) => {
       if (fu.kind === 'escalier') return; // dessiné par la rampe (escalier physique)
       if (fu.kind === 'bidon') return; // lot 9h : bidon solide, dessiné par le décor léger (decor-interieur.world.json)
+      if (fu.kind === 'epoque') return; // lot 9i : brancard ou caisse médicale d'époque, dessiné avec le décor intérieur d'époque (addInterieur)
       // Lot 9a-I : sacs de sable (obstacles venus du décor solide) : pile de sacs en toile de jute (texture « toile-jute », répétée), à tous les
       // réglages comme leur collision ; sans ombre portée (18 de haut, comme le décor léger), réception des ombres.
       if (fu.kind === 'sacs') {
@@ -786,7 +788,7 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
   if (layout.decor) addDecor(ex, region, layout.decor, outdoorSoil, tintOf);
   // Lot 5a : hélicoptère écrasé (maillage du décor de l'atlas) et feu groupé de la voiture en flammes (deux foyers, capot et habitacle ; flammes et fumée, sans
   // lueur au sol : deux appels de dessin, aucune lumière ; absent avec ?detail=0, comme les autres feux). Créés une fois, dans le groupe extérieur.
-  const wrecks = { helicopter: null, burningCar: null, epoque: null };
+  const wrecks = { helicopter: null, burningCar: null, epoque: null, interieur: null };
   // Lot 9a : rotor de queue de l'hélicoptère ({ pivot, axe, triangles, mesh }) et son temps de jeu cumulé (world.frame : dt = 0 en pause).
   let rotor = null;
   let rotorT = 0;
@@ -906,6 +908,75 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
     const mv = tag(epB.vehicules.mesh(groups.exterieur, matEpoque, { cast: true, receive: true }), 'exterieur');
     if (mv) mv.name = 'vehicules-epoque';
     wrecks.epoque = { objets: epoqueStats.objets, triangles: md ? md.geometry.attributes.position.count / 3 : 0, vehicules: mv ? mv.geometry.attributes.position.count / 3 : 0, atlas: img.width };
+  }
+  // Lot 9i : décor intérieur d'époque (layout.decor.interieur, npm run carte ; js/core/interieur-epoque.js, déterministe) : un maillage par étage (groupe
+  // de l'étage), une matière Lambert à l'atlas intérieur généré (256 px, aucune image) et couleurs de sommet ; le verre des ampoules ajoute sa couleur
+  // (attribut aLueur, comme la flamme des lampes à huile : aucune lumière nouvelle) ; sans ombre portée, réception des ombres, mur percé comme le décor.
+  const interieurSection = layout.decor?.interieur ?? null;
+  const interieurObjets = interieurSection ? objetsInterieur(interieurSection) : [];
+  if (interieurObjets.length) {
+    const lookupI = typeof document !== 'undefined' ? createTokenLookup() : () => null;
+    const couleursI = couleursEpoque(interieurSection.couleurs, lookupI);
+    const linI = (rgb) => {
+      const c = new THREE.Color().setRGB(rgb[0] / 255, rgb[1] / 255, rgb[2] / 255, THREE.SRGBColorSpace);
+      return [c.r, c.g, c.b];
+    };
+    const teinteI = (m) => {
+      const cle = MATIERES_INTERIEUR[m]?.teinte;
+      return cle && cle !== 'neutre' && couleursI[cle] ? linI(couleursI[cle]) : [1, 1, 1];
+    };
+    const img = atlasInterieur({ couleurs: couleursI });
+    const tex = new THREE.DataTexture(new Uint8Array(img.data.buffer), img.width, img.height, THREE.RGBAFormat);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    tex.generateMipmaps = true;
+    tex.minFilter = THREE.LinearMipmapLinearFilter;
+    tex.magFilter = THREE.LinearFilter;
+    tex.needsUpdate = true;
+    const matI = seeThrough.apply(new THREE.MeshLambertMaterial({ map: tex, vertexColors: true }));
+    const avant = matI.onBeforeCompile;
+    matI.onBeforeCompile = (shader, r) => {
+      if (typeof avant === 'function') avant.call(matI, shader, r);
+      shader.vertexShader = shader.vertexShader.replace('#include <common>', '#include <common>\nattribute float aLueur;\nvarying float vLueur;').replace('#include <begin_vertex>', '#include <begin_vertex>\nvLueur = aLueur;');
+      shader.fragmentShader = shader.fragmentShader.replace('#include <common>', '#include <common>\nvarying float vLueur;').replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\ntotalEmissiveRadiance += diffuseColor.rgb * vLueur;');
+    };
+    matI.customProgramCacheKey = () => 'interieur-epoque';
+    const parEtage = {};
+    for (const f of ['rdc', 'etage']) {
+      const tris = interieurObjets.filter((o) => o.floor === f).flatMap((o) => o.triangles);
+      if (!tris.length || !groups[f]) continue;
+      const n = tris.length * 3;
+      const pos = new Float32Array(n * 3);
+      const nor = new Float32Array(n * 3);
+      const uv = new Float32Array(n * 2);
+      const col = new Float32Array(n * 3);
+      const lueur = new Float32Array(n);
+      tris.forEach((q, i) => {
+        const c = teinteI(q.mat);
+        for (let k = 0; k < 3; k += 1) {
+          const j = i * 3 + k;
+          pos.set(q.p[k], j * 3);
+          nor.set(q.n, j * 3);
+          uv.set(q.uv[k], j * 2);
+          col.set(c, j * 3);
+          lueur[j] = q.lueur ? 1 : 0;
+        }
+      });
+      const g = new THREE.BufferGeometry();
+      g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+      g.setAttribute('normal', new THREE.BufferAttribute(nor, 3));
+      g.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
+      g.setAttribute('color', new THREE.BufferAttribute(col, 3));
+      g.setAttribute('aLueur', new THREE.BufferAttribute(lueur, 1));
+      g.computeBoundingSphere();
+      const mesh = new THREE.Mesh(g, matI);
+      mesh.name = `interieur-epoque-${f}`;
+      mesh.castShadow = false;
+      mesh.receiveShadow = true;
+      tag(mesh, f);
+      groups[f].add(mesh);
+      parEtage[f] = tris.length;
+    }
+    wrecks.interieur = { objets: interieurObjets.length, solides: interieurObjets.filter((o) => o.collision).length, triangles: parEtage, atlas: img.width, taille: interieurSection.taille };
   }
   // Lot 9a : hélicoptère en tôle de métal peinte (texture de js/core/epaves.js, couleur de base --game-metal comme l'ancienne région « tole », aucune
   // image) et rotor de queue qui tourne en temps de jeu (immobile sous mouvement réduit). Deux maillages coupés hors du champ : deux appels de dessin

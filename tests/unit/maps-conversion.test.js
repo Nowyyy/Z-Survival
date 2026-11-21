@@ -227,6 +227,9 @@ describe('fichiers versionnés = sortie du script (aucune retouche à la main)',
   it('les fichiers se relisent en JSON et correspondent à planToWorld (plus les obstacles du décor solide, lot 9a-I : sacs de sable)', () => {
     const lu = JSON.parse(files.world);
     const solides = lu.obstacles.filter((o) => o.kind === 'sacs' || o.kind === 'bidon');
+    // Lot 9i : obstacles des objets solides de l'intérieur d'époque (kind epoque), ajoutés après le recalage (js/core/interieur-epoque.js : obstaclesInterieur).
+    const epoqueInt = lu.obstacles.filter((o) => o.kind === 'epoque');
+    expect(epoqueInt.map((o) => o.id)).toEqual(['brancard-salle-brancard', 'caisse-medicale-salle-caisse']);
     expect(solides.map((o) => o.id)).toEqual(['sacs-1', 'sacs-2', 'bidon-salle', 'bidon-poche']); // lot 9h (retours) : bidons solides
     // Lot 9h (retours du propriétaire, intérieur) : collisions recalées sur le dessin (js/core/collisions-dessin.js) : marches des escaliers, meubles
     // dont un bord reculait d'au moins 6 ; mêmes obstacles sinon, dans le même ordre.
@@ -238,10 +241,11 @@ describe('fichiers versionnés = sortie du script (aucune retouche à la main)',
       return { id: s.id, walk: z.walk, interdits: [z.floors.rdc.trigger].map((t) => ({ x: t.x, y: t.y, w: t.w, h: t.h })) };
     });
     const attendu = recalerObstacles([...planOut.obstacles, ...solides], { pieces, escaliers, murs: segmentRects(planOut.walls, params.wallThickness), min: planOut.minCorridor }).obstacles;
-    expect(lu.obstacles).toEqual(attendu);
+    expect(lu.obstacles).toEqual([...attendu, ...epoqueInt]);
     expect({ ...lu, obstacles: [] }).toEqual({ ...planOut, obstacles: [] });
     // Lot 9h : plus la clé epoque (décor d'époque contrôlé et écrit par npm run carte : js/core/decor-epoque.js, tests/unit/decor-epoque.test.js).
-    const { epoque, ...decorLu } = JSON.parse(files.decor);
+    const { epoque, interieur, ...decorLu } = JSON.parse(files.decor); // lot 9i : plus la clé interieur (intérieur d'époque, tests/unit/interieur-epoque.test.js)
+    expect(interieur.objets.length).toBeGreaterThan(0);
     expect(decorLu).toEqual(JSON.parse(JSON.stringify(out.decor)));
     expect(epoque.objets.length).toBeGreaterThan(0);
   });
