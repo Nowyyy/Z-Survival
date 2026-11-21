@@ -27,9 +27,10 @@ const code = (f) => readFileSync(f, 'utf8').split('\n').filter((l) => !l.trim().
 
 describe('objets de l\'intérieur', () => {
   it('toutes les variantes se construisent, déterministes, sous budget, sous 70, triangles valides', () => {
-    expect(TYPES).toEqual(['radio', 'telephone', 'machine', 'carte', 'brancard', 'caisseMedicale', 'casques', 'ampoules']);
+    // Retours du propriétaire (après la fusion) : + « table » (une vraie table de 1942 à la place de deux meubles), deux variantes.
+    expect(TYPES).toEqual(['radio', 'telephone', 'machine', 'carte', 'brancard', 'caisseMedicale', 'casques', 'ampoules', 'table']);
     for (const type of TYPES) {
-      expect(CATALOGUE[type].variantes).toHaveLength(3);
+      expect(CATALOGUE[type].variantes).toHaveLength(type === 'table' ? 2 : 3);
       expect(CATALOGUE[type].variantes).toContain(CATALOGUE[type].defaut);
       for (const v of CATALOGUE[type].variantes) {
         const a = objet(type, v, { x: 10, y: 20, base: 40 });
@@ -128,7 +129,10 @@ describe('placement et chemins des zombies (deux étages)', () => {
   const ctl = controlePlan({ mondes, lampes, doc: placement, choixJson, navCfg, toutesVariantes: true });
   it('aucun problème pour toutes les variantes de tous les objets', () => {
     expect(ctl.problemes).toEqual([]);
-    expect(ctl.objets.length).toBe(placement.objets.length);
+    // Retour du propriétaire : ampoules retirées (gardes.ampoules false : le plafond n'est pas vu) ; tous les autres objets placés.
+    expect(lireChoix(choixJson).gardes.ampoules).toBe(false);
+    expect(ctl.objets.some((o) => o.type === 'ampoules')).toBe(false);
+    expect(ctl.objets.length).toBe(placement.objets.filter((o) => o.type !== 'ampoules').length);
     expect(new Set(ctl.objets.map((o) => o.floor))).toEqual(new Set(['rdc', 'etage']));
   });
   it('chemins depuis chaque fenêtre : aucune cellule coupée ; détour au plus de 130 unités (contourner un brancard de 128) et de 30 en moyenne', () => {
@@ -147,6 +151,25 @@ describe('placement et chemins des zombies (deux étages)', () => {
     }
     const types = (f) => new Set(ctl.objets.filter((o) => o.floor === f).map((o) => o.type));
     for (const f of ['rdc', 'etage']) for (const t of ['radio', 'telephone', 'machine', 'carte', 'brancard', 'caisseMedicale']) expect(types(f).has(t), `${f} ${t}`).toBe(true);
+  });
+  it('tables de 1942 (retour du propriétaire) : à la place exacte de P12 et Q4 (même rectangle, même hauteur), sans collision ni tir nouveaux', () => {
+    const tables = ctl.objets.filter((o) => o.type === 'table');
+    expect(tables.map((o) => `${o.floor}:${o.remplace}`).sort()).toEqual(['etage:Q4', 'rdc:P12']);
+    for (const o of tables) {
+      const m = mondes[o.floor].obstacles.find((q) => q.id === o.remplace);
+      expect(o.collision).toBe(false);
+      expect(o.rects).toEqual([]);
+      expect(o.hauteur).toBe(m.hauteur);
+      expect(o.emprise.x).toBeGreaterThanOrEqual(m.x - 1e-6);
+      expect(o.emprise.y).toBeGreaterThanOrEqual(m.y - 1e-6);
+      expect(o.emprise.x + o.emprise.w).toBeLessThanOrEqual(m.x + m.w + 1e-6);
+      expect(o.emprise.y + o.emprise.h).toBeLessThanOrEqual(m.y + m.h + 1e-6);
+      expect(o.emprise.w).toBeGreaterThanOrEqual(m.w - 1);
+      // Les objets posés dessus restent sur le même meuble (même hauteur).
+      expect(ctl.objets.filter((q) => q.sur === o.remplace && q.floor === o.floor).length).toBeGreaterThan(0);
+    }
+    // Meuble inconnu : aucune table.
+    expect(objetsPlaces({ objets: [{ id: 't', type: 'table', remplace: 'inconnu' }] }, { obstacles: { rdc: mondes.rdc.obstacles } })).toEqual([]);
   });
   it('budget du plan : au plus +2 000 triangles, un maillage par étage', () => {
     const b = budgetPlan(ctl.objets);

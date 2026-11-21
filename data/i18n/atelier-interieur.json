@@ -26,6 +26,7 @@
   "dev.interieur.pose.mur": "contre un mur",
   "dev.interieur.pose.sol": "au sol",
   "dev.interieur.pose.plafond": "au plafond (pend de 70)",
+  "dev.interieur.pose.remplace": "à la place d'un meuble (même rectangle, même hauteur)",
   "dev.interieur.hauteur.meuble": "meuble + {h}",
   "dev.interieur.jeu.titre": "Vue du jeu",
   "dev.interieur.jeu.intro": "Caméra du jeu (perspective, inclinaison et zoom de render.json) au-dessus de l'objet, sol de la salle, lampe à huile ou lune ; un meuble de 40 sous les objets posés sur un meuble, un pan de mur derrière les cartes ; repère de taille : un zombie de 61 unités (cylindre). Les deux images sont à leur taille réelle.",
@@ -162,5 +163,8 @@
   "dev.interieur.objet.ampoules": "Ampoules nues",
   "dev.interieur.variante.ampoules.fil": "au bout d'un fil",
   "dev.interieur.variante.ampoules.deux": "deux sur un fil",
-  "dev.interieur.variante.ampoules.cage": "dans une cage"
+  "dev.interieur.variante.ampoules.cage": "dans une cage",
+  "dev.interieur.objet.table": "Table de 1942",
+  "dev.interieur.variante.table.bois": "planches et quatre pieds",
+  "dev.interieur.variante.table.pliante": "pliante, pieds en X"
 }

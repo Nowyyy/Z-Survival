@@ -243,7 +243,7 @@ function vueProche(canvas, yaw, info, pitch = 0.55) {
 
 // --- Fiche, budget, choix --------------------------------------------------------------------------------------------------------------------------
 const tirsDe = (o2) => {
-  if (!o2.rects.length) return t(CATALOGUE[o2.type].pose === 'meuble' ? 'dev.interieur.tirs.meuble' : 'dev.interieur.tirs.aucun');
+  if (!o2.rects.length) return t(['meuble', 'remplace'].includes(CATALOGUE[o2.type].pose) ? 'dev.interieur.tirs.meuble' : 'dev.interieur.tirs.aucun');
   return o2.rects.map((r) => t(`dev.interieur.tirs.${r.tirs}`)).join(', ');
 };
 const reelDe = (type, v) => {

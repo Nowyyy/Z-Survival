@@ -608,6 +608,8 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
   const mat = (id) => new THREE.MeshLambertMaterial({ map: textures.texture(id) });
   // Lot 3g (retours du propriétaire) : murs, meubles, portes et décor (atlas) percés autour du joueur caché (render.seeThrough ; ?percee=0 l'enlève).
   const seeThrough = createSeeThrough(seeThroughSettings(render.seeThrough));
+  // Lot 9i (retours) : meubles redessinés par le décor intérieur d'époque (tables de 1942), étage et identifiant.
+  const remplacesInterieur = new Set((Array.isArray(layout.decor?.interieur?.objets) ? layout.decor.interieur.objets : []).filter((o) => o?.remplace).map((o) => `${o.floor}:${o.remplace}`));
   const atlasMaterial = seeThrough.apply(mat(ATLAS));
   const region = (id) => textures.region(ATLAS, id);
   const ex = {
@@ -706,6 +708,11 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
       if (fu.kind === 'escalier') return; // dessiné par la rampe (escalier physique)
       if (fu.kind === 'bidon') return; // lot 9h : bidon solide, dessiné par le décor léger (decor-interieur.world.json)
       if (fu.kind === 'epoque') return; // lot 9i : brancard ou caisse médicale d'époque, dessiné avec le décor intérieur d'époque (addInterieur)
+      // Lot 9i (retours) : meuble redessiné en table de 1942 par le décor intérieur d'époque (même rectangle, même hauteur) : seulement son occultation.
+      if (remplacesInterieur.has(`${f}:${fu.id}`)) {
+        occluders.push({ ...rectBox(fu, 0, Math.min(num(fu.hauteur, 60), 70)), floor: f });
+        return;
+      }
       // Lot 9a-I : sacs de sable (obstacles venus du décor solide) : pile de sacs en toile de jute (texture « toile-jute », répétée), à tous les
       // réglages comme leur collision ; sans ombre portée (18 de haut, comme le décor léger), réception des ombres.
       if (fu.kind === 'sacs') {
