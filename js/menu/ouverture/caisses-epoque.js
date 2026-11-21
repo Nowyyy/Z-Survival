@@ -1,6 +1,6 @@
 // Lot 9i (atelier, avant le « GO 9i ») : caisses d'époque des ouvertures en 3D, mêmes dimensions et mêmes places des « ? » que caisseGeo
 // (js/menu/ouverture/modeles.js) : Équipement (modele militaire) → caisse de munitions américaine en bois (planches, tasseaux, poignées de corde,
-// pochoir jaune inventé) ; Personnages (veterans) → cantine de soldat en bois peint à ferrures (nom inventé peint sur le couvercle) ; Cosmétiques
+// sans texte : retour du propriétaire) ; Personnages (veterans) → cantine de soldat en bois peint à ferrures (nom inventé peint sur le couvercle) ; Cosmétiques
 // (tenues) → valise de cuir des années 40 (sangles, boucles, coins renforcés, poignée). Textures sur canevas aux jetons --ouv-* ; aucune image,
 // aucune marque, aucun symbole. Chargé à la demande (import dynamique), jamais au démarrage du menu.
 import * as THREE from 'three';
@@ -8,7 +8,7 @@ import { CAISSE, fusion, piece } from './modeles.js';
 
 export const FORMES_EPOQUE = Object.freeze({ militaire: 'munitions', veterans: 'cantine', tenues: 'valise' });
 // Textes peints (inventés, génériques : aucune unité réelle, aucune marque).
-export const TEXTES_EPOQUE = Object.freeze({ munitions: ['CAL .30', 'BALL M2'], couvercleMunitions: 'LOT 42-B', cantine: 'PVT  R. MARCEAU' });
+export const TEXTES_EPOQUE = Object.freeze({ cantine: 'PVT  R. MARCEAU' }); // caisse de munitions sans texte (retour du propriétaire)
 // Jetons : corps (texture), garniture (couleur unie).
 export const JETONS_EPOQUE = Object.freeze({
   munitions: { corps: '--ouv-munitions', garniture: '--ouv-corde' },
@@ -142,16 +142,8 @@ export function texturesEpoque(forme, couleur, anisotropie = 1) {
   const [c2, x2] = toile(256, 256);
   if (forme === 'munitions') {
     planches(x1, '--ouv-munitions', '--ouv-munitions-clair', '--ouv-munitions-sombre', 3, 11);
-    // Pochoir jaune dans le bas de la face (le grand « ? » occupe le milieu) ; lettres un peu usées.
-    texte(x1, TEXTES_EPOQUE.munitions, 206, 34, 34, '--ouv-pochoir', 1 / 2.4);
-    for (let i = 0; i < 260; i += 1) {
-      x1.fillStyle = couleur('--ouv-munitions');
-      x1.globalAlpha = 0.5;
-      x1.fillRect(h01(i, 1) * 256, 180 + h01(i, 2) * 60, 2, 2);
-    }
-    x1.globalAlpha = 1;
+    // Retour du propriétaire : aucun texte sur la caisse d'équipement (bois et tasseaux seulement).
     planches(x2, '--ouv-munitions', '--ouv-munitions-clair', '--ouv-munitions-sombre', 4, 13);
-    texte(x2, [TEXTES_EPOQUE.couvercleMunitions], 128, 0, 30, '--ouv-pochoir', 1 / 1.9);
   } else if (forme === 'cantine') {
     planches(x1, '--ouv-cantine', '--ouv-cantine-clair', '--ouv-cantine-sombre', 4, 17);
     planches(x2, '--ouv-cantine', '--ouv-cantine-clair', '--ouv-cantine-sombre', 4, 19);

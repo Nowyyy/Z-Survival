@@ -71,7 +71,7 @@ test('atelier de l\'intérieur : variantes sous budget, plan des deux étages sa
     expect(m.pic.triangles).toBeLessThanOrEqual(60000);
     expect(m.apres).toEqual({ geometries: 0, textures: 0 });
   }
-  await expect(page.locator('#ouv-planche canvas')).toHaveCount(19);
+  await expect(page.locator('#ouv-planche canvas')).toHaveCount(25); // 6 cas × 4 instants (dont la douille) + le ×10
   // Caisses du menu (actuelle / époque) et scènes (actuelle, A, B ; chargement actuel, A, B, C).
   await expect(page.locator('#caisses-planche .i9-caisse-hote svg')).toHaveCount(6);
   await expect(page.locator('#caisses-planche svg[data-epoque] .e3-q')).toHaveCount(12); // halo, grand « ? », deux petits

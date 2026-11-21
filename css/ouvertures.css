@@ -80,7 +80,6 @@
   --ouv-munitions: #6b5a3c;
   --ouv-munitions-clair: #84704c;
   --ouv-munitions-sombre: #3e3322;
-  --ouv-pochoir: #e0b43a;
   --ouv-corde: #b39b6a;
   --ouv-cantine: #4f4a2e;
   --ouv-cantine-clair: #635d3a;
@@ -98,6 +97,7 @@
   --ouv-arm-phosphate-clair: #5e6157;
   --ouv-arm-cuir: #6b4528;
   --ouv-arm-cuir-sombre: #44291a;
+  --ouv-arm-laiton: #c9a24a;
   /* Interface par-dessus la scène */
   --ouv-passer-fond: rgb(5 5 5 / 80%);
   --ouv-passer-bord: var(--menu-classement-rang);

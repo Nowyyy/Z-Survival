@@ -34,6 +34,9 @@ const Z_PORTE = -678;
 const MAX_PARTICULES = 14;
 const MAX_ETINCELLES = 12;
 const MAX_RAYONS = 7;
+// Lot 9i : douille éjectée par le Garand (repère du fusil, centimètres) : fenêtre d'éjection sur le boîtier, vitesse (droite, haut, un peu vers l'avant : elle ne vient pas vers l'œil),
+// gravité et durée de la trajectoire (elle sort de l'écran par la droite).
+const DOUILLE = Object.freeze({ fenetre: [0.4, 2.8, -7], vitesse: [30, 38, -8], gravite: 170, duree: 0.8 });
 const TAU = Math.PI * 2;
 // Multiplicateurs neutres (pas des couleurs de la scène) : blanc d'une matière texturée, reflets gris des métaux et des matières mates.
 const NEUTRE = new THREE.Color(1, 1, 1);
@@ -358,6 +361,7 @@ export async function creerScene({ canvas, couleur, chrono, reglages, cartes, mo
   });
   // Lot 9i : Garand à la place du fusil d'assaut (mêmes gants et manches ; ni lunette ni point rouge) ; bout du canon : celui du Garand.
   let bout = BOUT;
+  let douille = null;
   if (modGarand) {
     const g = await modGarand.creerGarand({ couleur, anisotropie: Math.min(4, renderer.capabilities.getMaxAnisotropy()) });
     g.geometries.forEach(geo);
@@ -366,6 +370,12 @@ export async function creerScene({ canvas, couleur, chrono, reglages, cartes, mo
     for (const k of [0, 1, 4, 5]) meshesFusil[k].visible = false;
     fusil.add(g.mesh);
     bout = g.bout;
+    // Retour du propriétaire (atelier 9i) : une douille de laiton part de la fenêtre d'éjection à chaque tir (vers le haut et la droite, comme celle
+    // du Garand), suivie d'après l'instant du tir de la chronologie (aucune décision ici) ; un petit maillage, libéré avec la scène.
+    douille = new THREE.Mesh(geo(new THREE.CylinderGeometry(0.55, 0.55, 4, 8).rotateZ(Math.PI / 2)), mat(new THREE.MeshPhongMaterial({ color: col('--ouv-arm-laiton'), shininess: 80, specular: SPEC_METAL, emissive: col('--ouv-arm-laiton') })));
+    douille.material.emissiveIntensity = 0.25;
+    douille.visible = false;
+    fusil.add(douille);
   }
   fusil.add(...meshesFusil.filter((m) => m.visible));
   const flamme = new THREE.Sprite(mat(new THREE.SpriteMaterial({ map: texEtoile, color: col('--ouv-flamme'), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, opacity: 0 })));
@@ -568,6 +578,17 @@ export async function creerScene({ canvas, couleur, chrono, reglages, cartes, mo
     camera.updateMatrixWorld(true);
     const respire = Math.sin((TAU * t) / 2.4) * 0.35;
     poseFusil(sw * 1.1, -Math.abs(sw) * 0.9 + respire * 0.6, sw * 0.035, s.tir.recul);
+    if (douille) {
+      const c = chrono.caisses.find((k) => t >= k.tir && t < k.tir + DOUILLE.duree);
+      douille.visible = !!c;
+      if (c) {
+        const d = t - c.tir;
+        const [px, py, pz] = DOUILLE.fenetre;
+        const [vx, vy, vz] = DOUILLE.vitesse;
+        douille.position.set(px + vx * d, py + vy * d - 0.5 * DOUILLE.gravite * d * d, pz + vz * d);
+        douille.rotation.set(d * 9, d * 4, d * 22);
+      }
+    }
     flamme.material.opacity = s.tir.flamme;
     flamme.scale.setScalar(4 + 10 * s.tir.flamme);
     flamme.visible = s.tir.flamme > 0;
