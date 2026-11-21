@@ -44,7 +44,12 @@ const lisseLocal = (x) => x * x * (3 - 2 * x);
 // Bruit lisse et déterministe (somme de sinus) : secousse, grésillement de la lampe.
 const bruit = (t, k) => Math.sin(t * 37.1 + k * 1.7) * 0.5 + Math.sin(t * 23.3 + k * 4.1) * 0.35 + Math.sin(t * 61.7 + k) * 0.15;
 
-export async function creerScene({ canvas, couleur, chrono, reglages, cartes, modele, police, caseCible }) {
+// Lot 9i (atelier, avant le « GO 9i ») : epoque { arme: 'garand', caisses: true } montre le M1 Garand et les caisses d'époque (modules chargés à la
+// demande) ; absent (le menu), la scène est celle du lot 8f, inchangée.
+export async function creerScene({ canvas, couleur, chrono, reglages, cartes, modele, police, caseCible, epoque = null }) {
+  const modEpoque = epoque?.caisses === true ? await import('./caisses-epoque.js') : null;
+  const modGarand = epoque?.arme === 'garand' ? await import('./garand.js') : null;
+  const nettoyages = [];
   const col = (jeton) => new THREE.Color(couleur(jeton));
   // Contexte WebGL 2 demandé ici (Three.js 0.186 n'accepte que WebGL 2) : s'il n'y en a pas, l'ouverture s'arrête sans que Three.js n'écrive
   // d'erreur (résultat direct).
@@ -186,16 +191,20 @@ export async function creerScene({ canvas, couleur, chrono, reglages, cartes, mo
   scene.add(chassis, tapis, rouleaux);
 
   // --- Caisses (trois à la fois au plus : en attente, au centre, partie) ----------------------------------------------------------------------
-  const CG = caisseGeo(modele);
+  const CG = modEpoque ? modEpoque.caisseGeoEpoque(modele) : caisseGeo(modele);
   for (const g of [CG.corps.principal, CG.corps.garniture, CG.couvercle.principal, CG.couvercle.garniture, CG.interieur, CG.q]) geo(g);
   const forme = CG.forme;
   // Lot 8l : dessins bois et elite, variantes recrues, legendes, mode et couture retirés (plus utilisés par aucune caisse depuis le lot 8k).
   const corpsJeton = { militaire: '--ouv-militaire', malle: '--ouv-veterans', valise: '--ouv-tenues' }[forme];
   const couvercleJeton = { militaire: '--ouv-militaire-couvercle', malle: `${corpsJeton}-couvercle`, valise: corpsJeton }[forme];
-  const texMetal = T.metal(corpsJeton, 7);
-  const matCorps = mat(new THREE.MeshPhongMaterial({ color: NEUTRE, map: texMetal, shininess: 48, specular: SPEC_METAL }));
-  const matCouvercle = mat(new THREE.MeshPhongMaterial({ color: NEUTRE, map: T.metal(couvercleJeton, 8), shininess: 48, specular: SPEC_METAL }));
-  const matGarniture = mat(new THREE.MeshPhongMaterial({ color: col(forme === 'militaire' ? '--ouv-militaire-arete' : forme === 'valise' ? '--ouv-sangle' : '--ouv-clou'), shininess: 48, specular: SPEC_METAL }));
+  const texEpoque = modEpoque ? modEpoque.texturesEpoque(forme, couleur, Math.min(4, renderer.capabilities.getMaxAnisotropy())) : null;
+  if (texEpoque) nettoyages.push(texEpoque.liberer);
+  const texMetal = texEpoque ? texEpoque.corps : T.metal(corpsJeton, 7);
+  const brillance = texEpoque ? (forme === 'valise' ? 18 : 8) : 48;
+  const matCorps = mat(new THREE.MeshPhongMaterial({ color: NEUTRE, map: texMetal, shininess: brillance, specular: texEpoque ? SPEC_MAT : SPEC_METAL }));
+  const matCouvercle = mat(new THREE.MeshPhongMaterial({ color: NEUTRE, map: texEpoque ? texEpoque.couvercle : T.metal(couvercleJeton, 8), shininess: brillance, specular: texEpoque ? SPEC_MAT : SPEC_METAL }));
+  const jetonGarniture = texEpoque ? modEpoque.JETONS_EPOQUE[forme].garniture : forme === 'militaire' ? '--ouv-militaire-arete' : forme === 'valise' ? '--ouv-sangle' : '--ouv-clou';
+  const matGarniture = mat(new THREE.MeshPhongMaterial({ color: col(jetonGarniture), shininess: texEpoque && forme !== 'cantine' ? 12 : 48, specular: SPEC_METAL }));
   const matInterieur = mat(new THREE.MeshBasicMaterial({ color: col('--ouv-noir') }));
   const texQ = T.question(police);
   const matQ = mat(new THREE.MeshBasicMaterial({ color: col('--ouv-q'), map: texQ, transparent: true, depthWrite: false }));
@@ -342,14 +351,25 @@ export async function creerScene({ canvas, couleur, chrono, reglages, cartes, mo
     new THREE.Mesh(FG.lentille, mat(new THREE.MeshBasicMaterial({ color: NEUTRE, map: T.lentilleVerre() }))),
     new THREE.Mesh(FG.point, mat(new THREE.MeshBasicMaterial({ color: col('--ouv-point') }))),
   ];
-  fusil.add(...meshesFusil);
   // Lueur propre du fusil, des gants et des manches (sans lumière d'appoint) : ils restent lisibles au premier plan (même texture en lueur).
   meshesFusil.slice(0, 4).forEach((m, k) => {
     m.material.emissiveMap = texFusil[k];
     m.material.emissive.setScalar(k === 0 ? 0.08 : 0.12);
   });
+  // Lot 9i : Garand à la place du fusil d'assaut (mêmes gants et manches ; ni lunette ni point rouge) ; bout du canon : celui du Garand.
+  let bout = BOUT;
+  if (modGarand) {
+    const g = await modGarand.creerGarand({ couleur, anisotropie: Math.min(4, renderer.capabilities.getMaxAnisotropy()) });
+    g.geometries.forEach(geo);
+    g.materiaux.forEach(mat);
+    nettoyages.push(() => g.textures.forEach((t) => t.dispose()));
+    for (const k of [0, 1, 4, 5]) meshesFusil[k].visible = false;
+    fusil.add(g.mesh);
+    bout = g.bout;
+  }
+  fusil.add(...meshesFusil.filter((m) => m.visible));
   const flamme = new THREE.Sprite(mat(new THREE.SpriteMaterial({ map: texEtoile, color: col('--ouv-flamme'), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, opacity: 0 })));
-  flamme.position.set(...BOUT).add(new THREE.Vector3(0, 0, -3));
+  flamme.position.set(...bout).add(new THREE.Vector3(0, 0, -3));
   fusil.add(flamme);
   geo(flamme.geometry); // géométrie partagée des sprites de Three.js : libérée aussi (recréée sur la carte à la prochaine ouverture)
   camera.add(fusil);
@@ -554,7 +574,7 @@ export async function creerScene({ canvas, couleur, chrono, reglages, cartes, mo
     ambiance.intensity = AMBIANCE * (1 + 0.5 * s.tir.flamme);
     camera.updateMatrixWorld(true);
     fusil.updateMatrixWorld(true);
-    v1.set(...BOUT);
+    v1.set(...bout);
     fusil.localToWorld(v1);
 
     // Tapis : la bande défile, les rouleaux tournent.
@@ -1083,6 +1103,7 @@ export async function creerScene({ canvas, couleur, chrono, reglages, cartes, mo
     filets.dispose();
     gouttes.dispose();
     T.liberer();
+    for (const f of nettoyages) f();
     // Carte d'ombre : ses textures (couleur et profondeur, Three.js 0.186) ne sont pas comptées libérées avec elle.
     const profondeur = spot.shadow.map?.depthTexture ?? null;
     spot.shadow.dispose();

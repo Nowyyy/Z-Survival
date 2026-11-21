@@ -1,0 +1,37 @@
+{
+  "_provisoire": "Lot 9i (atelier, provisoire jusqu'au « GO 9i » du propriétaire) : décor intérieur d'époque (1942), rien n'est branché sur la partie. couleurs : teintes des matières et couleurs de l'atlas intérieur, dérivées de jetons existants de css/tokens.css (jeton, vers, part : mélange linéaire, comme data/game/decor-epoque.json) ; aucune couleur en dur, aucun jeton nouveau. Modèles, variantes et règles : js/core/interieur-epoque.js ; noms affichés : data/i18n/atelier-interieur.json ; choix : data/game/interieur-epoque-choix.json ; positions : data/game/maps/rez-de-chaussee/interieur-epoque.json ; fiche : Docs/ref/decor-epoque.md (« Intérieur et menu »). reel : dimensions réelles (mètres : longueur, largeur, hauteur) dont s'inspirent les variantes. Caisse médicale : croix blanche sur vert et « MEDICAL » (jamais de croix rouge : emblème protégé). Cartes : relief, routes et rivières inventés ; aucune marque, aucun symbole politique.",
+  "couleurs": {
+    "olive": { "jeton": "--game-tree", "vers": "--game-paint-3", "part": 0.35 },
+    "acier": { "jeton": "--game-metal", "vers": "--game-wall", "part": 0.35 },
+    "bois": { "jeton": "--game-wood-dark", "vers": "--game-wood", "part": 0.35 },
+    "toile": { "jeton": "--game-wreck-hull", "vers": "--game-tree", "part": 0.5 },
+    "cuir": { "jeton": "--game-bark", "vers": "--game-wood-dark", "part": 0.3 },
+    "bakelite": { "jeton": "--game-boot", "vers": "--game-lamp-metal", "part": 0.5 },
+    "couverture": { "jeton": "--game-tree", "vers": "--game-wreck-hull", "part": 0.3 },
+    "couverture-bande": { "jeton": "--game-plank-dark", "vers": "--game-tree", "part": 0.3 },
+    "verre": { "jeton": "--game-lamp-light", "vers": "--game-lamp-core", "part": 0.3 },
+    "verre-coeur": { "jeton": "--game-lamp-core", "part": 0 },
+    "cadran-vitre": { "jeton": "--game-plank", "vers": "--game-wreck-hull", "part": 0.4 },
+    "touche": { "jeton": "--game-pip-off", "vers": "--game-plank", "part": 0.3 },
+    "papier": { "jeton": "--game-plank", "vers": "--game-wreck-hull", "part": 0.35 },
+    "encre": { "jeton": "--game-lamp-metal", "vers": "--game-boot", "part": 0.3 },
+    "relief": { "jeton": "--game-plank-dark", "vers": "--game-rust", "part": 0.3 },
+    "riviere": { "jeton": "--game-paint-2", "vers": "--game-plank", "part": 0.35 },
+    "route": { "jeton": "--game-paint-1", "vers": "--game-plank-dark", "part": 0.45 },
+    "punaise": { "jeton": "--game-paint-1", "vers": "--game-boot", "part": 0.45 },
+    "ficelle": { "jeton": "--game-plank-dark", "vers": "--game-plank", "part": 0.3 },
+    "pansement": { "jeton": "--game-plank", "vers": "--game-pip-on", "part": 0.5 },
+    "medical-vert": { "jeton": "--game-tree", "vers": "--game-zombie", "part": 0.25 },
+    "medical-blanc": { "jeton": "--game-pip-on", "vers": "--game-plank", "part": 0.2 }
+  },
+  "reel": {
+    "radio": { "caisse": [0.48, 0.3, 0.32], "dorsal": [0.3, 0.18, 0.43], "generateur": [0.75, 0.3, 0.32] },
+    "telephone": { "etui": [0.25, 0.2, 0.11], "ouvert": [0.36, 0.25, 0.14], "bobine": [0.4, 0.2, 0.17] },
+    "machine": { "noire": [0.32, 0.32, 0.17], "portable": [0.37, 0.34, 0.19], "papier": [0.32, 0.32, 0.41] },
+    "carte": { "grande": [1.2, 0.02, 0.86], "trois": [1.48, 0.02, 0.86], "ficelles": [1.2, 0.04, 0.86] },
+    "brancard": { "toile": [2.3, 0.58, 0.13], "treteaux": [2.3, 0.62, 0.71], "couverture": [2.3, 0.58, 0.25] },
+    "caisseMedicale": { "une": [0.66, 0.4, 0.36], "pile": [0.68, 0.42, 0.68], "ouverte": [0.66, 0.84, 0.36] },
+    "casques": { "un": [0.29, 0.29, 0.17], "deux": [0.62, 0.45, 0.17], "renverse": [0.36, 0.29, 0.12] },
+    "ampoules": { "fil": [0.1, 0.1, 0.3], "deux": [1.07, 0.1, 0.25], "cage": [0.16, 0.16, 0.3] }
+  }
+}

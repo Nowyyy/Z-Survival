@@ -1,0 +1,145 @@
+/* Lot 9i — Atelier de l'intérieur et du menu de 1942 (page technique) : jetons de tokens.css seulement (aucune couleur ici). Les classes i9-* des
+   dessins du menu (caisses, scènes) prennent des jetons --menu-* existants ; à l'intégration (après « GO 9i »), elles rejoignent css/menu.css. */
+.i9-plan {
+  margin: 0;
+  overflow-x: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+}
+
+.i9-plan svg {
+  display: block;
+  width: 100%;
+  min-width: 36rem;
+  height: auto;
+}
+
+.i9-plan .i9-contour { fill: var(--color-surface-raised); stroke: var(--color-text-muted); stroke-width: 6; }
+.i9-plan .i9-meuble { fill: var(--color-ground-light); stroke: var(--color-border); stroke-width: 2; }
+.i9-plan .i9-escalier { fill: var(--color-ground); stroke: var(--color-border); stroke-width: 1; }
+.i9-plan .i9-fenetre { fill: var(--color-danger); }
+.i9-plan .i9-zone-fenetre { fill: none; stroke: var(--color-danger); stroke-width: 3; stroke-dasharray: 10 8; }
+.i9-plan .i9-lampe { fill: var(--color-money); stroke: var(--color-bg); stroke-width: 3; }
+.i9-plan .i9-passe { fill: var(--color-warning); fill-opacity: 0.6; stroke: var(--color-warning); stroke-width: 3; }
+.i9-plan .i9-libre { fill: var(--color-focus); fill-opacity: 0.35; stroke: var(--color-focus); stroke-width: 3; }
+.i9-plan .i9-etiquette { fill: var(--color-text); font-size: 22px; }
+
+.i9-legende {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+  padding: 0;
+  list-style: none;
+}
+
+.i9-legende li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.i9-pastille {
+  display: inline-block;
+  width: 1rem;
+  height: 1rem;
+  border-radius: 2px;
+}
+
+.i9-p-passe { background: var(--color-warning); }
+.i9-p-libre { background: var(--color-focus); }
+.i9-p-fenetre { background: var(--color-danger); }
+.i9-p-lampe { background: var(--color-money); }
+
+.i9-paire,
+.i9-ouv-planche,
+.i9-caisses,
+.i9-scenes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 18rem), 1fr));
+  gap: var(--space-3);
+}
+
+.i9-scenes,
+.i9-ouv-planche {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 26rem), 1fr));
+}
+
+.i9-paire canvas,
+.i9-ouv-planche canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.i9-caisse-hote {
+  position: relative;
+  aspect-ratio: 150 / 106;
+  padding: var(--space-2);
+  background: var(--menu-nuit);
+  --e3-teinte: var(--rarete-rare);
+}
+
+.i9-caisse-hote svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.i9-scene-hote {
+  position: relative;
+  aspect-ratio: 932 / 318;
+  overflow: hidden;
+  background: var(--menu-nuit);
+}
+
+.i9-scene-hote.i9-chargement {
+  aspect-ratio: 932 / 430;
+  background: linear-gradient(var(--menu-ciel-haut), var(--menu-ciel-bas));
+}
+
+.i9-scene-hote svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* Dessins d'époque du menu (jetons --menu-*). */
+.i9-bois { fill: var(--menu-bois); stroke: var(--menu-bois-sombre); stroke-width: 3; }
+.i9-bois-couvercle { fill: var(--menu-bois-clair); stroke: var(--menu-bois-sombre); stroke-width: 3; }
+.i9-bois-tasseau { fill: var(--menu-bois-clair); stroke: var(--menu-bois-sombre); stroke-width: 1.5; }
+.i9-bois-joint { fill: none; stroke: var(--menu-bois-sombre); stroke-width: 1.5; }
+.i9-corde { fill: none; stroke: var(--menu-classement-rang); stroke-width: 3; stroke-linecap: round; }
+.i9-pochoir { fill: var(--menu-ruban-jaune); font-family: var(--font-label, var(--font-display)); font-size: 10px; letter-spacing: 1px; }
+.i9-cantine { fill: var(--menu-perso-survivant); stroke: var(--menu-perso-jambes); stroke-width: 3; }
+.i9-cantine-couvercle { fill: var(--menu-perso-poche); stroke: var(--menu-perso-jambes); stroke-width: 3; }
+.i9-cantine-joint { fill: none; stroke: var(--menu-perso-jambes); stroke-width: 1.2; }
+.i9-ferrure { fill: none; stroke: var(--menu-clou); stroke-width: 3; stroke-linejoin: round; }
+.i9-ferrure-fine { fill: none; stroke: var(--menu-clou); stroke-width: 2; }
+.i9-nom { fill: var(--menu-texte); font-family: var(--font-label, var(--font-display)); font-size: 7.5px; letter-spacing: 0.5px; }
+.i9-couture { fill: none; stroke: var(--menu-bois-clair); stroke-width: 1.2; stroke-dasharray: 3 2; }
+.i9-coin-cuir { fill: var(--menu-bois-sombre); }
+.i9-orniere { fill: none; stroke: var(--menu-scene-route-trait); stroke-width: 1.6; }
+.i9-poteau { fill: none; stroke: var(--menu-scene-lointain); stroke-width: 3; }
+.i9-chargement .i9-poteau,
+.i9-decor-chargement .i9-poteau { stroke: var(--menu-batiment); stroke-width: 4; }
+.i9-fil { fill: none; stroke: var(--menu-scene-lointain); stroke-width: 0.8; }
+.i9-decor-chargement .i9-fil { stroke: var(--menu-batiment); stroke-width: 1.2; }
+.i9-piquet { fill: none; stroke: var(--menu-scene-lointain); stroke-width: 2; }
+.i9-fil-barbele { fill: none; stroke: var(--menu-scene-lointain); stroke-width: 1; stroke-dasharray: 3 1.5; }
+.i9-decor-chargement .i9-piquet,
+.i9-decor-chargement .i9-fil-barbele { stroke: var(--menu-batiment); }
+
+@media (prefers-reduced-motion: reduce) {
+  .i9-caisse-hote *,
+  .i9-scene-hote * {
+    animation: none !important;
+  }
+}
+
+.i9-plan:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
