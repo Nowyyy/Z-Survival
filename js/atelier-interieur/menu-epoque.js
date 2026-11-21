@@ -5,7 +5,7 @@
 // - Onglet Histoire : sceneJouer (js/menu/jouer.js) reprise, puis voiture → Jeep en flammes, zombies en civil → zombies soldats (casque, capote),
 //   pointillés centraux → ornières ; B : poteaux télégraphiques et barbelés en plus.
 // - Écran de chargement : decorNuit (js/menu/chargement.js) reprise ; B : poteaux et barbelés ; C : plus une Jeep abandonnée et des sacs de sable.
-// Texte inventé (« R. MARCEAU », cantine ; caisse d'équipement sans texte, retour du propriétaire) ; aucune marque, aucun symbole. À l'intégration (après « GO 9i »), ces dessins rejoignent
+// Aucun texte sur les caisses (retours du propriétaire) ; aucune marque, aucun symbole. À l'intégration (après « GO 9i »), ces dessins rejoignent
 // boutique.js, jouer.js et chargement.js ; la partie et le menu ne chargent pas ce module.
 import { caisseSvg } from '../menu/boutique.js';
 import { sceneJouer } from '../menu/jouer.js';
@@ -29,7 +29,6 @@ const point = (x, y, classe, texte, attrs = {}) => {
   return n;
 };
 
-export const TEXTES_MENU = Object.freeze({ cantine: 'R. MARCEAU' }); // retour du propriétaire : aucun texte sur la caisse d'équipement
 export const FORMES_MENU = Object.freeze({ militaire: 'munitions', veterans: 'cantine', tenues: 'valise' });
 
 const DESSINS = {
@@ -55,7 +54,6 @@ const DESSINS = {
     forme('path', { d: 'M6 58 h6 M6 58 v8 h6 M144 58 h-6 M144 58 v8 h-6' }, 'i9-ferrure-fine'),
     forme('rect', { x: 71, y: 37, width: 8, height: 5, rx: 1 }, 'e3-loquet'),
     forme('rect', { x: 8, y: 26, width: 134, height: 12, rx: 2 }, 'i9-cantine-couvercle'),
-    point(75, 35, 'i9-nom', TEXTES_MENU.cantine),
   ],
   valise: () => [
     forme('path', { d: 'M60 34 V26 Q75 20 90 26 V34' }, 'e3-anse'),

@@ -426,7 +426,7 @@ export function modeleCaisseMedicale(variante) {
     caisse('corps', 0, 8);
     m.boite('fond', 'pansement', 'caisse', [-7.6, 7.6], [0, 6.5], [-4.6, 4.6]);
     for (let i = 0; i < 4; i += 1) m.cylindre(`rouleau-${i}`, 'pansement', 'caisse', { r0: 1.6, len: 3, cotes: 6 }, { ry: 90, t: [-5.5 + i * 3.6, 7.6, -1.5] });
-    m.boite('couvercle', 'medical', 'caisse', [-8.5, 8.5], [0, 1.2], [-5.5, 5.5], { t: [0, 0, -12] });
+    m.boite('couvercle', 'medical', 'caisse', [-8.5, 8.5], [0, 1.2], [-5.5, 5.5], { t: [19.5, 0, 0] });
   } else caisse('c0', 0, 10);
   return { modele: m };
 }
@@ -502,12 +502,16 @@ export function lireChoix(json) {
     variantes[type] = CATALOGUE[type].variantes.includes(v) ? v : CATALOGUE[type].defaut;
     gardes[type] = typeof json?.gardes?.[type] === 'boolean' ? json.gardes[type] : true;
   }
-  return { variantes, gardes };
+  const t = json?.taille;
+  return { variantes, gardes, taille: isNum(t) && t >= 1 && t <= 3 ? t : TAILLE_DEFAUT };
 }
 
+// Facteur de taille des objets (1 : dimensions réelles à 28 unités par mètre ; borné de 1 à 3) ; TAILLE_DEFAUT : retour du propriétaire (× 2).
+export const TAILLE_DEFAUT = 2;
+export const taille = (v) => (isNum(v) && v >= 1 && v <= 3 ? v : 1);
 const FACES = Object.freeze({ s: 0, e: 90, n: 180, o: -90 }); // face visible d'une carte (repère du modèle : vers le sud)
-function construire(type, v, { base = 0 } = {}) {
-  if (type === 'radio') return modeleRadio(v, { hMax: Math.max(4, HAUTEUR_MAX - base) });
+function construire(type, v, { base = 0, k = 1 } = {}) {
+  if (type === 'radio') return modeleRadio(v, { hMax: Math.max(4, (HAUTEUR_MAX - base) / k) });
   if (type === 'telephone') return modeleTelephone(v);
   if (type === 'machine') return modeleMachine(v);
   if (type === 'carte') return modeleCarte(v);
@@ -524,12 +528,16 @@ export function objet(type, variante, spec = {}) {
   if (!cat) return null;
   const v = cat.variantes.includes(variante) ? variante : cat.defaut;
   const base = cat.pose === 'meuble' ? Math.max(0, num(spec.base)) : 0;
-  const res = construire(type, v, { base });
+  const k = taille(spec.taille);
+  const res = construire(type, v, { base, k });
   const a = (type === 'carte' ? (FACES[spec.face] ?? 0) : num(spec.cap)) * DEG;
   const x = num(spec.x);
   const y = num(spec.y);
-  const move = (p) => {
-    const q = rotY(p, a);
+  // Taille (retour du propriétaire : objets × 2) : homothétie du modèle ; les ampoules pendent toujours du plafond (70), les cartes restent centrées
+  // à mi-hauteur du mur (34) ; les objets posés grandissent depuis leur support.
+  const ancre = cat.pose === 'plafond' ? HAUTEUR_MAX : cat.pose === 'mur' ? 34 : 0;
+  const move = (p0) => {
+    const q = rotY([p0[0] * k, ancre + (p0[1] - ancre) * k, p0[2] * k], a);
     return [r3(q[0] + x), r3(q[1] + base), r3(q[2] + y)];
   };
   const tris = trianguler(res.modele).map((t) => ({ ...t, p: t.p.map(move), n: rotY(t.n, a).map((c) => Math.round(c * 10000) / 10000) }));
@@ -557,7 +565,7 @@ export function objetsPlaces(doc, { choix, obstacles = {} } = {}) {
     if (!it || !CATALOGUE[it.type] || ch.gardes[it.type] === false || !isNum(it.x) || !isNum(it.y)) continue;
     const floor = it.floor === 'etage' ? 'etage' : 'rdc';
     const porteur = it.sur ? (obstacles[floor] ?? []).find((o) => o.id === it.sur) ?? null : null;
-    const spec = { id: String(it.id ?? it.type), x: it.x, y: it.y, cap: num(it.cap), face: it.face, floor, base: porteur ? num(porteur.hauteur) : 0 };
+    const spec = { id: String(it.id ?? it.type), x: it.x, y: it.y, cap: num(it.cap), face: it.face, floor, base: porteur ? num(porteur.hauteur) : 0, taille: ch.taille ?? TAILLE_DEFAUT };
     const v = CATALOGUE[it.type].variantes.includes(it.variante) ? it.variante : ch.variantes[it.type];
     out.push({ ...objet(it.type, v, spec), spec, sur: it.sur ?? null, porteur });
   }
