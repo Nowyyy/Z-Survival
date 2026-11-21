@@ -282,3 +282,9 @@ version: v0.9
 nom: Décor extérieur de 1942
 description: Dehors, Jeep, Kübelwagen et camion d'époque, chasseur écrasé et parachute dans un arbre, barbelés, hérissons, caisses, trous d'obus et poteaux télégraphiques ; les zombies arrivent comme avant.
 afficher: oui
+
+[lot-9i]
+version: v0.9
+nom: Intérieur et menu de 1942
+description: Poste de commandement et infirmerie de fortune dans le bâtiment, lampe coudée sur la poitrine du soldat, M1 Garand et caisses d'époque dans les ouvertures, scènes du menu en 1942.
+afficher: oui

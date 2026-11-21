@@ -17,6 +17,7 @@ import { buildLayouts, windowsWithGaps } from '../js/core/layout.js';
 import { windowGeometries } from '../js/core/windows.js';
 import { tirsMonde } from '../js/core/tir-traverse.js';
 import { controlePlan, sectionEpoque } from '../js/core/decor-epoque.js';
+import { controlePlan as controleInterieur, obstaclesInterieur, sectionInterieur } from '../js/core/interieur-epoque.js';
 import { recalerObstacles } from '../js/core/collisions-dessin.js';
 import { groundScarBoxes } from '../js/core/epaves.js';
 
@@ -187,6 +188,28 @@ export function generateMapFiles(id = 'rez-de-chaussee') {
     result.lampesReport = { count: conv.lamps.length, triangles, problems: conv.problems, warnings: conv.warnings };
     result.problems.push(...conv.problems.map((v) => `lampes : ${v}`));
   }
+  // Lot 9i : décor intérieur d'époque (interieur-epoque.json de la carte, unités du jeu ; choix : data/game/interieur-epoque-choix.json ; couleurs :
+  // data/game/interieur-epoque.json) : contrôlé sur les mondes d'avant (pièce, fenêtres, portes, escaliers, lampes, interstices, meuble porteur, chemins
+  // des zombies, pour toutes les variantes), puis écrit dans decor.json (clé interieur) ; ses objets solides deviennent des obstacles de leur étage
+  // (kind « epoque », rectangle dessiné), retirés par la partie sous ?test=1&decor=avant. Les tirs suivent tirs-traversables.json (bloc suivant).
+  result.interieurReport = null;
+  const interieurUrl = new URL(`${id}/interieur-epoque.json`, ROOT);
+  if (existsSync(interieurUrl)) {
+    const lireData = (nom) => {
+      const url = new URL(`../${nom}`, ROOT);
+      return existsSync(url) ? JSON.parse(readFileSync(url, 'utf8')) : null;
+    };
+    const lampesListe = result.lampes ? JSON.parse(result.lampes).lampes : [];
+    const ctl = controleInterieur({ mondes: { rdc: out.world, ...(etageWorldOut ? { etage: etageWorldOut } : {}) }, lampes: lampesListe, doc: JSON.parse(readFileSync(interieurUrl, 'utf8')), choixJson: lireData('interieur-epoque-choix.json'), navCfg: lireData('nav.json') });
+    const couleursDefs = lireData('interieur-epoque.json')?.couleurs ?? {};
+    out.decor.interieur = sectionInterieur(ctl, { couleurs: couleursDefs });
+    for (const [f, w] of [['rdc', out.world], ['etage', etageWorldOut]]) if (w) w.obstacles.push(...obstaclesInterieur(out.decor.interieur, f));
+    result.world = `${formatJson(out.world)}\n`;
+    if (etageWorldOut) result.etage = `${formatJson(etageWorldOut)}\n`;
+    result.decor = `${formatJson(out.decor)}\n`;
+    result.interieurReport = { objets: ctl.objets.length, solides: ctl.objets.filter((o) => o.collision).length, triangles: out.decor.interieur.triangles, coupes: Object.values(ctl.chemins).flat().filter((c) => c.coupees > 0).length, detour: Math.max(0, ...Object.values(ctl.chemins).flat().map((c) => c.allongementMax)), problems: ctl.problemes };
+    result.problems.push(...ctl.problemes.map((v) => `intérieur d'époque : ${v}`));
+  }
   // Lot 8j : objets traversables par les tirs (balles, laser) d'après data/game/tirs-traversables.json (liste du propriétaire, par carte et par
   // étage) : identifiants vérifiés (meubles, décor solide, grilles posées dans un mur ; jamais pilier, escalier ni objet de 100 de haut ou plus).
   // Écrit tirs.world.json (jamais édité à la main), lu par la partie (js/core/tir-traverse.js).
@@ -238,7 +261,7 @@ if (isMain) {
   const args = process.argv.slice(2);
   const check = args.includes('--verifie');
   const id = args.find((a) => !a.startsWith('--')) ?? 'rez-de-chaussee';
-  const { world, decor, etage, report, etageReport, problems, decorInterieur, decorReport, mobilier, mobilierReport, wrecksReport, lampes, lampesReport, tirs, tirsReport, decorEpoqueReport, collisionsReport } = generateMapFiles(id);
+  const { world, decor, etage, report, etageReport, problems, decorInterieur, decorReport, mobilier, mobilierReport, wrecksReport, lampes, lampesReport, tirs, tirsReport, decorEpoqueReport, collisionsReport, interieurReport } = generateMapFiles(id);
   const files = [['world.json', world], ['decor.json', decor], ...(etage === null ? [] : [['etage.world.json', etage]]), ...(decorInterieur === null ? [] : [['decor-interieur.world.json', decorInterieur]]), ...(mobilier ? [['mobilier.world.json', mobilier]] : []), ...(lampes ? [['lampes.world.json', lampes]] : []), ...(tirs ? [['tirs.world.json', tirs]] : [])].map(([name, text]) => [name, text, new URL(`${id}/${name}`, ROOT)]);
   if (check) {
     const stale = files.filter(([, text, url]) => !existsSync(url) || readFileSync(url, 'utf8') !== text).map(([name]) => name);
@@ -275,6 +298,7 @@ if (isMain) {
   if (tirsReport) console.log(`Tirs : ${Object.entries(tirsReport.counts).map(([f, t]) => `${f} ${t}`).join(' ; ')} traversables.`);
   for (const c of collisionsReport ?? []) console.log(`Collision recalée sur le dessin (${c.floor}) : ${c.id} ${typeof c.avant === 'number' ? `${c.avant} → ${c.apres} rectangles (marches)` : `${JSON.stringify(c.avant)} → ${JSON.stringify(c.apres)}`}.`);
   if (decorEpoqueReport) console.log(`Décor d'époque : ${decorEpoqueReport.objets} objets dont ${decorEpoqueReport.solides} solides, ${decorEpoqueReport.triangles} triangles ; ${decorEpoqueReport.chemins} chemins de zombies, ${decorEpoqueReport.allonges} allongés, ${decorEpoqueReport.problems.length} problème(s).`);
+  if (interieurReport) console.log(`Intérieur d'époque : ${interieurReport.objets} objets dont ${interieurReport.solides} solides (obstacles kind epoque), ${interieurReport.triangles} triangles ; chemins coupés ${interieurReport.coupes}, détour le plus long ${interieurReport.detour} ; ${interieurReport.problems.length} problème(s).`);
   if (wrecksReport) {
     const { car, helicopter: h } = wrecksReport;
     if (car) console.log(`Épaves : voiture en flammes ${car.id} (${car.x}, ${car.y}), à ${car.gap} du bâtiment.`);

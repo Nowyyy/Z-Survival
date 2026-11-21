@@ -1,6 +1,6 @@
 // Lot 9i (atelier, avant le « GO 9i ») : caisses d'époque des ouvertures en 3D, mêmes dimensions et mêmes places des « ? » que caisseGeo
 // (js/menu/ouverture/modeles.js) : Équipement (modele militaire) → caisse de munitions américaine en bois (planches, tasseaux, poignées de corde,
-// sans texte : retour du propriétaire) ; Personnages (veterans) → cantine de soldat en bois peint à ferrures (nom inventé peint sur le couvercle) ; Cosmétiques
+// sans texte : retour du propriétaire) ; Personnages (veterans) → cantine de soldat en bois peint à ferrures (sans texte : retour du propriétaire) ; Cosmétiques
 // (tenues) → valise de cuir des années 40 (sangles, boucles, coins renforcés, poignée). Textures sur canevas aux jetons --ouv-* ; aucune image,
 // aucune marque, aucun symbole. Chargé à la demande (import dynamique), jamais au démarrage du menu.
 import * as THREE from 'three';
@@ -8,7 +8,6 @@ import { CAISSE, fusion, piece } from './modeles.js';
 
 export const FORMES_EPOQUE = Object.freeze({ militaire: 'munitions', veterans: 'cantine', tenues: 'valise' });
 // Textes peints (inventés, génériques : aucune unité réelle, aucune marque).
-export const TEXTES_EPOQUE = Object.freeze({ cantine: 'PVT  R. MARCEAU' }); // caisse de munitions sans texte (retour du propriétaire)
 // Jetons : corps (texture), garniture (couleur unie).
 export const JETONS_EPOQUE = Object.freeze({
   munitions: { corps: '--ouv-munitions', garniture: '--ouv-corde' },
@@ -95,8 +94,7 @@ const h01 = (k, j) => {
   return x - Math.floor(x);
 };
 
-// Textures d'une forme : { corps, couvercle (CanvasTexture), liberer() }. Les faces des boîtes reçoivent la texture entière (étirée) : les textes sont
-// dessinés resserrés d'après le rapport de la face avant (150 × 62) ou du dessus (150 × 80).
+// Textures d'une forme : { corps, couvercle (CanvasTexture), liberer() } ; aucun texte sur les caisses (retours du propriétaire).
 export function texturesEpoque(forme, couleur, anisotropie = 1) {
   const textures = [];
   const garder = (c) => {
@@ -128,16 +126,6 @@ export function texturesEpoque(forme, couleur, anisotropie = 1) {
     }
     ctx.globalAlpha = 1;
   };
-  const texte = (ctx, lignes, y0, pas, taille, jeton, resserre) => {
-    ctx.save();
-    ctx.fillStyle = couleur(jeton);
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.font = `700 ${taille}px Barlow, sans-serif`;
-    ctx.scale(resserre, 1);
-    lignes.forEach((l, i) => ctx.fillText(l, 128 / resserre, y0 + i * pas));
-    ctx.restore();
-  };
   const [c1, x1] = toile(256, 256);
   const [c2, x2] = toile(256, 256);
   if (forme === 'munitions') {
@@ -147,13 +135,6 @@ export function texturesEpoque(forme, couleur, anisotropie = 1) {
   } else if (forme === 'cantine') {
     planches(x1, '--ouv-cantine', '--ouv-cantine-clair', '--ouv-cantine-sombre', 4, 17);
     planches(x2, '--ouv-cantine', '--ouv-cantine-clair', '--ouv-cantine-sombre', 4, 19);
-    // Nom peint à la main sur le couvercle (blanc cassé), un peu de travers.
-    x2.save();
-    x2.translate(128, 128);
-    x2.rotate(-0.03);
-    x2.translate(-128, -128);
-    texte(x2, [TEXTES_EPOQUE.cantine], 128, 0, 34, '--ouv-nom', 1 / 1.9);
-    x2.restore();
   } else {
     for (const [ctx, g] of [[x1, 23], [x2, 29]]) {
       ctx.fillStyle = couleur('--ouv-cuir');

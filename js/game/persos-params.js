@@ -46,5 +46,7 @@ export function readPersosParams(search, choices = null) {
   // Lot 5e : tous les personnages sont des personnages v2 ; le chargeur est donc toujours actif.
   // Lot 9e : ?test=1&corps=avant : corps d'avant le corps long (référence de la trace ; jamais mémorisé).
   const corpsAvant = q.get('test') === '1' && q.get('corps') === 'avant';
-  return { perso, sang, usure: usure === 'auto' ? 'auto' : Number(usure), slots, v2: true, active: true, ...(corpsAvant ? { corpsAvant } : {}) };
+  // Lot 9i : ?test=1&decor=avant : joueur sans la lampe coudée (référence des budgets de rendu d'avant le lot ; jamais mémorisé).
+  const sansLampe = q.get('test') === '1' && q.get('decor') === 'avant';
+  return { perso, sang, usure: usure === 'auto' ? 'auto' : Number(usure), slots, v2: true, active: true, ...(corpsAvant ? { corpsAvant } : {}), ...(sansLampe ? { sansLampe } : {}) };
 }

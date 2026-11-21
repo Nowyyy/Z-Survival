@@ -93,7 +93,9 @@
     { "id": "Q4", "x": 1070, "y": 1350, "w": 100, "h": 80, "hauteur": 40, "kind": "table", "provisional": true },
     { "id": "Q5", "x": 1070, "y": 1650, "w": 80, "h": 60, "hauteur": 45, "kind": "caisse", "provisional": true },
     { "id": "Q6", "x": 1650, "y": 2225, "w": 60, "h": 60, "hauteur": 45, "kind": "caisse", "provisional": true },
-    { "id": "bidon-etage", "x": 2110, "y": 2400, "w": 20, "h": 20, "hauteur": 28, "kind": "bidon" }
+    { "id": "bidon-etage", "x": 2110, "y": 2400, "w": 20, "h": 20, "hauteur": 28, "kind": "bidon" },
+    { "id": "brancard-etage-brancard", "x": 1616, "y": 2160, "w": 34, "h": 128, "hauteur": 14, "kind": "epoque" },
+    { "id": "caisse-medicale-etage-caisse", "x": 1617, "y": 2138, "w": 38, "h": 22, "hauteur": 20, "kind": "epoque" }
   ],
   "generation": {
     "shifts": [

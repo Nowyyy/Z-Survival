@@ -871,7 +871,7 @@
       "dependances": ["armes", "economie", "graphismes", "interface", "noyau", "personnages", "publication", "rendu", "sons", "textes"],
       "vitest": ["tests/unit/cache-adresses.test.js", "tests/unit/menu-etat.test.js", "tests/unit/infini-9a.test.js", "tests/unit/menu-mondes.test.js", "tests/unit/equipement.test.js", "tests/unit/caisses.test.js", "tests/unit/caisses-pitie.test.js",
         "tests/unit/menu-garde.test.js", "tests/unit/profil-garde.test.js", "tests/unit/ouverture.test.js", "tests/unit/studio.test.js", "tests/unit/sons-menu.test.js", "tests/unit/musique-menu.test.js", "tests/unit/sons-volumes.test.js"],
-      "e2e": ["tests/e2e/menu.spec.js", "tests/e2e/menu-onglets.spec.js", "tests/e2e/options-menu.spec.js", "tests/e2e/personnage.spec.js", "tests/e2e/boutique.spec.js", "tests/e2e/caisses-pitie.spec.js", "tests/e2e/ouverture.spec.js", "tests/e2e/studio.spec.js", "tests/e2e/sons-menu-musique.spec.js", "tests/e2e/sons-menu.spec.js", "tests/e2e/sons-volumes.spec.js"],
+      "e2e": ["tests/e2e/menu.spec.js", "tests/e2e/menu-epoque.spec.js", "tests/e2e/menu-onglets.spec.js", "tests/e2e/options-menu.spec.js", "tests/e2e/personnage.spec.js", "tests/e2e/boutique.spec.js", "tests/e2e/caisses-pitie.spec.js", "tests/e2e/ouverture.spec.js", "tests/e2e/studio.spec.js", "tests/e2e/sons-menu-musique.spec.js", "tests/e2e/sons-menu.spec.js", "tests/e2e/sons-volumes.spec.js"],
       "complet": []
     },
     {
@@ -991,7 +991,6 @@
         "js/atelier-interieur/**",
         "data/i18n/atelier-interieur.json",
         "css/atelier-interieur.css",
-        "data/menu/caisses-epoque-choix.json",
         "js/armes/atelier.js",
         "js/armes/rendu.js",
         "js/armes/tenue.js",

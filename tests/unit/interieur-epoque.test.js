@@ -11,7 +11,7 @@ import {
 import { LENTILLE, PIECES_TL122, avecLampeCoudee } from '../../js/core/lampe-coudee.js';
 import { garandOuverture } from '../../js/menu/ouverture/garand.js';
 import { CAISSE, caisseGeo } from '../../js/menu/ouverture/modeles.js';
-import { FORMES_EPOQUE, JETONS_EPOQUE, TEXTES_EPOQUE, caisseGeoEpoque } from '../../js/menu/ouverture/caisses-epoque.js';
+import { FORMES_EPOQUE, JETONS_EPOQUE, caisseGeoEpoque } from '../../js/menu/ouverture/caisses-epoque.js';
 import { lireArmes, lireChoix as lireChoixArmes } from '../../js/core/armes/armes.js';
 
 const lire = (p) => JSON.parse(readFileSync(p, 'utf8'));
@@ -118,7 +118,9 @@ describe('atlas, couleurs, contenu', () => {
     for (const f of ['js/core/interieur-epoque.js', 'js/core/lampe-coudee.js', 'js/menu/ouverture/caisses-epoque.js', 'js/menu/ouverture/garand.js', 'js/atelier-interieur/menu-epoque.js']) {
       expect(code(f)).not.toMatch(/croix-rouge|red cross|svastika|swastika|hakenkreuz|\bSS\b|Wehrmacht|Coca|Zippo|Motorola|Remington|Underwood/i);
     }
-    expect(Object.values(TEXTES_EPOQUE).flat().join(' ')).toMatch(/^[A-Z0-9 .-]+$/);
+    // Retours du propriétaire : aucun texte sur les caisses d'époque (menu et 3D).
+    expect(code('js/menu/ouverture/caisses-epoque.js')).not.toMatch(/fillText|strokeText/);
+    expect(code('js/atelier-interieur/menu-epoque.js')).not.toMatch(/'i9-(nom|pochoir)'/);
   });
 });
 
@@ -129,12 +131,13 @@ describe('placement et chemins des zombies (deux étages)', () => {
     expect(ctl.objets.length).toBe(placement.objets.length);
     expect(new Set(ctl.objets.map((o) => o.floor))).toEqual(new Set(['rdc', 'etage']));
   });
-  it('chemins depuis chaque fenêtre : aucune cellule coupée, allongement au plus de 40 unités', () => {
+  it('chemins depuis chaque fenêtre : aucune cellule coupée ; détour au plus de 130 unités (contourner un brancard de 128) et de 30 en moyenne', () => {
     expect(ctl.chemins.rdc).toHaveLength(7);
     expect(ctl.chemins.etage).toHaveLength(7);
     for (const l of Object.values(ctl.chemins)) for (const c of l) {
       expect(c.coupees, c.fenetre).toBe(0);
-      expect(c.allongementMax, c.fenetre).toBeLessThanOrEqual(40);
+      expect(c.allongementMax, c.fenetre).toBeLessThanOrEqual(130);
+      expect(c.allongementMoyen, c.fenetre).toBeLessThanOrEqual(30);
     }
   });
   it('objets « sur meuble » dans le dessus de leur meuble ; cartes contre un mur ; poste de commandement et infirmerie aux deux étages', () => {
@@ -160,6 +163,26 @@ describe('placement et chemins des zombies (deux étages)', () => {
     const f = facesMurs(mondes.rdc.contour);
     expect(f[0].y).toBeGreaterThanOrEqual(900);
     expect(f[1].x).toBeLessThanOrEqual(1490);
+  });
+});
+
+describe('taille des objets (retour du propriétaire : × 2)', () => {
+  it('homothétie : emprise doublée ; posés depuis leur support, ampoules depuis le plafond, cartes autour de 34 ; toujours sous 70', () => {
+    expect(lireChoix(choixJson).taille).toBe(2);
+    expect(lireChoix(null).taille).toBe(2);
+    expect(lireChoix({ taille: 9 }).taille).toBe(2);
+    const a = objet('caisseMedicale', 'une', { taille: 1 });
+    const b = objet('caisseMedicale', 'une', { taille: 2 });
+    expect(b.emprise.w).toBeGreaterThanOrEqual(2 * a.emprise.w - 2);
+    expect(b.hauteur).toBe(2 * a.hauteur);
+    expect(objet('ampoules', 'fil', { taille: 2 }).hauteur).toBeGreaterThanOrEqual(69);
+    expect(objet('ampoules', 'fil', { taille: 2 }).hauteur).toBeLessThanOrEqual(70);
+    const carte = objet('carte', 'grande', { taille: 2 });
+    const ys = carte.triangles.flatMap((t) => t.p.map((p) => p[1]));
+    expect(Math.min(...ys)).toBeGreaterThanOrEqual(6);
+    expect(Math.max(...ys)).toBeLessThanOrEqual(60);
+    for (const type of TYPES) for (const v of CATALOGUE[type].variantes) expect(objet(type, v, { taille: 2, base: 40 }).hauteur, `${type}/${v}`).toBeLessThanOrEqual(70);
+    for (const v of CATALOGUE.brancard.variantes) expect(objet('brancard', v, { taille: 2 }).rects[0].hauteur).toBeLessThan(HAUTEUR_ARME);
   });
 });
 
@@ -237,27 +260,28 @@ describe('ouvertures : Garand et caisses d\'époque', () => {
   });
   it('jetons --ouv-* d\'époque déclarés dans ouvertures.css', () => {
     const css = readFileSync('css/ouvertures.css', 'utf8');
-    for (const j of ['--ouv-munitions', '--ouv-corde', '--ouv-cantine', '--ouv-ferrure', '--ouv-nom', '--ouv-cuir', '--ouv-sangle-cuir', '--ouv-boucle', '--ouv-arm-noyer', '--ouv-arm-phosphate', '--ouv-arm-cuir']) expect(css).toContain(`${j}:`);
+    for (const j of ['--ouv-munitions', '--ouv-corde', '--ouv-cantine', '--ouv-ferrure', '--ouv-cuir', '--ouv-sangle-cuir', '--ouv-boucle', '--ouv-arm-noyer', '--ouv-arm-phosphate', '--ouv-arm-cuir']) expect(css).toContain(`${j}:`);
   });
 });
 
-describe('jeu et menu inchangés avant le GO', () => {
+describe('modules du lot 9i dans la partie et le menu', () => {
   const fichiers = (dir) => readdirSync(dir, { recursive: true }).filter((f) => f.endsWith('.js')).map((f) => `${dir}/${f}`);
-  it('ni la partie ni le menu n\'importent les modules du lot 9i (scène des ouvertures : import dynamique sous l\'option epoque seulement)', () => {
-    const interdits = /interieur-epoque|lampe-coudee|caisses-epoque|garand\.js|atelier-interieur/;
+  it('la partie n\'importe que les modules purs (intérieur, lampe coudée) aux endroits prévus ; jamais l\'atelier ; le menu charge les modules 3D des ouvertures à la demande seulement', () => {
+    const permis = { 'js/game/world.js': ['interieur-epoque'], 'js/game/persos-runtime.js': ['lampe-coudee'], 'js/core/decor.js': [] };
+    const motif = /interieur-epoque|lampe-coudee|caisses-epoque|ouverture\/garand\.js|\.\/garand\.js|atelier-interieur/g;
     for (const f of [...fichiers('js/game'), ...fichiers('js/menu'), 'js/main.js', ...fichiers('js/core')]) {
       if (f === 'js/core/interieur-epoque.js' || f === 'js/core/lampe-coudee.js' || f.endsWith('caisses-epoque.js') || f.endsWith('ouverture/garand.js')) continue;
       const src = code(f);
       if (f.endsWith('ouverture/scene.js')) {
-        expect(src).toMatch(/epoque\?\.caisses === true \? await import\('\.\/caisses-epoque\.js'\)/);
-        expect(src).toMatch(/epoque\?\.arme === 'garand' \? await import\('\.\/garand\.js'\)/);
+        expect(src).toMatch(/await import\('\.\/caisses-epoque\.js'\)/);
+        expect(src).toMatch(/await import\('\.\/garand\.js'\)/);
         expect(src).not.toMatch(/^import .*(caisses-epoque|garand)/m);
         continue;
       }
-      const imports = [...src.matchAll(/(?:from|import\()\s*'([^']+)'/g)].map((m) => m[1]).join(' ');
-      expect(interdits.test(imports), f).toBe(false);
+      const statiques = [...src.matchAll(/^import [^;]*from '([^']+)'/gm)].map((m) => m[1]).join(' ');
+      const trouves = [...new Set((statiques.match(motif) ?? []))];
+      expect(trouves, f).toEqual(permis[f] ?? []);
+      expect(/atelier-interieur/.test(statiques), f).toBe(false);
     }
-    // Le menu ne passe jamais l'option epoque à la scène (ouverture.js).
-    expect(code('js/menu/ouverture/ouverture.js')).not.toMatch(/epoque/);
   });
 });

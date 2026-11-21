@@ -14,8 +14,7 @@ import { slotsWithEpoch } from '../core/persos-variants.js';
 import { avecLampeCoudee, PIECES_TL122 } from '../core/lampe-coudee.js';
 import { chronologie, lireOuvertures } from '../core/ouverture.js';
 import { CATALOGUE, HAUTEUR_ARME, MATIERES, TEXTES, TYPES, atlasInterieur, controlePlan, couleursEpoque, lireChoix, objet } from '../core/interieur-epoque.js';
-import { TEXTES_EPOQUE } from '../menu/ouverture/caisses-epoque.js';
-import { TEXTES_MENU, VARIANTES_CHARGEMENT, VARIANTES_HISTOIRE, caisseSvg, caisseSvgEpoque, decorNuitEpoque, sceneJouerEpoque } from './menu-epoque.js';
+import { VARIANTES_CHARGEMENT, VARIANTES_HISTOIRE, caisseSvg, caisseSvgEpoque } from './menu-epoque.js';
 import { sceneJouer } from '../menu/jouer.js';
 import { decorNuit } from '../menu/chargement.js';
 
@@ -47,7 +46,7 @@ const palette = readPalette();
 const lookup = createTokenLookup();
 const couleurs = couleursEpoque(donnees.couleurs, lookup);
 const choix0 = lireChoix(choixJson);
-const etat = { type: TYPES[0], variantes: { ...choix0.variantes }, gardes: { ...choix0.gardes }, lumiere: 'lampe', rotation: !reduit, yaw: 0.7 };
+const etat = { type: TYPES[0], variantes: { ...choix0.variantes }, gardes: { ...choix0.gardes }, taille: choix0.taille, lumiere: 'lampe', rotation: !reduit, yaw: 0.7 };
 // Choix du menu (data/menu/caisses-epoque-choix.json ; invalide = défaut).
 function lireChoixMenu(j) {
   const ok = (v, liste, d) => (liste.includes(v) ? v : d);
@@ -195,7 +194,7 @@ function vider(g) {
 function poser(type, variante) {
   vider(groupe);
   const pose = CATALOGUE[type].pose;
-  const info = objet(type, variante, { x: 0, y: 0, base: pose === 'meuble' ? 40 : 0, face: 's' });
+  const info = objet(type, variante, { x: 0, y: 0, base: pose === 'meuble' ? 40 : 0, face: 's', taille: etat.taille });
   const res = maillage(info.triangles);
   groupe.add(res.mesh);
   table.visible = pose === 'meuble';
@@ -253,7 +252,7 @@ const reelDe = (type, v) => {
 };
 const toutes = [];
 for (const type of TYPES) for (const v of CATALOGUE[type].variantes) {
-  const ob = objet(type, v, { x: 0, y: 0, base: 0 });
+  const ob = objet(type, v, { x: 0, y: 0, base: 0, taille: etat.taille });
   toutes.push({ type, variante: v, triangles: ob.compte, budget: CATALOGUE[type].budget, hauteur: ob.hauteur, emprise: ob.emprise, collision: ob.collision, tirs: tirsDe(ob), lueur: ob.lueur, rects: ob.rects.map((r) => ({ w: r.w, h: r.h, hauteur: r.hauteur, tirs: r.tirs })) });
 }
 const remplir = (id, lignes) => {
@@ -274,7 +273,7 @@ remplir('table-budget', toutes.map((r) => [nomType(r.type), nomVariante(r.type, 
 function fiche(info) {
   $('variante-fiche').textContent = t('dev.interieur.fiche', { v: nomVariante(etat.type, etat.variantes[etat.type]), reel: reelDe(etat.type, etat.variantes[etat.type]), jeu: info.emprise ? `${info.emprise.w} × ${info.emprise.h}` : '–', h: info.hauteur - info.base, tris: info.compte, budget: CATALOGUE[etat.type].budget, tirs: tirsDe(info), collision: t(info.collision ? 'dev.interieur.collision.oui' : 'dev.interieur.collision.non'), pose: t(`dev.interieur.pose.${CATALOGUE[etat.type].pose}`) });
 }
-const propositionInterieur = () => ({ variantes: { ...etat.variantes }, gardes: { ...etat.gardes } });
+const propositionInterieur = () => ({ taille: etat.taille, variantes: { ...etat.variantes }, gardes: { ...etat.gardes } });
 const propositionMenu = () => ({ ...menu });
 function majChoix() {
   $('choix-interieur').textContent = JSON.stringify(propositionInterieur(), null, 2);
@@ -498,16 +497,15 @@ function dessinerMenu() {
     fig.append(box, cap);
     scenes.append(fig);
   };
-  ajouter(sceneJouer(etatJouer), t('dev.interieur.scenes.histoire', { version: t('dev.interieur.avant') }), false, 'histoire-actuelle');
-  for (const v of VARIANTES_HISTOIRE) ajouter(sceneJouerEpoque(etatJouer, v), t('dev.interieur.scenes.histoire', { version: t(`dev.interieur.scenes.histoire.${v}`) }), false, `histoire-${v}`);
-  ajouter(decorNuit(), t('dev.interieur.scenes.chargement', { version: t('dev.interieur.avant') }), true, 'chargement-actuelle');
-  for (const v of VARIANTES_CHARGEMENT) ajouter(decorNuitEpoque(v), t('dev.interieur.scenes.chargement', { version: t(`dev.interieur.scenes.chargement.${v}`) }), true, `chargement-${v}`);
+  // Après le « GO 9i » : scènes intégrées au menu (onglet Histoire « B », chargement « C »), dessinées par les modules du menu.
+  ajouter(sceneJouer(etatJouer), t('dev.interieur.scenes.histoire', { version: t('dev.interieur.scenes.histoire.B') }), false, 'histoire-B');
+  ajouter(decorNuit(), t('dev.interieur.scenes.chargement', { version: t('dev.interieur.scenes.chargement.C') }), true, 'chargement-C');
 }
 
 // Revue du contenu.
 {
   const ul = $('contenu-liste');
-  const textes = [TEXTES.medical, TEXTES_EPOQUE.cantine, TEXTES_MENU.cantine].map((s) => `« ${s.replace(/\s+/g, ' ')} »`).join(', ');
+  const textes = [TEXTES.medical].map((s) => `« ${s.replace(/\s+/g, ' ')} »`).join(', ');
   for (const [cle, p] of [['dev.interieur.contenu.medical'], ['dev.interieur.contenu.textes', { textes }], ['dev.interieur.contenu.cartes'], ['dev.interieur.contenu.interdits'], ['dev.interieur.contenu.images'], ['dev.interieur.contenu.lumiere']]) {
     const li = document.createElement('li');
     li.textContent = t(cle, p);

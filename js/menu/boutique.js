@@ -85,19 +85,64 @@ const DESSINS = {
     forme('path', { d: 'M12 46 V43 Q12 34 21 34 H24 M138 46 V43 Q138 34 129 34 H126 M12 80 V83 Q12 92 21 92 H24 M138 80 V83 Q138 92 129 92 H126' }, 'e3-coin-valise'),
   ],
 };
+// Lot 9i (choix du propriétaire, data/menu/caisses-epoque-choix.json) : caisses de 1942, sans texte : caisse de munitions américaine en bois (Équipement :
+// planches, tasseaux, poignées de corde), cantine de soldat à ferrures (Personnages), valise de cuir des années 40 (Cosmétiques : coins, sangles, boucles).
+// Même cadre, mêmes rayons, mêmes « ? » lumineux et mêmes animations que les dessins d'avant ; couleurs : classes e3-ep-* (jetons --menu-*).
+const DESSINS_EPOQUE = {
+  munitions: () => [
+    // Poignées de corde en boucle aux deux bouts.
+    forme('path', { d: 'M12 50 C2 52 2 70 12 72 M138 50 C148 52 148 70 138 72' }, 'e3-ep-corde'),
+    forme('rect', { x: 12, y: 36, width: 126, height: 56, rx: 1 }, 'e3-ep-bois'),
+    forme('path', { d: 'M12 55 H138 M12 74 H138' }, 'e3-ep-bois-joint'),
+    forme('rect', { x: 12, y: 36, width: 9, height: 56 }, 'e3-ep-bois-tasseau'),
+    forme('rect', { x: 129, y: 36, width: 9, height: 56 }, 'e3-ep-bois-tasseau'),
+    forme('rect', { x: 12, y: 82, width: 126, height: 5 }, 'e3-bande'),
+    forme('rect', { x: 8, y: 25, width: 134, height: 13, rx: 1 }, 'e3-ep-bois-couvercle'),
+    forme('path', { d: 'M8 31.5 H142' }, 'e3-ep-bois-joint'),
+    forme('rect', { x: 38, y: 24, width: 8, height: 15 }, 'e3-ep-bois-tasseau'),
+    forme('rect', { x: 104, y: 24, width: 8, height: 15 }, 'e3-ep-bois-tasseau'),
+  ],
+  cantine: () => [
+    forme('rect', { x: 12, y: 36, width: 126, height: 56, rx: 2 }, 'e3-ep-cantine'),
+    forme('path', { d: 'M12 50 H138 M12 64 H138 M12 78 H138' }, 'e3-ep-cantine-joint'),
+    forme('rect', { x: 10, y: 37, width: 130, height: 3 }, 'e3-bande'),
+    // Cornières, poignées latérales, moraillon.
+    forme('path', { d: 'M12 82 V92 H22 M138 82 V92 H128 M12 46 V36 H22 M138 46 V36 H128' }, 'e3-ep-ferrure'),
+    forme('path', { d: 'M6 58 h6 M6 58 v8 h6 M144 58 h-6 M144 58 v8 h-6' }, 'e3-ep-ferrure-fine'),
+    forme('rect', { x: 71, y: 37, width: 8, height: 5, rx: 1 }, 'e3-loquet'),
+    forme('rect', { x: 8, y: 26, width: 134, height: 12, rx: 2 }, 'e3-ep-cantine-couvercle'),
+  ],
+  valise: () => [
+    forme('path', { d: 'M60 34 V26 Q75 20 90 26 V34' }, 'e3-anse'),
+    forme('rect', { x: 12, y: 34, width: 126, height: 58, rx: 12 }, 'e3-valise'),
+    forme('rect', { x: 17, y: 39, width: 116, height: 48, rx: 9 }, 'e3-ep-couture'),
+    forme('rect', { x: 12, y: 60, width: 126, height: 3 }, 'e3-bande'),
+    // Coins de cuir plus sombre, deux sangles à boucle, serrures.
+    forme('path', { d: 'M12 50 V46 Q12 34 24 34 H28 V40 H22 Q18 40 18 46 V50Z M138 50 V46 Q138 34 126 34 H122 V40 H128 Q132 40 132 46 V50Z M12 76 V80 Q12 92 24 92 H28 V86 H22 Q18 86 18 80 V76Z M138 76 V80 Q138 92 126 92 H122 V86 H128 Q132 86 132 80 V76Z' }, 'e3-ep-coin-cuir'),
+    forme('rect', { x: 38, y: 34, width: 9, height: 58 }, 'e3-sangle'),
+    forme('rect', { x: 103, y: 34, width: 9, height: 58 }, 'e3-sangle'),
+    forme('rect', { x: 36, y: 68, width: 13, height: 10, rx: 1 }, 'e3-boucle'),
+    forme('rect', { x: 101, y: 68, width: 13, height: 10, rx: 1 }, 'e3-boucle'),
+    forme('rect', { x: 60, y: 31, width: 6, height: 5, rx: 1 }, 'e3-loquet'),
+    forme('rect', { x: 84, y: 31, width: 6, height: 5, rx: 1 }, 'e3-loquet'),
+  ],
+};
 // Places des « ? » par dessin : grand (y de la ligne de base), petits (x, x, y).
 const POINTS = { militaire: [70, 44, 106, 64], malle: [70, 36, 98, 64], valise: [72, 25, 125, 58] };
+const POINTS_EPOQUE = { militaire: [70, 44, 106, 64], malle: [70, 36, 112, 66], valise: [72, 25, 125, 58] };
 // Forme de chaque dessin (lot 8l : les seuls encore acceptés par js/core/caisses.js).
 const FORMES = { militaire: 'militaire', veterans: 'malle', tenues: 'valise' };
-export function caisseSvg(modele = 'militaire') {
+// Lot 9i : epoque (choix du propriétaire) : dessins de 1942 (DESSINS_EPOQUE, mêmes formes de cadre) ; sinon les dessins d'avant.
+const NOMS_EPOQUE = Object.freeze({ militaire: 'munitions', malle: 'cantine', valise: 'valise' });
+export function caisseSvg(modele = 'militaire', { epoque = false } = {}) {
   const m = FORMES[modele] ? modele : 'militaire';
   const f = FORMES[m];
-  const [y, x1, x2, y2] = POINTS[f];
-  const svg = forme('svg', { viewBox: '0 -10 150 106', 'aria-hidden': 'true', focusable: 'false', preserveAspectRatio: 'xMidYMax meet', 'data-modele': m }, `e3-caisse e3-caisse-${m}`);
+  const [y, x1, x2, y2] = (epoque ? POINTS_EPOQUE : POINTS)[f];
+  const svg = forme('svg', { viewBox: '0 -10 150 106', 'aria-hidden': 'true', focusable: 'false', preserveAspectRatio: 'xMidYMax meet', 'data-modele': m, ...(epoque ? { 'data-epoque': NOMS_EPOQUE[f] } : {}) }, `e3-caisse e3-caisse-${m}`);
   svg.append(
     groupe('e3-rayons', forme('path', { d: 'M40 30 L20 -6 L55 -6 Z M75 30 L66 -10 L84 -10 Z M110 30 L95 -6 L130 -6 Z' })),
     groupe('e3-tremble', groupe('e3-flotte',
-      ...DESSINS[f](),
+      ...(epoque ? DESSINS_EPOQUE[NOMS_EPOQUE[f]] : DESSINS[f])(),
       // Grand « ? » lumineux : un halo de la teinte (trait large et transparent, sans filtre) sous le « ? » clair ; il pulse (e3-lueur).
       groupe('e3-lueur', point(75, y, 'e3-q e3-q-halo', '?'), point(75, y, 'e3-q', '?')),
       point(x1, y2, 'e3-q e3-q-petit', '?'),
@@ -147,10 +192,11 @@ export const avantMinuit = (d) => new Date(d.getFullYear(), d.getMonth(), d.getD
 // maintenant() (date de l'appareil ; les tests la fixent par l'horloge du navigateur) }.
 // Retour du propriétaire (latence au premier toucher sur iPhone) : données demandées dès que le doigt se pose sur l'onglet (menu.js, precharger).
 let chargement = null;
-export const precharger = () => (chargement ??= Promise.all([chargerEquipement(), json('data/menu/caisses.json'), json('data/menu/cosmetiques.json')]));
+export const precharger = () => (chargement ??= Promise.all([chargerEquipement(), json('data/menu/caisses.json'), json('data/menu/cosmetiques.json'), json('data/menu/caisses-epoque-choix.json')])); // lot 9i : choix d'époque
 
 export async function ecranBoutique({ t, bandeau, root, rootDialogue, surVue = () => {}, maintenant = () => new Date() }) {
-  const [eq, donnees, cosm] = await precharger();
+  const [eq, donnees, cosm, choixEpoque] = await precharger();
+  const caissesEpoque = choixEpoque?.caisses !== 'actuelles'; // lot 9i : caisses de 1942 (choix du propriétaire ; fichier illisible : époque)
   const cat = { ...eq.cat, cosmetiques: lireCosmetiques(cosm, eq.cat.raretes) };
   const { caisses } = lireCaisses(donnees, cat);
   const { regles } = lireOffres(donnees, cat);
@@ -334,7 +380,7 @@ export async function ecranBoutique({ t, bandeau, root, rootDialogue, surVue = (
     lien.append(pc, Object.assign(el('span', ['e3-lien-nom']), { textContent: t('game.menu.boutique.chances') }));
     lien.addEventListener('click', () => ouvrirChances(c, lien));
     const raison = el('span', ['sr-only'], { id: `menu-caisse-${c.id}-raison` });
-    li.append(el('span', ['e3-carte-bande'], { 'aria-hidden': 'true' }), caisseSvg(c.modele), nom, contenuCaisse(c), actions, lien, raison);
+    li.append(el('span', ['e3-carte-bande'], { 'aria-hidden': 'true' }), caisseSvg(c.modele, { epoque: caissesEpoque }), nom, contenuCaisse(c), actions, lien, raison);
     boutons.set(c.id, { un, dix, chances: lien, raison, caisse: c });
     return li;
   }

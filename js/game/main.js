@@ -216,6 +216,11 @@ export async function demarrerPartie() {
   // réglage de test, jamais mémorisé : référence de la trace logique.
   const decorAvant = testMode && query.get('decor') === 'avant';
   if (decorAvant) delete decor.epoque;
+  // Lot 9i : decor=avant vaut aussi pour l'intérieur : sans les objets d'époque (clé interieur de decor.json) ni leurs obstacles (kind « epoque »).
+  if (decorAvant) {
+    delete decor.interieur;
+    for (const w of [world, upperWorld]) if (w && Array.isArray(w.obstacles)) w.obstacles = w.obstacles.filter((o) => o.kind !== 'epoque');
+  }
   const layouts = buildLayouts({ rdc: { world, decor }, etage: upperWorld ? { world: upperWorld } : null, zones }, { empty: emptyMode, slack: camera.slack });
   const layout = layouts.rdc;
 
