@@ -477,6 +477,30 @@ export function modeleAmpoules(variante) {
   return { modele: m };
 }
 
+// Table de 1942 (retour du propriétaire : « une vraie table ») : dessinée à la place d'un meuble existant (même rectangle, même hauteur : sa collision
+// et ses tirs ne changent pas) ; plateau de planches, quatre pieds et traverses (bois) ou pieds en X repliables (pliante). w, d : emprise ; h : hauteur.
+export function modeleTable(variante, { w = 100, d = 60, h = 40 } = {}) {
+  const v = ['bois', 'pliante'].includes(variante) ? variante : 'bois';
+  const m = modele();
+  const [x0, x1, z0, z1] = [-w / 2, w / 2, -d / 2, d / 2];
+  const n = Math.max(2, Math.round(d / 18));
+  for (let i = 0; i < n; i += 1) m.boite(`planche-${i}`, 'bois', 'deco', [x0, x1], [h - 3, h], [z0 + (i * d) / n + 0.3, z0 + ((i + 1) * d) / n - 0.3]);
+  m.boite('ceinture-n', 'bois', 'deco', [x0 + 3, x1 - 3], [h - 8, h - 3], [z0 + 3, z0 + 5]);
+  m.boite('ceinture-s', 'bois', 'deco', [x0 + 3, x1 - 3], [h - 8, h - 3], [z1 - 5, z1 - 3]);
+  if (v === 'pliante') {
+    for (const x of [x0 + 5, x1 - 7]) {
+      m.barre(`x-${x}-a`, 'bois', 'deco', [x, 0, z0 + 4], [x, h - 3, z1 - 4], 2.2);
+      m.barre(`x-${x}-b`, 'bois', 'deco', [x, 0, z1 - 4], [x, h - 3, z0 + 4], 2.2);
+    }
+    m.boite('entretoise', 'bois', 'deco', [x0 + 5, x1 - 5], [h * 0.45, h * 0.45 + 2], [-1, 1]);
+  } else {
+    for (const [x, z] of [[x0 + 3, z0 + 3], [x1 - 7, z0 + 3], [x0 + 3, z1 - 7], [x1 - 7, z1 - 7]]) m.boite(`pied-${x}-${z}`, 'bois', 'deco', [x, x + 4], [0, h - 3], [z, z + 4]);
+    m.boite('traverse-n', 'bois', 'deco', [x0 + 7, x1 - 7], [9, 12], [z0 + 4, z0 + 6]);
+    m.boite('traverse-s', 'bois', 'deco', [x0 + 7, x1 - 7], [9, 12], [z1 - 6, z1 - 4]);
+  }
+  return { modele: m };
+}
+
 // --- Catalogue ------------------------------------------------------------------------------------------------------------------------------------
 // type : { variantes, defaut, pose ('meuble' : sur le dessus d'un meuble ; 'mur' : contre un mur ; 'sol' ; 'plafond'), collision (groupes solides :
 // rectangle dessiné de chaque groupe), budget (triangles d'une variante), clair (couleur claire : à plus de 150 d'une fenêtre) }. Noms affichés :
@@ -490,6 +514,8 @@ export const CATALOGUE = Object.freeze({
   caisseMedicale: { variantes: ['une', 'pile', 'ouverte'], defaut: 'une', pose: 'sol', collision: ['caisse'], budget: 130 },
   casques: { variantes: ['un', 'deux', 'renverse'], defaut: 'deux', pose: 'sol', collision: [], budget: 100 },
   ampoules: { variantes: ['fil', 'deux', 'cage'], defaut: 'fil', pose: 'plafond', collision: [], budget: 150, clair: true },
+  // Lot 9i (retours) : table dessinée à la place d'un meuble (« remplace » : id de l'obstacle) ; ni collision ni tirs nouveaux, jamais agrandie.
+  table: { variantes: ['bois', 'pliante'], defaut: 'bois', pose: 'remplace', collision: [], budget: 140 },
 });
 export const TYPES = Object.freeze(Object.keys(CATALOGUE));
 
@@ -510,7 +536,8 @@ export function lireChoix(json) {
 export const TAILLE_DEFAUT = 2;
 export const taille = (v) => (isNum(v) && v >= 1 && v <= 3 ? v : 1);
 const FACES = Object.freeze({ s: 0, e: 90, n: 180, o: -90 }); // face visible d'une carte (repère du modèle : vers le sud)
-function construire(type, v, { base = 0, k = 1 } = {}) {
+function construire(type, v, { base = 0, k = 1, spec = {} } = {}) {
+  if (type === 'table') return modeleTable(v, { w: num(spec.w, 100), d: num(spec.l, 60), h: num(spec.hauteur, 40) });
   if (type === 'radio') return modeleRadio(v, { hMax: Math.max(4, (HAUTEUR_MAX - base) / k) });
   if (type === 'telephone') return modeleTelephone(v);
   if (type === 'machine') return modeleMachine(v);
@@ -528,8 +555,8 @@ export function objet(type, variante, spec = {}) {
   if (!cat) return null;
   const v = cat.variantes.includes(variante) ? variante : cat.defaut;
   const base = cat.pose === 'meuble' ? Math.max(0, num(spec.base)) : 0;
-  const k = taille(spec.taille);
-  const res = construire(type, v, { base, k });
+  const k = cat.pose === 'remplace' ? 1 : taille(spec.taille);
+  const res = construire(type, v, { base, k, spec });
   const a = (type === 'carte' ? (FACES[spec.face] ?? 0) : num(spec.cap)) * DEG;
   const x = num(spec.x);
   const y = num(spec.y);
@@ -562,9 +589,19 @@ export function objetsPlaces(doc, { choix, obstacles = {} } = {}) {
   const ch = choix ?? lireChoix(null);
   const out = [];
   for (const it of Array.isArray(doc?.objets) ? doc.objets : []) {
-    if (!it || !CATALOGUE[it.type] || ch.gardes[it.type] === false || !isNum(it.x) || !isNum(it.y)) continue;
+    if (!it || !CATALOGUE[it.type] || ch.gardes[it.type] === false) continue;
+    if (CATALOGUE[it.type].pose !== 'remplace' && (!isNum(it.x) || !isNum(it.y))) continue;
     const floor = it.floor === 'etage' ? 'etage' : 'rdc';
     const porteur = it.sur ? (obstacles[floor] ?? []).find((o) => o.id === it.sur) ?? null : null;
+    if (CATALOGUE[it.type].pose === 'remplace') {
+      // Table : à la place exacte du meuble (centre, emprise, hauteur) ; sans meuble connu, rien.
+      const o = (obstacles[floor] ?? []).find((q) => q.id === it.remplace);
+      if (!o) continue;
+      const spec = { id: String(it.id ?? it.type), x: o.x + o.w / 2, y: o.y + o.h / 2, w: o.w, l: o.h, hauteur: num(o.hauteur, 40), floor, remplace: o.id };
+      const v = CATALOGUE[it.type].variantes.includes(it.variante) ? it.variante : ch.variantes[it.type];
+      out.push({ ...objet(it.type, v, spec), spec, sur: null, porteur: null, remplace: o.id });
+      continue;
+    }
     const spec = { id: String(it.id ?? it.type), x: it.x, y: it.y, cap: num(it.cap), ...(typeof it.face === 'string' ? { face: it.face } : {}), floor, base: porteur ? num(porteur.hauteur) : 0, taille: ch.taille ?? TAILLE_DEFAUT };
     const v = CATALOGUE[it.type].variantes.includes(it.variante) ? it.variante : ch.variantes[it.type];
     out.push({ ...objet(it.type, v, spec), spec, sur: it.sur ?? null, porteur });
@@ -583,6 +620,7 @@ export function problemesPlacement(objets, couches = {}, regles = {}) {
     const zone = o.emprise;
     if (!zone) continue;
     const cat = CATALOGUE[o.type];
+    if (cat.pose === 'remplace') continue; // table dessinée à la place d'un meuble : rien ne change (collision, tirs, place)
     if (o.hauteur > HAUTEUR_MAX + 0.5) out.push(`${o.id} dépasse ${HAUTEUR_MAX} (${o.hauteur})`);
     // Dans la pièce : les quatre coins de l'emprise dans le contour (les cartes : leur point du mur, dans le contour à 25 près).
     const contour = Array.isArray(c.contour) ? c.contour : [];
@@ -762,7 +800,7 @@ export function controlePlan({ mondes = {}, lampes = [], doc, choixJson = null, 
 // variante, étage, spec, rectangles solides, hauteur, triangles). ctl : sortie de controlePlan.
 export function sectionInterieur(ctl, { couleurs = {} } = {}) {
   const objets = ctl.objets.map((o) => ({
-    id: o.id, type: o.type, variante: o.variante, floor: o.floor, spec: { ...o.spec }, ...(o.sur ? { sur: o.sur } : {}),
+    id: o.id, type: o.type, variante: o.variante, floor: o.floor, spec: { ...o.spec }, ...(o.sur ? { sur: o.sur } : {}), ...(o.remplace ? { remplace: o.remplace } : {}),
     hauteur: o.hauteur, emprise: { ...o.emprise }, collision: o.collision, triangles: o.compte, rects: o.rects.map((r) => ({ ...r })),
   }));
   return { taille: ctl.choix?.taille ?? TAILLE_DEFAUT, couleurs: JSON.parse(JSON.stringify(couleurs)), objets, triangles: objets.reduce((s, o) => s + o.triangles, 0) };

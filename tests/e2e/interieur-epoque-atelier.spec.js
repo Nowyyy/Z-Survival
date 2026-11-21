@@ -33,14 +33,14 @@ test('atelier de l\'intérieur : variantes sous budget, plan des deux étages sa
   await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex');
   expect(await page.evaluate(() => window.__zsInterieur.webgl)).toBe(true);
   const toutes = await page.evaluate(() => window.__zsInterieur.toutes());
-  expect(toutes.length).toBe(24); // 8 objets × 3 variantes
+  expect(toutes.length).toBe(26); // 8 objets × 3 variantes + la table de 1942 (retours du propriétaire) × 2
   for (const r of toutes) {
     expect(r.triangles, `${r.type}/${r.variante}`).toBeLessThanOrEqual(r.budget);
     expect(r.hauteur).toBeLessThanOrEqual(70);
     for (const q of r.rects) expect(q.tirs).toBe('passent');
   }
-  await expect(page.locator('#planche figure')).toHaveCount(24);
-  await expect(page.locator('#table-budget tbody tr')).toHaveCount(24);
+  await expect(page.locator('#planche figure')).toHaveCount(26);
+  await expect(page.locator('#table-budget tbody tr')).toHaveCount(26);
   // Un appel par objet (une matière, lueur des ampoules comprise).
   for (const [type, v] of [['radio', 'generateur'], ['ampoules', 'deux'], ['brancard', 'treteaux'], ['caisseMedicale', 'pile']]) {
     expect(await page.evaluate(([a, b]) => window.__zsInterieur.choisir(a, b), [type, v])).toBe(true);

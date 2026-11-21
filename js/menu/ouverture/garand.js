@@ -34,7 +34,8 @@ export function garandOuverture(donnees, varianteId) {
   if (!arme) return null;
   const v = varianteDe(arme, varianteId);
   const d1 = { ...donnees, echelle: { ...donnees.echelle, epaisseur: 1 } };
-  const m = maillageArme(d1, arme, v, { pose: 'main', echelle: CM_PAR_MM });
+  // Retour du propriétaire : sans la bretelle (à la première personne, elle pendait sans être attachée à l'arme).
+  const m = maillageArme(d1, arme, v, { pose: 'main', echelle: CM_PAR_MM, sansBretelle: true });
   const zMain = num(arme.prises?.droite?.[2], -90) * CM_PAR_MM;
   const conv = ([x, y, z]) => [-x, y - DECALAGE_Y, Z_DETENTE - (z - zMain)];
   const positions = new Float32Array(m.positions.length);

@@ -556,6 +556,32 @@
     },
     "objets": [
       {
+        "id": "table-salle",
+        "type": "table",
+        "variante": "bois",
+        "floor": "rdc",
+        "spec": { "id": "table-salle", "x": 1720, "y": 2225, "w": 120, "l": 90, "hauteur": 40, "floor": "rdc", "remplace": "P12" },
+        "remplace": "P12",
+        "hauteur": 40,
+        "emprise": { "x": 1660, "y": 2180, "w": 120, "h": 90 },
+        "collision": false,
+        "triangles": 130,
+        "rects": []
+      },
+      {
+        "id": "table-etage",
+        "type": "table",
+        "variante": "bois",
+        "floor": "etage",
+        "spec": { "id": "table-etage", "x": 1120, "y": 1390, "w": 100, "l": 80, "hauteur": 40, "floor": "etage", "remplace": "Q4" },
+        "remplace": "Q4",
+        "hauteur": 40,
+        "emprise": { "x": 1070, "y": 1350, "w": 100, "h": 80 },
+        "collision": false,
+        "triangles": 120,
+        "rects": []
+      },
+      {
         "id": "radio-salle",
         "type": "radio",
         "variante": "caisse",
@@ -683,54 +709,6 @@
         "rects": []
       },
       {
-        "id": "ampoule-aile",
-        "type": "ampoules",
-        "variante": "fil",
-        "floor": "rdc",
-        "spec": { "id": "ampoule-aile", "x": 1260, "y": 1700, "cap": 0, "floor": "rdc", "base": 0, "taille": 2 },
-        "hauteur": 69,
-        "emprise": { "x": 1257, "y": 1697, "w": 6, "h": 6 },
-        "collision": false,
-        "triangles": 58,
-        "rects": []
-      },
-      {
-        "id": "ampoule-poche",
-        "type": "ampoules",
-        "variante": "fil",
-        "floor": "rdc",
-        "spec": { "id": "ampoule-poche", "x": 1250, "y": 2230, "cap": 0, "floor": "rdc", "base": 0, "taille": 2 },
-        "hauteur": 69,
-        "emprise": { "x": 1247, "y": 2227, "w": 6, "h": 6 },
-        "collision": false,
-        "triangles": 58,
-        "rects": []
-      },
-      {
-        "id": "ampoule-salle-1",
-        "type": "ampoules",
-        "variante": "fil",
-        "floor": "rdc",
-        "spec": { "id": "ampoule-salle-1", "x": 1650, "y": 2060, "cap": 0, "floor": "rdc", "base": 0, "taille": 2 },
-        "hauteur": 69,
-        "emprise": { "x": 1647, "y": 2057, "w": 6, "h": 6 },
-        "collision": false,
-        "triangles": 58,
-        "rects": []
-      },
-      {
-        "id": "ampoule-salle-2",
-        "type": "ampoules",
-        "variante": "fil",
-        "floor": "rdc",
-        "spec": { "id": "ampoule-salle-2", "x": 2600, "y": 2200, "cap": 0, "floor": "rdc", "base": 0, "taille": 2 },
-        "hauteur": 69,
-        "emprise": { "x": 2597, "y": 2197, "w": 6, "h": 6 },
-        "collision": false,
-        "triangles": 58,
-        "rects": []
-      },
-      {
         "id": "radio-etage",
         "type": "radio",
         "variante": "caisse",
@@ -820,32 +798,8 @@
         "collision": false,
         "triangles": 76,
         "rects": []
-      },
-      {
-        "id": "ampoule-etage-gauche",
-        "type": "ampoules",
-        "variante": "fil",
-        "floor": "etage",
-        "spec": { "id": "ampoule-etage-gauche", "x": 1250, "y": 1700, "cap": 0, "floor": "etage", "base": 0, "taille": 2 },
-        "hauteur": 69,
-        "emprise": { "x": 1247, "y": 1697, "w": 6, "h": 6 },
-        "collision": false,
-        "triangles": 58,
-        "rects": []
-      },
-      {
-        "id": "ampoule-etage-droite",
-        "type": "ampoules",
-        "variante": "fil",
-        "floor": "etage",
-        "spec": { "id": "ampoule-etage-droite", "x": 1650, "y": 2130, "cap": 0, "floor": "etage", "base": 0, "taille": 2 },
-        "hauteur": 69,
-        "emprise": { "x": 1647, "y": 2127, "w": 6, "h": 6 },
-        "collision": false,
-        "triangles": 58,
-        "rects": []
       }
     ],
-    "triangles": 1096
+    "triangles": 998
   }
 }

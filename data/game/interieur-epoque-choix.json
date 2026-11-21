@@ -1,5 +1,5 @@
 {
-  "_provisoire": "Choix du propriétaire sur atelier-interieur.html (lot 9i, mode d'emploi : Docs/ref/decor-epoque.md, « Intérieur et menu »). taille : facteur de taille des objets (1 = dimensions réelles, 2 = retour du propriétaire du 21/11/2026, de 1 à 3) ; variantes : type d'objet → variante retenue ; gardes : type → true (dans le plan) ou false (retiré). Entrée inconnue, absente ou fichier illisible : variante proposée par défaut et objet gardé. Le jeu ne lit ce fichier qu'après « GO 9i ».",
+  "_provisoire": "Choix du propriétaire sur atelier-interieur.html (lot 9i, mode d'emploi : Docs/ref/decor-epoque.md, « Intérieur et menu »). taille : facteur de taille des objets (1 = dimensions réelles, 2 = retour du propriétaire du 21/11/2026, de 1 à 3) ; variantes : type d'objet → variante retenue ; gardes : type → true (dans le plan) ou false (retiré). Entrée inconnue, absente ou fichier illisible : variante proposée par défaut et objet gardé. Le jeu ne lit ce fichier qu'après « GO 9i ». Retours du propriétaire après la fusion : ampoules retirées (on ne voit pas le plafond) ; table « bois » à la place du dessin de P12 et Q4.",
   "taille": 2,
   "variantes": {
     "radio": "caisse",
@@ -9,7 +9,8 @@
     "brancard": "couverture",
     "caisseMedicale": "une",
     "casques": "deux",
-    "ampoules": "fil"
+    "ampoules": "fil",
+    "table": "bois"
   },
   "gardes": {
     "radio": true,
@@ -19,6 +20,7 @@
     "brancard": true,
     "caisseMedicale": true,
     "casques": true,
-    "ampoules": true
+    "ampoules": false,
+    "table": true
   }
 }
