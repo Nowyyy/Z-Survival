@@ -1,11 +1,14 @@
 // Lot 8b : onglet Jouer (E8-3) du menu principal, d'après la maquette Docs/maquettes-v0.8/Main.html (Docs/ref/menu-principal.md).
 // Scène de nuit dessinée en code (SVG en ligne, décorative : aria-hidden) : ciel, lune, silhouettes, bâtiment (aile à deux étages, grande salle),
-// fenêtres éclairées (lueur qui vacille), barricadées ou noires, porte barricadée, route en pointillés et panneaux 1, 10, 20, 30, 40 (rouges si
-// atteints par le record), repère du record, voiture en feu (flammes, halo, fumée), brume, vignette ; zombies : un par la gauche abattu depuis une
+// fenêtres éclairées (lueur qui vacille), barricadées ou noires, porte barricadée, route à ornières et panneaux 1, 10, 20, 30, 40 (rouges si
+// atteints par le record), repère du record, Jeep en feu (flammes, halo, fumée), poteaux télégraphiques et barbelés (lot 9i), brume, vignette ; zombies : un par la gauche abattu depuis une
 // fenêtre de l'étage, un par la droite abattu depuis le rez-de-chaussée avant la voiture, deux rôdeurs au loin. Par-dessus, en texte : bandeau,
 // record et portes ouvertes, « Monde précédent » (désactivé), carte du monde suivant (verrouillé), bouton « JOUER » (mode histoire).
 // Couleurs : classes de css/menu.css (jetons --menu-* de tokens.css) ; animations CSS « e8-jouer-* », en pause hors de l'écran (data-anim).
 // Ordre de profondeur : décor, puis zombies (le plus loin d'abord), puis panneaux de la route (plus près), puis brume et vignette.
+// Lot 9i (choix du propriétaire, scène « B », data/menu/caisses-epoque-choix.json) : scène de 1942 : Jeep en flammes à la place de la voiture, zombies
+// soldats (casque M1, capote), ornières à la place des pointillés centraux, poteaux télégraphiques et barbelés de part et d'autre ; dessin fixe (aucun
+// fichier lu au démarrage du menu).
 import { etatJouer, mondeSuivant } from '../core/menu-etat.js';
 import { fmt } from '../game/texts.js';
 
@@ -54,15 +57,34 @@ export function pointRoute(x) {
 // Panneaux (abscisse du piquet, haut de la planche) : espacés le long de la route, le pied du piquet sur la route (lot 8d ; maquette : 94 à 508).
 const PANNEAUX = [94, 218, 342, 466, 590].map((x) => [x, Math.round(pointRoute(x + 2)[1] - 30)]);
 
-// Silhouette de zombie (pieds à l'origine, regard vers la droite) : tête, corps et jambes, bras tendus, œil rouge.
+// Silhouette de zombie soldat (pieds à l'origine, regard vers la droite ; lot 9i) : tête, casque M1 (calotte ronde, bord court), capote jusqu'aux
+// genoux puis jambes en marche, bras tendus, œil rouge.
 function zombie(x, y, echelle = 1, miroir = false) {
   const g = svgEl('g', { transform: `translate(${x} ${y}) scale(${miroir ? -echelle : echelle} ${echelle})` });
   g.append(
-    svgEl('circle', { cx: 0, cy: -38, r: 7 }, 'e8-jouer-zombie'),
-    svgEl('path', { d: 'M-8 -30 H8 L10 -4 H4 L2 -14 L-2 -4 H-10Z' }, 'e8-jouer-zombie'),
+    svgEl('circle', { cx: 0, cy: -38, r: 6.5 }, 'e8-jouer-zombie'),
+    svgEl('path', { d: 'M-7.5 -39 Q-7.5 -48.5 0.5 -48.5 Q8.5 -48.5 8.5 -39 L10 -38 H-9Z' }, 'e8-jouer-zombie'),
+    svgEl('path', { d: 'M-8 -30 H8 L10.5 -13 H8.6 L10 -4 H4 L2 -11 L-2 -4 H-9.4 L-8.6 -13 H-10.5Z' }, 'e8-jouer-zombie'),
     svgEl('path', { d: 'M6 -27 L26 -29 L26 -24 L6 -21Z' }, 'e8-jouer-zombie'),
-    svgEl('circle', { cx: 3, cy: -39, r: 1.3 }, 'e8-jouer-yeux'),
+    svgEl('circle', { cx: 3, cy: -38.5, r: 1.3 }, 'e8-jouer-yeux'),
   );
+  return g;
+}
+
+// Lot 9i : poteaux télégraphiques (pied, hauteur ; traverse, deux fils qui pendent d'un poteau au suivant) et barbelés (piquets, deux fils).
+function poteaux(ligne) {
+  const g = svgEl('g', {}, 'e8-jouer-poteaux');
+  ligne.forEach(([x, y, h], i) => {
+    g.append(svgEl('path', { d: `M${x} ${y} V${y - h} M${x - 9} ${y - h + 4} H${x + 9}` }, 'e8-jouer-poteau'));
+    const n = ligne[i + 1];
+    if (n) for (const dx of [-8, 8]) g.append(svgEl('path', { d: `M${x + dx} ${y - h + 4} Q${(x + n[0]) / 2 + dx} ${(y - h + n[1] - n[2]) / 2 + 14} ${n[0] + dx} ${n[1] - n[2] + 4}` }, 'e8-jouer-fil'));
+  });
+  return g;
+}
+function barbeles(x0, x1, y, pas = 26) {
+  const g = svgEl('g', {}, 'e8-jouer-barbeles');
+  for (let x = x0; x <= x1; x += pas) g.append(svgEl('path', { d: `M${x} ${y} V${y - 14}` }, 'e8-jouer-piquet'));
+  for (const dy of [-5, -11]) g.append(svgEl('path', { d: `M${x0} ${y + dy} L${x1} ${y + dy - 2}` }, 'e8-jouer-barbele'));
   return g;
 }
 
@@ -149,9 +171,10 @@ export function sceneJouer(etat) {
     svgEl('rect', { x: 662, y: 226, width: 28, height: 60 }, 'e8-jouer-fenetre-noire'),
     svgEl('path', { d: 'M658 240 L694 254 M658 262 L694 248' }, 'e8-jouer-planches'),
   );
-  // Route de terre en pointillés.
-  svg.append(svgEl('path', { d: ROUTE }, 'e8-jouer-route'), svgEl('path', { d: ROUTE }, 'e8-jouer-route-trait'));
-  // Voiture en feu (plus bas) : carcasse, halo orangé qui pulse, flammes qui vacillent, fumée qui monte et s'efface.
+  // Lot 9i : poteaux télégraphiques et barbelés (derrière la route), puis route de terre à deux ornières (plus de pointillés centraux, marquage moderne).
+  svg.append(poteaux([[24, 300, 120], [132, 296, 112], [226, 292, 104]]), poteaux([[716, 290, 104], [884, 290, 116]]), barbeles(18, 236, 318), barbeles(706, 920, 312));
+  svg.append(svgEl('path', { d: ROUTE }, 'e8-jouer-route'), svgEl('path', { d: ROUTE, transform: 'translate(0 -4)' }, 'e8-jouer-orniere'), svgEl('path', { d: ROUTE, transform: 'translate(0 4)' }, 'e8-jouer-orniere'));
+  // Jeep en feu (lot 9i ; plus bas) : carcasse (capot plat, pare-brise rabattu, roue de secours), halo orangé qui pulse, flammes qui vacillent, fumée.
   const flammes = svgEl('g', {}, 'e8-jouer-flammes');
   flammes.append(
     svgEl('path', { d: 'M770 268 C772 250 782 252 780 238 C792 250 800 246 798 232 C810 248 812 262 806 268Z' }, 'e8-jouer-flamme'),
@@ -170,7 +193,9 @@ export function sceneJouer(etat) {
     svgEl('circle', { cx: 790, cy: 262, r: 62, fill: 'url(#e8-jouer-feu)' }, 'e8-jouer-feu'),
     flaque(862, 282, 'e8-jouer-sang-b'),
     approche('b', zombie(950, 280, 0.9, true)),
-    svgEl('path', { d: 'M742 286 L752 268 L800 266 L818 280 L838 282 L840 296 L740 296Z' }, 'e8-jouer-voiture'),
+    svgEl('path', { d: 'M744 296 L744 282 L752 280 L768 279 L770 270 L773 270 L776 279 L812 279 L818 274 L822 274 L824 279 L834 280 L838 284 L838 296 L830 296 A8 8 0 0 0 814 296 L768 296 A8 8 0 0 0 752 296Z' }, 'e8-jouer-voiture'),
+    svgEl('circle', { cx: 842, cy: 285, r: 6 }, 'e8-jouer-voiture'),
+    svgEl('path', { d: 'M770 279 L782 270 L786 270 L774 279Z' }, 'e8-jouer-voiture'),
     flammes,
     svgEl('ellipse', { cx: 804, cy: 206, rx: 42, ry: 16 }, 'e8-jouer-fumee e8-jouer-fumee-1'),
     svgEl('ellipse', { cx: 826, cy: 176, rx: 30, ry: 12 }, 'e8-jouer-fumee e8-jouer-fumee-2'),

@@ -14,7 +14,7 @@ import { slotsWithEpoch } from '../core/persos-variants.js';
 import { avecLampeCoudee, PIECES_TL122 } from '../core/lampe-coudee.js';
 import { chronologie, lireOuvertures } from '../core/ouverture.js';
 import { CATALOGUE, HAUTEUR_ARME, MATIERES, TEXTES, TYPES, atlasInterieur, controlePlan, couleursEpoque, lireChoix, objet } from '../core/interieur-epoque.js';
-import { VARIANTES_CHARGEMENT, VARIANTES_HISTOIRE, caisseSvg, caisseSvgEpoque, decorNuitEpoque, sceneJouerEpoque } from './menu-epoque.js';
+import { VARIANTES_CHARGEMENT, VARIANTES_HISTOIRE, caisseSvg, caisseSvgEpoque } from './menu-epoque.js';
 import { sceneJouer } from '../menu/jouer.js';
 import { decorNuit } from '../menu/chargement.js';
 
@@ -497,10 +497,9 @@ function dessinerMenu() {
     fig.append(box, cap);
     scenes.append(fig);
   };
-  ajouter(sceneJouer(etatJouer), t('dev.interieur.scenes.histoire', { version: t('dev.interieur.avant') }), false, 'histoire-actuelle');
-  for (const v of VARIANTES_HISTOIRE) ajouter(sceneJouerEpoque(etatJouer, v), t('dev.interieur.scenes.histoire', { version: t(`dev.interieur.scenes.histoire.${v}`) }), false, `histoire-${v}`);
-  ajouter(decorNuit(), t('dev.interieur.scenes.chargement', { version: t('dev.interieur.avant') }), true, 'chargement-actuelle');
-  for (const v of VARIANTES_CHARGEMENT) ajouter(decorNuitEpoque(v), t('dev.interieur.scenes.chargement', { version: t(`dev.interieur.scenes.chargement.${v}`) }), true, `chargement-${v}`);
+  // Après le « GO 9i » : scènes intégrées au menu (onglet Histoire « B », chargement « C »), dessinées par les modules du menu.
+  ajouter(sceneJouer(etatJouer), t('dev.interieur.scenes.histoire', { version: t('dev.interieur.scenes.histoire.B') }), false, 'histoire-B');
+  ajouter(decorNuit(), t('dev.interieur.scenes.chargement', { version: t('dev.interieur.scenes.chargement.C') }), true, 'chargement-C');
 }
 
 // Revue du contenu.

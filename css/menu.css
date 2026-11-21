@@ -35,6 +35,12 @@
   fill: var(--menu-fenetre);
 }
 
+/* Lot 9i : silhouettes de 1942 de l'écran de chargement (poteaux, fils, barbelés). */
+.e7-poteau { fill: none; stroke: var(--menu-batiment); stroke-width: 4; }
+.e7-fil { fill: none; stroke: var(--menu-batiment); stroke-width: 1.2; }
+.e7-piquet { fill: none; stroke: var(--menu-batiment); stroke-width: 2.5; }
+.e7-barbele { fill: none; stroke: var(--menu-batiment); stroke-width: 1.2; stroke-dasharray: 3 1.5; }
+
 /* ---------------------------------------------------------------------------------------------------------------------------------------------- */
 /* E7 — écran de chargement (au-dessus de l'écran de préparation #loading, comme lui plein écran fixe : aucun décalage de mise en page). */
 .e7 {
@@ -1032,8 +1038,13 @@
 .e8-jouer-lampe { fill: url("#e8-jouer-lampe"); }
 .e8-jouer-planches { fill: none; stroke: var(--menu-scene-planche); stroke-width: 5; }
 .e8-jouer-route { fill: none; stroke: var(--menu-scene-route); stroke-width: 30; stroke-linecap: round; }
-.e8-jouer-route-trait { fill: none; stroke: var(--menu-scene-route-trait); stroke-width: 2; stroke-dasharray: 10 12; }
 .e8-jouer-voiture { fill: var(--menu-scene-voiture); }
+/* Lot 9i : scène de 1942 (ornières, poteaux télégraphiques, barbelés). */
+.e8-jouer-orniere { fill: none; stroke: var(--menu-scene-route-trait); stroke-width: 1.6; }
+.e8-jouer-poteau { fill: none; stroke: var(--menu-scene-toit); stroke-width: 4; }
+.e8-jouer-fil { fill: none; stroke: var(--menu-scene-toit); stroke-width: 1.2; }
+.e8-jouer-piquet { fill: none; stroke: var(--menu-scene-toit); stroke-width: 2.5; }
+.e8-jouer-barbele { fill: none; stroke: var(--menu-scene-toit); stroke-width: 1.2; stroke-dasharray: 3 1.5; }
 .e8-jouer-flamme { fill: var(--menu-scene-flamme); }
 .e8-jouer-flamme-coeur { fill: var(--menu-scene-flamme-coeur); }
 .e8-jouer-fumee { fill: var(--menu-scene-fumee); opacity: 0.3; }

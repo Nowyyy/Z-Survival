@@ -101,7 +101,7 @@
   "dev.interieur.caisses.intro": "Les dessins des caisses dans la Boutique, avant et après : caisse de munitions américaine en bois, sans texte (Équipement), cantine de soldat à ferrures (Personnages), valise de cuir des années 40 (Cosmétiques). Le « ? » lumineux, les rayons et les animations sont ceux d'aujourd'hui.",
   "dev.interieur.caisses.vignette": "{caisse} — {version}",
   "dev.interieur.scenes.titre": "Scènes de l'onglet Histoire et du chargement",
-  "dev.interieur.scenes.intro": "Onglet Histoire : la voiture en feu devient une Jeep en flammes, les zombies prennent une silhouette de soldat (casque, capote), les pointillés de la route deviennent des ornières. Écran de chargement : rien de moderne n'y a été relevé ; deux propositions d'ambiance sont montrées. Logo, chute du Z et textes ne changent pas.",
+  "dev.interieur.scenes.intro": "Scènes intégrées au menu après le « GO 9i » (choix du propriétaire) : onglet Histoire B (Jeep en flammes, zombies soldats, ornières, poteaux télégraphiques et barbelés) et écran de chargement C (poteaux, barbelés, Jeep abandonnée, sacs de sable). Logo, chute du Z et textes ne changent pas.",
   "dev.interieur.scenes.histoire": "Onglet Histoire — {version}",
   "dev.interieur.scenes.histoire.A": "A : Jeep en flammes, zombies soldats, ornières",
   "dev.interieur.scenes.histoire.B": "B : A avec poteaux télégraphiques et barbelés",

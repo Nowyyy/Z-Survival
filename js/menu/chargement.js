@@ -48,7 +48,8 @@ function svgEl(tag, attrs) {
   return n;
 }
 
-// Décor (vue 932 × 430, ancré en bas) : ciel par dégradé CSS, lune et halo, bâtiment à toit plat avec cheminée, deux fenêtres éclairées.
+// Décor (vue 932 × 430, ancré en bas) : ciel par dégradé CSS, lune et halo, bâtiment à toit plat avec cheminée, deux fenêtres éclairées ; lot 9i :
+// poteaux télégraphiques, barbelés, Jeep abandonnée et sacs de sable (1942).
 // Lot 8b : écran de chargement seulement (l'onglet Jouer a sa propre scène, js/menu/jouer.js).
 export function decorNuit(classe = 'e7-decor') {
   const svg = svgEl('svg', { class: classe, viewBox: '0 0 932 430', preserveAspectRatio: 'xMidYMax slice', 'aria-hidden': 'true', focusable: 'false' });
@@ -59,6 +60,20 @@ export function decorNuit(classe = 'e7-decor') {
     svgEl('rect', { class: 'menu-fenetre', x: '300', y: '336', width: '20', height: '24' }),
     svgEl('rect', { class: 'menu-fenetre', x: '560', y: '340', width: '20', height: '24' }),
   );
+  // Lot 9i (choix du propriétaire, décor « C ») : silhouettes de 1942 posées sur le sol du décor (372), lisibles contre le ciel : poteaux télégraphiques
+  // et leurs fils, barbelés, Jeep abandonnée à gauche, sacs de sable à droite. Dessin fixe ; logo, chute du Z et textes inchangés.
+  const ligne = [[34, 372, 66], [160, 372, 62], [790, 372, 62], [918, 372, 66]];
+  ligne.forEach(([x, y, h], i) => {
+    svg.append(svgEl('path', { class: 'e7-poteau', d: `M${x} ${y} V${y - h} M${x - 9} ${y - h + 4} H${x + 9}` }));
+    const n = ligne[i + 1];
+    if (n && Math.abs(n[0] - x) < 300) for (const dx of [-8, 8]) svg.append(svgEl('path', { class: 'e7-fil', d: `M${x + dx} ${y - h + 4} Q${(x + n[0]) / 2 + dx} ${(y - h + n[1] - n[2]) / 2 + 14} ${n[0] + dx} ${n[1] - n[2] + 4}` }));
+  });
+  for (const [x0, x1, pas] of [[0, 104, 26], [770, 932, 27]]) {
+    for (let x = x0; x <= x1; x += pas) svg.append(svgEl('path', { class: 'e7-piquet', d: `M${x} 372 V358` }));
+    for (const dy of [-5, -11]) svg.append(svgEl('path', { class: 'e7-barbele', d: `M${x0} ${372 + dy} L${x1} ${370 + dy}` }));
+  }
+  svg.append(svgEl('path', { class: 'menu-batiment', d: 'M110 372 L110 358 L118 356 L134 355 L137 346 L140 346 L143 355 L176 355 L182 349 L186 349 L188 355 L198 356 L202 360 L202 372Z' }));
+  for (const [cx, cy] of [[790, 367], [812, 367], [834, 367], [801, 357], [823, 357]]) svg.append(svgEl('ellipse', { class: 'menu-batiment', cx: String(cx), cy: String(cy), rx: '12', ry: '6' }));
   return svg;
 }
 

@@ -72,11 +72,13 @@ test('atelier de l\'intérieur : variantes sous budget, plan des deux étages sa
     expect(m.apres).toEqual({ geometries: 0, textures: 0 });
   }
   await expect(page.locator('#ouv-planche canvas')).toHaveCount(25); // 6 cas × 4 instants (dont la douille) + le ×10
-  // Caisses du menu (actuelle / époque) et scènes (actuelle, A, B ; chargement actuel, A, B, C).
+  // Caisses du menu (actuelle / époque) et scènes.
   await expect(page.locator('#caisses-planche .i9-caisse-hote svg')).toHaveCount(6);
   await expect(page.locator('#caisses-planche svg[data-epoque] .e3-q')).toHaveCount(12); // halo, grand « ? », deux petits
-  await expect(page.locator('#scenes-planche .i9-scene-hote svg')).toHaveCount(7);
-  await expect(page.locator('[data-cas="histoire-A"] .e8-jouer-route-trait')).toHaveCount(0);
+  // Scènes intégrées au menu (lot 9i-E : onglet Histoire B, chargement C).
+  await expect(page.locator('#scenes-planche .i9-scene-hote svg')).toHaveCount(2);
+  await expect(page.locator('[data-cas="histoire-B"] .e8-jouer-poteau')).toHaveCount(5);
+  await expect(page.locator('[data-cas="chargement-C"] .e7-poteau')).toHaveCount(4);
   // Choix à recopier : les propositions suivent les listes.
   await page.selectOption('#ctl-objet', 'casques');
   await page.selectOption('#ctl-variante', 'renverse');
