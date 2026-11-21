@@ -10,6 +10,9 @@ import { parseColor } from '../../core/color.js';
 
 // Repère : x_ouverture = −x_arme ; y_ouverture = y_arme − DECALAGE_Y ; z_ouverture = Z_DETENTE − (z_arme − z_main_droite) ; 1 mm = 0,1 cm.
 const CM_PAR_MM = 0.1;
+// Bretelle (mm, repère de l'arme ; une position par section du modèle, js/core/armes/modeles.js) : ses deux bouts sont pris dans le flanc gauche de
+// la crosse (z −250) et du fût (z 450) ; entre les deux, elle pend en arc à côté de l'arme, du côté vu par la caméra (sous l'arme, elle était cachée).
+export const BRETELLE = Object.freeze([[16, -50, -250], [50, -110, -20], [50, -105, 280], [14, 2, 450]]);
 const Z_DETENTE = 8; // main droite du fusil actuel (fusilGeo : poing à z +8,4)
 const DECALAGE_Y = 2.4; // axe du canon du Garand (30 mm) au niveau de celui du fusil actuel (y 0,6)
 
@@ -34,8 +37,8 @@ export function garandOuverture(donnees, varianteId) {
   if (!arme) return null;
   const v = varianteDe(arme, varianteId);
   const d1 = { ...donnees, echelle: { ...donnees.echelle, epaisseur: 1 } };
-  // Retour du propriétaire : sans la bretelle (à la première personne, elle pendait sans être attachée à l'arme).
-  const m = maillageArme(d1, arme, v, { pose: 'main', echelle: CM_PAR_MM, sansBretelle: true });
+  // Retours du propriétaire : la bretelle du modèle pendait à côté de l'arme, sans la toucher ; elle est remise, accrochée à ses deux anneaux.
+  const m = maillageArme(d1, arme, v, { pose: 'main', echelle: CM_PAR_MM, bretelle: BRETELLE });
   const zMain = num(arme.prises?.droite?.[2], -90) * CM_PAR_MM;
   const conv = ([x, y, z]) => [-x, y - DECALAGE_Y, Z_DETENTE - (z - zMain)];
   const positions = new Float32Array(m.positions.length);

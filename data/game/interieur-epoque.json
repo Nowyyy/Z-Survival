@@ -5,6 +5,7 @@
     "acier": { "jeton": "--game-metal", "vers": "--game-wall", "part": 0.35 },
     "bois": { "jeton": "--game-wood-dark", "vers": "--game-wood", "part": 0.35 },
     "toile": { "jeton": "--game-wreck-hull", "vers": "--game-tree", "part": 0.5 },
+    "etoffe": { "jeton": "--game-wreck-hull", "vers": "--game-plank", "part": 0.2 },
     "cuir": { "jeton": "--game-bark", "vers": "--game-wood-dark", "part": 0.3 },
     "bakelite": { "jeton": "--game-boot", "vers": "--game-lamp-metal", "part": 0.5 },
     "couverture": { "jeton": "--game-tree", "vers": "--game-wreck-hull", "part": 0.3 },

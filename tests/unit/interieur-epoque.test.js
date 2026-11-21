@@ -9,10 +9,10 @@ import {
   lireChoix, objet, objetsPlaces,
 } from '../../js/core/interieur-epoque.js';
 import { LENTILLE, PIECES_TL122, avecLampeCoudee } from '../../js/core/lampe-coudee.js';
-import { garandOuverture } from '../../js/menu/ouverture/garand.js';
+import { BRETELLE, garandOuverture } from '../../js/menu/ouverture/garand.js';
 import { CAISSE, caisseGeo } from '../../js/menu/ouverture/modeles.js';
 import { FORMES_EPOQUE, JETONS_EPOQUE, caisseGeoEpoque } from '../../js/menu/ouverture/caisses-epoque.js';
-import { lireArmes, lireChoix as lireChoixArmes } from '../../js/core/armes/armes.js';
+import { armeParId, lireArmes, lireChoix as lireChoixArmes, piecesArme, varianteDe } from '../../js/core/armes/armes.js';
 
 const lire = (p) => JSON.parse(readFileSync(p, 'utf8'));
 const D = 'data/game/maps/rez-de-chaussee/';
@@ -264,6 +264,45 @@ describe('ouvertures : Garand et caisses d\'époque', () => {
     expect(g.bout[2]).toBeLessThan(-60);
     expect(g.crosse[2]).toBeGreaterThan(30);
     expect(g.triangles).toBeLessThanOrEqual(400);
+  });
+  it('retours du propriétaire : bretelle remise, ses deux bouts pris dans le bois (crosse et fût), son arc à côté de l\'arme', () => {
+    const donneesArmes = lireArmes(lire('data/armes/armes.json'));
+    const arme = armeParId(donneesArmes, 'garand');
+    const pieces = piecesArme(arme, varianteDe(arme, 'a'), 'main', { bretelle: BRETELLE });
+    const sangle = pieces.find((p) => p.groupe === 'bretelle');
+    expect(sangle.sections.map((q) => [q.x, q.y, q.z])).toEqual(BRETELLE.map((b) => [...b]));
+    // Section du bois (crosse et fût d'une pièce, premier loft) à la profondeur z, par interpolation linéaire : le bout de la bretelle est dedans.
+    const bois = pieces.find((p) => p.forme === 'loft' && p.mat === 'bois');
+    const section = (z) => {
+      const ss = bois.sections;
+      const i = ss.findIndex((q, k) => k < ss.length - 1 && z >= q.z && z <= ss[k + 1].z);
+      const [a, b] = [ss[i], ss[i + 1]];
+      const u = (z - a.z) / (b.z - a.z);
+      const m = (c) => a[c] + (b[c] - a[c]) * u;
+      return { w: m('w'), h: m('h'), y: m('y') };
+    };
+    for (const [x, y, z] of [BRETELLE[0], BRETELLE.at(-1)]) {
+      const s0 = section(z);
+      expect(Math.abs(x), `x ${z}`).toBeLessThanOrEqual(s0.w / 2);
+      expect(Math.abs(y - s0.y), `y ${z}`).toBeLessThanOrEqual(s0.h / 2);
+    }
+    // Entre les deux, l'arc pend sous l'arme et à côté (vu par la caméra).
+    for (const [x, y] of BRETELLE.slice(1, -1)) {
+      expect(x).toBeGreaterThan(30);
+      expect(y).toBeLessThan(-90);
+    }
+    const g = garandOuverture(donneesArmes, 'a');
+    expect(g.triangles).toBeLessThanOrEqual(400);
+  });
+  it('retour du propriétaire : le tir de l\'ouverture est celui du Garand de la partie (recette copiée à l\'identique, variante retenue)', () => {
+    const tir = lire('data/menu/sons.json').sons.find((s) => s.id === 'ouv-tir');
+    const d = tir.variantes.find((v) => v.id === 'D');
+    expect(d.couches).toHaveLength(1);
+    expect(d.couches[0].t).toBe('jeu');
+    const armesSons = lire('data/game/sons-armes.json');
+    expect(d.couches[0].recette).toEqual(armesSons.recettes.find((r) => r.id === `tir-garand-${armesSons.choix.garand}`));
+    expect(d.dur).toBe(d.couches[0].recette.duration);
+    expect(lire('data/menu/sons-choix.json').choix['ouv-tir']).toBe('D');
   });
   it('trois caisses d\'époque : mêmes dimensions et mêmes places des « ? » que les caisses actuelles', () => {
     expect(FORMES_EPOQUE).toEqual({ militaire: 'munitions', veterans: 'cantine', tenues: 'valise' });

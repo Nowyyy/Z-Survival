@@ -56,7 +56,7 @@ Total hors ouvertures : 9 sons à créer ou intégrer (clic, musique, achat, qua
 | `rarete-commun` … `rarete-legendaire` | signature de la rareté (ouverture : début des rayons ; fusion : après la montée) | 0,35 · 0,6 · 1,0 · 1,6 · 2,6 s | **A** cloches (du toc discret à la cascade dorée) · B cuivres sombres · C verre et chœur |
 | `ouv-pas` | chaque pas de l'arrivée | 0,18 s | **A** semelle sur béton · B botte lourde |
 | `ouv-tapis` | tapis roulant (arrêté à la fin du tapis) | 1,4 s | **A** moteur et rouleaux · B chaîne qui cliquette |
-| `ouv-tir` | tir du fusil d'assaut | 0,4 s | **A** coup sec et queue · B coup grave étouffé · C rafale de deux |
+| `ouv-tir` | tir du fusil d'assaut, puis du M1 Garand (lot 9i) | 0,4 s (D : 0,95 s) | A coup sec et queue · B coup grave étouffé · C rafale de deux · **D** tir du M1 Garand (lot 9i, demande du propriétaire : recette `tir-garand-a` de `data/game/sons-armes.json` copiée telle quelle, rendue par `js/core/synth.js` dans une couche `jeu` de `synthese.js`) |
 | `ouv-impact` | balle sur la caisse, étincelles | 0,3 s | **A** tôle et grésillement · B ricochet |
 | `ouv-couvercle` | couvercle qui saute | 0,5 s | **A** verrou et souffle · B tôle qui claque |
 | `ouv-lumiere` | montée de la lumière et des rayons | 0,7 s | **A** souffle clair montant · B bourdon qui s'ouvre |

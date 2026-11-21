@@ -6,6 +6,7 @@
 // fondus aux deux bouts (premier et dernier échantillons nuls).
 import { biquad, biquadSweep, clamp, createRandom, curveAt, dbToGain, fadeEdges, hashSeed, noise, num, removeDc, shortReverb, softClip } from '../../core/synth2-dsp.js';
 import { render as rendreMoteur } from '../../core/synth2.js';
+import { renderSound as rendreJeu } from '../../core/synth.js';
 
 export const FREQUENCE = 22050;
 export const CRETE_DB = -3;
@@ -210,7 +211,27 @@ function coucheMoteur(c, n, sr, graine) {
   return out;
 }
 
-const COUCHES = { ton: coucheTon, bruit: coucheBruit, modes: coucheModes, grains: coucheGrains, notes: coucheNotes, moteur: coucheMoteur };
+// Jeu (lot 9i, retour du propriétaire : le tir du Garand dans les ouvertures) : recette de la partie (format de data/game/sounds.json, rendue par
+// js/core/synth.js, variante `variante`), ramenée à la fréquence du menu (interpolation linéaire) et placée à `at`.
+function coucheJeu(c, n, sr) {
+  const out = new Float64Array(n);
+  if (!estObjet(c.recette)) return out;
+  const r = rendreJeu(c.recette, Math.max(0, Math.trunc(num(c.variante, 0))));
+  const x = r?.samples;
+  const sr0 = num(r?.sampleRate, 0);
+  if (!x?.length || !(sr0 > 0)) return out;
+  const i0 = Math.max(0, Math.round(num(c.at, 0) * sr));
+  const pas = sr0 / sr;
+  for (let i = 0; i0 + i < n; i += 1) {
+    const u = i * pas;
+    const j = Math.floor(u);
+    if (j + 1 >= x.length) break;
+    out[i0 + i] = x[j] + (x[j + 1] - x[j]) * (u - j);
+  }
+  return out;
+}
+
+const COUCHES = { ton: coucheTon, bruit: coucheBruit, modes: coucheModes, grains: coucheGrains, notes: coucheNotes, moteur: coucheMoteur, jeu: coucheJeu };
 export const SORTES_COUCHES = Object.freeze(Object.keys(COUCHES));
 
 // Écho : ligne à retard [retard (s), réinjection, part] (queue des signatures, des explosions) ; même longueur que l'entrée.
