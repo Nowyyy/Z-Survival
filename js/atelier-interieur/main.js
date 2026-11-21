@@ -51,7 +51,7 @@ const etat = { type: TYPES[0], variantes: { ...choix0.variantes }, gardes: { ...
 // Choix du menu (data/menu/caisses-epoque-choix.json ; invalide = défaut).
 function lireChoixMenu(j) {
   const ok = (v, liste, d) => (liste.includes(v) ? v : d);
-  return { caisses: ok(j?.caisses, ['epoque', 'actuelles'], 'epoque'), arme: ok(j?.arme, ['garand', 'fusil'], 'garand'), histoire: ok(j?.histoire, VARIANTES_HISTOIRE, 'A'), chargement: ok(j?.chargement, VARIANTES_CHARGEMENT, 'B') };
+  return { caisses: ok(j?.caisses, ['epoque', 'actuelles'], 'epoque'), arme: ok(j?.arme, ['garand', 'fusil'], 'garand'), histoire: ok(j?.histoire, VARIANTES_HISTOIRE, 'A'), chargement: ok(j?.chargement, VARIANTES_CHARGEMENT, 'C') };
 }
 const menu = lireChoixMenu(choixMenuJson);
 const nomType = (type) => t(`dev.interieur.objet.${type}`);
@@ -445,7 +445,7 @@ async function dessinerOuvertures() {
     }
     sc.redimensionner(932, 430);
     const c0 = chrono.caisses[k.dix ? 3 : 0];
-    const instants = k.dix ? [['dev.interieur.ouv.t.dix', c0.tir + 0.9]] : [['dev.interieur.ouv.t.tapis', c0.tir - 0.25], ['dev.interieur.ouv.t.tir', c0.tir + 0.03], ['dev.interieur.ouv.t.ouverte', c0.tir + 1.2]];
+    const instants = k.dix ? [['dev.interieur.ouv.t.dix', c0.tir + 0.9]] : [['dev.interieur.ouv.t.tapis', c0.tir - 0.25], ['dev.interieur.ouv.t.tir', c0.tir + 0.03], ['dev.interieur.ouv.t.douille', c0.tir + 0.22], ['dev.interieur.ouv.t.ouverte', c0.tir + 1.2]];
     for (const [cle, tps] of instants) {
       sc.rendre(tps);
       const cv = vignette(t('dev.interieur.ouv.vignette', { caisse: t(`dev.interieur.caisse.${k.modele}`), version: t(k.ep ? 'dev.interieur.apres' : 'dev.interieur.avant'), instant: t(cle) }));
@@ -507,7 +507,7 @@ function dessinerMenu() {
 // Revue du contenu.
 {
   const ul = $('contenu-liste');
-  const textes = [TEXTES.medical, ...TEXTES_EPOQUE.munitions, TEXTES_EPOQUE.couvercleMunitions, TEXTES_EPOQUE.cantine, TEXTES_MENU.munitions, TEXTES_MENU.cantine].map((s) => `« ${s.replace(/\s+/g, ' ')} »`).join(', ');
+  const textes = [TEXTES.medical, TEXTES_EPOQUE.cantine, TEXTES_MENU.cantine].map((s) => `« ${s.replace(/\s+/g, ' ')} »`).join(', ');
   for (const [cle, p] of [['dev.interieur.contenu.medical'], ['dev.interieur.contenu.textes', { textes }], ['dev.interieur.contenu.cartes'], ['dev.interieur.contenu.interdits'], ['dev.interieur.contenu.images'], ['dev.interieur.contenu.lumiere']]) {
     const li = document.createElement('li');
     li.textContent = t(cle, p);

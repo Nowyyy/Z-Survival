@@ -237,7 +237,7 @@ describe('ouvertures : Garand et caisses d\'époque', () => {
   });
   it('jetons --ouv-* d\'époque déclarés dans ouvertures.css', () => {
     const css = readFileSync('css/ouvertures.css', 'utf8');
-    for (const j of ['--ouv-munitions', '--ouv-pochoir', '--ouv-corde', '--ouv-cantine', '--ouv-ferrure', '--ouv-nom', '--ouv-cuir', '--ouv-sangle-cuir', '--ouv-boucle', '--ouv-arm-noyer', '--ouv-arm-phosphate', '--ouv-arm-cuir']) expect(css).toContain(`${j}:`);
+    for (const j of ['--ouv-munitions', '--ouv-corde', '--ouv-cantine', '--ouv-ferrure', '--ouv-nom', '--ouv-cuir', '--ouv-sangle-cuir', '--ouv-boucle', '--ouv-arm-noyer', '--ouv-arm-phosphate', '--ouv-arm-cuir']) expect(css).toContain(`${j}:`);
   });
 });
 

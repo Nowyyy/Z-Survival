@@ -5,7 +5,7 @@
 // - Onglet Histoire : sceneJouer (js/menu/jouer.js) reprise, puis voiture → Jeep en flammes, zombies en civil → zombies soldats (casque, capote),
 //   pointillés centraux → ornières ; B : poteaux télégraphiques et barbelés en plus.
 // - Écran de chargement : decorNuit (js/menu/chargement.js) reprise ; B : poteaux et barbelés ; C : plus une Jeep abandonnée et des sacs de sable.
-// Textes inventés (« CAL .30 », « R. MARCEAU ») ; aucune marque, aucun symbole. À l'intégration (après « GO 9i »), ces dessins rejoignent
+// Texte inventé (« R. MARCEAU », cantine ; caisse d'équipement sans texte, retour du propriétaire) ; aucune marque, aucun symbole. À l'intégration (après « GO 9i »), ces dessins rejoignent
 // boutique.js, jouer.js et chargement.js ; la partie et le menu ne chargent pas ce module.
 import { caisseSvg } from '../menu/boutique.js';
 import { sceneJouer } from '../menu/jouer.js';
@@ -29,7 +29,7 @@ const point = (x, y, classe, texte, attrs = {}) => {
   return n;
 };
 
-export const TEXTES_MENU = Object.freeze({ munitions: 'CAL .30', cantine: 'R. MARCEAU' });
+export const TEXTES_MENU = Object.freeze({ cantine: 'R. MARCEAU' }); // retour du propriétaire : aucun texte sur la caisse d'équipement
 export const FORMES_MENU = Object.freeze({ militaire: 'munitions', veterans: 'cantine', tenues: 'valise' });
 
 const DESSINS = {
@@ -41,7 +41,6 @@ const DESSINS = {
     forme('rect', { x: 12, y: 36, width: 9, height: 56 }, 'i9-bois-tasseau'),
     forme('rect', { x: 129, y: 36, width: 9, height: 56 }, 'i9-bois-tasseau'),
     forme('rect', { x: 12, y: 82, width: 126, height: 5 }, 'e3-bande'),
-    point(75, 80, 'i9-pochoir', TEXTES_MENU.munitions),
     forme('rect', { x: 8, y: 25, width: 134, height: 13, rx: 1 }, 'i9-bois-couvercle'),
     forme('path', { d: 'M8 31.5 H142' }, 'i9-bois-joint'),
     forme('rect', { x: 38, y: 24, width: 8, height: 15 }, 'i9-bois-tasseau'),
@@ -98,12 +97,13 @@ export { caisseSvg };
 // tendus, œil rouge.
 function soldat(g) {
   g.replaceChildren(
-    forme('circle', { cx: 0, cy: -37, r: 6.5 }, 'e8-jouer-zombie'),
-    forme('path', { d: 'M-9 -41 Q0 -52 9 -41 L11 -40 H-11Z' }, 'e8-jouer-zombie'),
-    forme('path', { d: 'M-8 -30 H8 L12 -9 H5 L3 -1 H-2 L-3 -9 L-6 -1 H-11 L-10 -9Z' }, 'e8-jouer-zombie'),
+    forme('circle', { cx: 0, cy: -38, r: 6.5 }, 'e8-jouer-zombie'),
+    // Casque M1 : calotte ronde posée sur la tête, bord court tout autour.
+    forme('path', { d: 'M-7.5 -39 Q-7.5 -48.5 0.5 -48.5 Q8.5 -48.5 8.5 -39 L10 -38 H-9Z' }, 'e8-jouer-zombie'),
+    // Capote jusqu'aux genoux (évasée des deux côtés), puis jambes en marche comme le zombie d'origine (pieds sur la même ligne).
+    forme('path', { d: 'M-8 -30 H8 L10.5 -13 H8.6 L10 -4 H4 L2 -11 L-2 -4 H-9.4 L-8.6 -13 H-10.5Z' }, 'e8-jouer-zombie'),
     forme('path', { d: 'M6 -27 L26 -29 L26 -24 L6 -21Z' }, 'e8-jouer-zombie'),
-    forme('path', { d: 'M-7 -29 L-12 -20 L-10 -19 L-5 -26Z' }, 'e8-jouer-zombie'),
-    forme('circle', { cx: 3, cy: -38, r: 1.3 }, 'e8-jouer-yeux'),
+    forme('circle', { cx: 3, cy: -38.5, r: 1.3 }, 'e8-jouer-yeux'),
   );
 }
 // Jeep en flammes (même place que la voiture : 740-840 × 266-296) : capot plat, pare-brise rabattu, roue de secours, roues découpées.
@@ -149,8 +149,8 @@ export function sceneJouerEpoque(etat, variante = 'A') {
     const route = svg.querySelector('.e8-jouer-route');
     const ref = route ?? svg.lastChild;
     const lignes = forme('g', {}, 'i9-decor-b');
-    poteaux(lignes, [[22, 300, 70], [128, 296, 66], [212, 292, 62]]);
-    poteaux(lignes, [[722, 290, 60], [870, 288, 64]]);
+    poteaux(lignes, [[24, 300, 120], [132, 296, 112], [226, 292, 104]], 'i9-histoire');
+    poteaux(lignes, [[716, 290, 104], [884, 290, 116]], 'i9-histoire');
     lignes.append(barbeles(18, 236, 318), barbeles(706, 920, 312));
     ref.before(lignes);
   }
