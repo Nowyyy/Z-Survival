@@ -18,76 +18,11 @@ const forme = (tag, attrs = {}, classe = '') => {
   for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, String(v));
   return n;
 };
-const groupe = (classe, ...enfants) => {
-  const g = forme('g', {}, classe);
-  g.append(...enfants);
-  return g;
-};
-const point = (x, y, classe, texte, attrs = {}) => {
-  const n = forme('text', { x, y, 'text-anchor': 'middle', ...attrs }, classe);
-  n.textContent = texte;
-  return n;
-};
 
 export const FORMES_MENU = Object.freeze({ militaire: 'munitions', veterans: 'cantine', tenues: 'valise' });
 
-const DESSINS = {
-  munitions: () => [
-    // Poignées de corde en boucle aux deux bouts.
-    forme('path', { d: 'M12 50 C2 52 2 70 12 72 M138 50 C148 52 148 70 138 72' }, 'i9-corde'),
-    forme('rect', { x: 12, y: 36, width: 126, height: 56, rx: 1 }, 'i9-bois'),
-    forme('path', { d: 'M12 55 H138 M12 74 H138' }, 'i9-bois-joint'),
-    forme('rect', { x: 12, y: 36, width: 9, height: 56 }, 'i9-bois-tasseau'),
-    forme('rect', { x: 129, y: 36, width: 9, height: 56 }, 'i9-bois-tasseau'),
-    forme('rect', { x: 12, y: 82, width: 126, height: 5 }, 'e3-bande'),
-    forme('rect', { x: 8, y: 25, width: 134, height: 13, rx: 1 }, 'i9-bois-couvercle'),
-    forme('path', { d: 'M8 31.5 H142' }, 'i9-bois-joint'),
-    forme('rect', { x: 38, y: 24, width: 8, height: 15 }, 'i9-bois-tasseau'),
-    forme('rect', { x: 104, y: 24, width: 8, height: 15 }, 'i9-bois-tasseau'),
-  ],
-  cantine: () => [
-    forme('rect', { x: 12, y: 36, width: 126, height: 56, rx: 2 }, 'i9-cantine'),
-    forme('path', { d: 'M12 50 H138 M12 64 H138 M12 78 H138' }, 'i9-cantine-joint'),
-    forme('rect', { x: 10, y: 37, width: 130, height: 3 }, 'e3-bande'),
-    // Cornières, poignées latérales, moraillon.
-    forme('path', { d: 'M12 82 V92 H22 M138 82 V92 H128 M12 46 V36 H22 M138 46 V36 H128' }, 'i9-ferrure'),
-    forme('path', { d: 'M6 58 h6 M6 58 v8 h6 M144 58 h-6 M144 58 v8 h-6' }, 'i9-ferrure-fine'),
-    forme('rect', { x: 71, y: 37, width: 8, height: 5, rx: 1 }, 'e3-loquet'),
-    forme('rect', { x: 8, y: 26, width: 134, height: 12, rx: 2 }, 'i9-cantine-couvercle'),
-  ],
-  valise: () => [
-    forme('path', { d: 'M60 34 V26 Q75 20 90 26 V34' }, 'e3-anse'),
-    forme('rect', { x: 12, y: 34, width: 126, height: 58, rx: 12 }, 'e3-valise'),
-    forme('rect', { x: 17, y: 39, width: 116, height: 48, rx: 9 }, 'i9-couture'),
-    forme('rect', { x: 12, y: 60, width: 126, height: 3 }, 'e3-bande'),
-    // Coins de cuir plus sombre, deux sangles à boucle, serrures.
-    forme('path', { d: 'M12 50 V46 Q12 34 24 34 H28 V40 H22 Q18 40 18 46 V50Z M138 50 V46 Q138 34 126 34 H122 V40 H128 Q132 40 132 46 V50Z M12 76 V80 Q12 92 24 92 H28 V86 H22 Q18 86 18 80 V76Z M138 76 V80 Q138 92 126 92 H122 V86 H128 Q132 86 132 80 V76Z' }, 'i9-coin-cuir'),
-    forme('rect', { x: 38, y: 34, width: 9, height: 58 }, 'e3-sangle'),
-    forme('rect', { x: 103, y: 34, width: 9, height: 58 }, 'e3-sangle'),
-    forme('rect', { x: 36, y: 68, width: 13, height: 10, rx: 1 }, 'e3-boucle'),
-    forme('rect', { x: 101, y: 68, width: 13, height: 10, rx: 1 }, 'e3-boucle'),
-    forme('rect', { x: 60, y: 31, width: 6, height: 5, rx: 1 }, 'e3-loquet'),
-    forme('rect', { x: 84, y: 31, width: 6, height: 5, rx: 1 }, 'e3-loquet'),
-  ],
-};
-// Places des « ? » (comme caisseSvg) : grand (y de la ligne de base), petits (x, x, y).
-const POINTS = { munitions: [70, 44, 106, 64], cantine: [70, 36, 112, 66], valise: [72, 25, 125, 58] };
-
-// Caisse d'époque (même nœud que caisseSvg : classes e3-caisse, e3-rayons, e3-tremble, e3-flotte, e3-lueur, e3-q).
-export function caisseSvgEpoque(modele = 'militaire') {
-  const m = FORMES_MENU[modele] ? modele : 'militaire';
-  const f = FORMES_MENU[m];
-  const [y, x1, x2, y2] = POINTS[f];
-  const svg = forme('svg', { viewBox: '0 -10 150 106', 'aria-hidden': 'true', focusable: 'false', preserveAspectRatio: 'xMidYMax meet', 'data-modele': m, 'data-epoque': f }, `e3-caisse e3-caisse-${m}`);
-  svg.append(
-    groupe('e3-rayons', forme('path', { d: 'M40 30 L20 -6 L55 -6 Z M75 30 L66 -10 L84 -10 Z M110 30 L95 -6 L130 -6 Z' })),
-    groupe('e3-tremble', groupe('e3-flotte',
-      ...DESSINS[f](),
-      groupe('e3-lueur', point(75, y, 'e3-q e3-q-halo', '?'), point(75, y, 'e3-q', '?')),
-      point(x1, y2, 'e3-q e3-q-petit', '?'),
-      point(x2, y2, 'e3-q e3-q-petit', '?'))));
-  return svg;
-}
+// Caisse d'époque : le dessin intégré au menu après le « GO 9i » (js/menu/boutique.js, caisseSvg avec epoque).
+export const caisseSvgEpoque = (modele = 'militaire') => caisseSvg(modele, { epoque: true });
 export { caisseSvg };
 
 // --- Onglet Histoire -------------------------------------------------------------------------------------------------------------------------------

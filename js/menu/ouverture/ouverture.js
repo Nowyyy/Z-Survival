@@ -48,7 +48,16 @@ function feuille() {
   });
 }
 
-// Préchargement (toucher de « Ouvrir ») : feuille, données, Three.js et la scène, données des zombies. Une seule promesse.
+// Lot 9i : choix d'époque des ouvertures (data/menu/caisses-epoque-choix.json, choix du propriétaire) : M1 Garand (avec sa douille) et caisses
+// d'époque ; valeur inconnue ou fichier illisible : défaut (Garand, caisses d'époque). → option epoque de creerScene.
+export function epoqueOuverture(j) {
+  const arme = j?.arme === 'fusil' ? null : 'garand';
+  const caisses = j?.caisses !== 'actuelles';
+  return arme || caisses ? { arme, caisses } : null;
+}
+
+// Préchargement (toucher de « Ouvrir ») : feuille, données, Three.js et la scène, données des zombies ; lot 9i : choix d'époque, modules du Garand
+// (et ses données d'armes) et des caisses d'époque. Une seule promesse.
 let charge = null;
 export function precharger() {
   charge ??= Promise.all([
@@ -56,6 +65,10 @@ export function precharger() {
     json('data/menu/ouvertures.json'),
     import('./scene.js'),
     import('./zombies.js').then((m) => m.prechargerZombies()),
+    json('data/menu/caisses-epoque-choix.json').catch(() => null).then((j) => {
+      const ep = epoqueOuverture(j);
+      return Promise.all([ep?.arme ? import('./garand.js').then((m) => m.prechargerGarand()) : null, ep?.caisses ? import('./caisses-epoque.js') : null]).then(() => ep);
+    }),
   ]).catch((e) => {
     charge = null;
     throw e;
@@ -91,10 +104,11 @@ async function creerOuverture({ r, cat, cartes, annonce, t, parent, rappels }) {
   if (enCours || !ouvertureVoulue() || !r?.caisse || !Array.isArray(cartes) || cartes.length !== r.objets.length) return null;
   let donnees;
   let sceneMod;
+  let epoque; // lot 9i : choix d'époque (Garand, caisses)
   // Lot 8i : sons de l'ouverture calculés en même temps (calculateur d'arrière-plan ; null sans geste : l'ouverture reste muette).
   const sonsPrets = preparerSons('ouverture').catch(() => null);
   try {
-    [, donnees, sceneMod] = await precharger();
+    [, donnees, sceneMod, , epoque] = await precharger();
   } catch {
     return null;
   }
@@ -173,7 +187,7 @@ async function creerOuverture({ r, cat, cartes, annonce, t, parent, rappels }) {
   try {
     const police = getComputedStyle(document.documentElement).getPropertyValue('--font-display').trim() || 'sans-serif';
     await Promise.race([document.fonts?.load?.(`48px ${police}`), new Promise((res) => setTimeout(res, 800))]).catch(() => {});
-    scene = await sceneMod.creerScene({ canvas, couleur, chrono, reglages, cartes: cartesScene, modele: r.caisse.modele, police, caseCible });
+    scene = await sceneMod.creerScene({ canvas, couleur, chrono, reglages, cartes: cartesScene, modele: r.caisse.modele, police, caseCible, epoque });
   } catch {
     // WebGL indisponible (ou création impossible) : rien de plus n'est montré, le résultat s'affiche directement.
     section.remove();

@@ -3982,6 +3982,20 @@
   stroke-width: 3;
 }
 
+/* Lot 9i : caisses de 1942 (choix du propriétaire), sans texte. */
+.e3-ep-bois { fill: var(--menu-bois); stroke: var(--menu-bois-sombre); stroke-width: 3; }
+.e3-ep-bois-couvercle { fill: var(--menu-bois-clair); stroke: var(--menu-bois-sombre); stroke-width: 3; }
+.e3-ep-bois-tasseau { fill: var(--menu-bois-clair); stroke: var(--menu-bois-sombre); stroke-width: 1.5; }
+.e3-ep-bois-joint { fill: none; stroke: var(--menu-bois-sombre); stroke-width: 1.5; }
+.e3-ep-corde { fill: none; stroke: var(--menu-classement-rang); stroke-width: 3; stroke-linecap: round; }
+.e3-ep-cantine { fill: var(--menu-perso-survivant); stroke: var(--menu-perso-jambes); stroke-width: 3; }
+.e3-ep-cantine-couvercle { fill: var(--menu-perso-poche); stroke: var(--menu-perso-jambes); stroke-width: 3; }
+.e3-ep-cantine-joint { fill: none; stroke: var(--menu-perso-jambes); stroke-width: 1.2; }
+.e3-ep-ferrure { fill: none; stroke: var(--menu-clou); stroke-width: 3; stroke-linejoin: round; }
+.e3-ep-ferrure-fine { fill: none; stroke: var(--menu-clou); stroke-width: 2; }
+.e3-ep-couture { fill: none; stroke: var(--menu-bois-clair); stroke-width: 1.2; stroke-dasharray: 3 2; }
+.e3-ep-coin-cuir { fill: var(--menu-bois-sombre); }
+
 @keyframes e3-flotte {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-3px); }

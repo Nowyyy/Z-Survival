@@ -991,7 +991,6 @@
         "js/atelier-interieur/**",
         "data/i18n/atelier-interieur.json",
         "css/atelier-interieur.css",
-        "data/menu/caisses-epoque-choix.json",
         "js/armes/atelier.js",
         "js/armes/rendu.js",
         "js/armes/tenue.js",

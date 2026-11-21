@@ -107,18 +107,6 @@
 }
 
 /* Dessins d'époque du menu (jetons --menu-*). */
-.i9-bois { fill: var(--menu-bois); stroke: var(--menu-bois-sombre); stroke-width: 3; }
-.i9-bois-couvercle { fill: var(--menu-bois-clair); stroke: var(--menu-bois-sombre); stroke-width: 3; }
-.i9-bois-tasseau { fill: var(--menu-bois-clair); stroke: var(--menu-bois-sombre); stroke-width: 1.5; }
-.i9-bois-joint { fill: none; stroke: var(--menu-bois-sombre); stroke-width: 1.5; }
-.i9-corde { fill: none; stroke: var(--menu-classement-rang); stroke-width: 3; stroke-linecap: round; }
-.i9-cantine { fill: var(--menu-perso-survivant); stroke: var(--menu-perso-jambes); stroke-width: 3; }
-.i9-cantine-couvercle { fill: var(--menu-perso-poche); stroke: var(--menu-perso-jambes); stroke-width: 3; }
-.i9-cantine-joint { fill: none; stroke: var(--menu-perso-jambes); stroke-width: 1.2; }
-.i9-ferrure { fill: none; stroke: var(--menu-clou); stroke-width: 3; stroke-linejoin: round; }
-.i9-ferrure-fine { fill: none; stroke: var(--menu-clou); stroke-width: 2; }
-.i9-couture { fill: none; stroke: var(--menu-bois-clair); stroke-width: 1.2; stroke-dasharray: 3 2; }
-.i9-coin-cuir { fill: var(--menu-bois-sombre); }
 .i9-orniere { fill: none; stroke: var(--menu-scene-route-trait); stroke-width: 1.6; }
 .i9-poteau { fill: none; stroke: var(--menu-scene-lointain); stroke-width: 3; }
 .i9-chargement .i9-poteau,
