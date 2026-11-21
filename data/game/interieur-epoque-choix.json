@@ -1,0 +1,23 @@
+{
+  "_provisoire": "Choix du propriétaire sur atelier-interieur.html (lot 9i, mode d'emploi : Docs/ref/decor-epoque.md, « Intérieur et menu »). variantes : type d'objet → variante retenue ; gardes : type → true (dans le plan) ou false (retiré). Entrée inconnue, absente ou fichier illisible : variante proposée par défaut et objet gardé. Le jeu ne lit ce fichier qu'après « GO 9i ».",
+  "variantes": {
+    "radio": "caisse",
+    "telephone": "ouvert",
+    "machine": "papier",
+    "carte": "grande",
+    "brancard": "couverture",
+    "caisseMedicale": "une",
+    "casques": "deux",
+    "ampoules": "fil"
+  },
+  "gardes": {
+    "radio": true,
+    "telephone": true,
+    "machine": true,
+    "carte": true,
+    "brancard": true,
+    "caisseMedicale": true,
+    "casques": true,
+    "ampoules": true
+  }
+}

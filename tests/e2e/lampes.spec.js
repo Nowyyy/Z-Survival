@@ -55,10 +55,13 @@ const pixels = (page, x, y, w, h) => page.evaluate(({ x, y, w, h }) => {
 // Faible (avant : 38 385, 39 827 ; 23 773, 25 215 ; 19 179, 19 831), mêmes appels et programmes ; écart présent sur origin/dev, hors de ce lot.
 // Lot 9h (retours, collisions de l'intérieur) : meubles fusionnés découpés en leurs pièces ; M26 et M29 (pièces de M26+M28+M29+M31, dont deux pièces sans
 // dessin) sont dessinés pièce par pièce : + 20 triangles (Élevé, Moyen), + 10 (Faible) mesurés ; mêmes appels et programmes.
+// Lot 9i : un programme de shader de plus à chaque préréglage (19 → 20, 17 → 18), mêmes appels et triangles : écart déjà présent sur origin/dev
+// (7f60484) et sur les pointes de lot-9e (c48924a) et de lot-9h (9f14379), venu des retours du lot 9e après la partie H (dernière mise à jour de
+// cette table) ; ce test ne tournait plus dans la CI de dev (sélection par zones). Mesuré à l'identique avec et sans les changements du lot 9i.
 const ORIGINE = {
-  eleve: { R1: [64, 38421, 19], U1: [71, 39863, 19] },
-  moyen: { R1: [62, 24085, 19], U1: [69, 25527, 19] },
-  faible: { R1: [44, 19481, 17], U1: [50, 20133, 17] },
+  eleve: { R1: [64, 38421, 20], U1: [71, 39863, 20] },
+  moyen: { R1: [62, 24085, 20], U1: [69, 25527, 20] },
+  faible: { R1: [44, 19481, 18], U1: [50, 20133, 18] },
 };
 const SCENES = {
   R1: { url: '&nospawn=1', at: [U(300), U(300)], floor: 'rdc', wave: 10 },

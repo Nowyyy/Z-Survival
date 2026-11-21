@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex">
+  <meta name="color-scheme" content="dark">
+  <title>Z-Survival · Atelier de l'intérieur et du menu de 1942</title>
+  <link rel="icon" href="data:,">
+  <script type="importmap">{"imports":{"three":"./vendor/three/three.module.js"}}</script>
+  <link rel="preload" href="fonts/barlow-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="fonts/barlow-latin-700-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/atelier-sons.css">
+  <link rel="stylesheet" href="css/atelier-armes.css">
+  <link rel="stylesheet" href="css/carte.css">
+  <link rel="stylesheet" href="css/atelier-decor.css">
+  <link rel="stylesheet" href="css/menu.css">
+  <link rel="stylesheet" href="css/ouvertures.css">
+  <link rel="stylesheet" href="css/atelier-interieur.css">
+  <script type="module" src="js/atelier-interieur/main.js"></script>
+</head>
+<body class="atelier-page">
+  <noscript>
+    <p class="noscript">Cette page a besoin de JavaScript.</p>
+  </noscript>
+  <main id="app" class="atelier armes decor interieur" hidden>
+    <header class="atelier-head" aria-labelledby="atelier-title">
+      <h1 id="atelier-title" class="atelier-title" data-i18n="dev.interieur.titre"></h1>
+      <p class="atelier-intro" data-i18n="dev.interieur.intro"></p>
+      <p class="atelier-warning" data-i18n="dev.interieur.avertissement"></p>
+      <p id="status" class="atelier-status" role="status" aria-live="polite"></p>
+      <p id="webgl-erreur" class="atelier-note" data-i18n="dev.interieur.webgl" hidden></p>
+      <nav aria-labelledby="nav-titre">
+        <h2 id="nav-titre" class="armes-nav-titre" data-i18n="dev.interieur.nav"></h2>
+        <ul class="armes-nav">
+          <li><a class="atelier-link" href="#vue-jeu" data-i18n="dev.interieur.jeu.titre"></a></li>
+          <li><a class="atelier-link" href="#vue-gros-plan" data-i18n="dev.interieur.grosplan.titre"></a></li>
+          <li><a class="atelier-link" href="#vue-planche" data-i18n="dev.interieur.planche.titre"></a></li>
+          <li><a class="atelier-link" href="#plan" data-i18n="dev.interieur.plan.titre"></a></li>
+          <li><a class="atelier-link" href="#lampe" data-i18n="dev.interieur.lampe.titre"></a></li>
+          <li><a class="atelier-link" href="#ouvertures" data-i18n="dev.interieur.ouv.titre"></a></li>
+          <li><a class="atelier-link" href="#caisses" data-i18n="dev.interieur.caisses.titre"></a></li>
+          <li><a class="atelier-link" href="#scenes" data-i18n="dev.interieur.scenes.titre"></a></li>
+          <li><a class="atelier-link" href="#budget" data-i18n="dev.interieur.budget.titre"></a></li>
+          <li><a class="atelier-link" href="#contenu" data-i18n="dev.interieur.contenu.titre"></a></li>
+          <li><a class="atelier-link" href="#choix" data-i18n="dev.interieur.choix.titre"></a></li>
+          <li><a class="atelier-link" href="jeu.html" data-i18n="dev.interieur.lien.jeu"></a></li>
+        </ul>
+      </nav>
+    </header>
+
+    <section id="reglages" class="atelier-section armes-reglages" aria-labelledby="reglages-titre" tabindex="0">
+      <h2 id="reglages-titre" class="atelier-heading" data-i18n="dev.interieur.reglages"></h2>
+      <div class="armes-champs">
+        <div class="armes-champ"><label for="ctl-objet" data-i18n="dev.interieur.objet"></label><select id="ctl-objet" class="armes-select"></select></div>
+        <div class="armes-champ"><label for="ctl-variante" data-i18n="dev.interieur.variante"></label><select id="ctl-variante" class="armes-select"></select></div>
+        <div class="armes-champ"><label for="ctl-lumiere" data-i18n="dev.interieur.lumiere"></label><select id="ctl-lumiere" class="armes-select"></select></div>
+        <div class="armes-champ"><label for="ctl-garde" data-i18n="dev.interieur.garde"></label><select id="ctl-garde" class="armes-select"></select></div>
+      </div>
+      <p id="variante-fiche" class="atelier-note decor-fiche"></p>
+    </section>
+
+    <section id="vue-jeu" class="atelier-section" aria-labelledby="jeu-titre">
+      <h2 id="jeu-titre" class="atelier-heading" data-i18n="dev.interieur.jeu.titre"></h2>
+      <p class="atelier-note" data-i18n="dev.interieur.jeu.intro"></p>
+      <p id="jeu-mesures" class="atelier-note armes-mesures"></p>
+      <h3 id="jeu-petit-titre" class="armes-sous-titre" data-i18n="dev.interieur.jeu.petit"></h3>
+      <div class="armes-scene armes-taille-reelle" tabindex="0" role="group" aria-labelledby="jeu-petit-titre"><canvas id="cv-jeu" class="armes-canvas-reel" width="667" height="375" aria-hidden="true"></canvas></div>
+      <h3 id="jeu-grand-titre" class="armes-sous-titre" data-i18n="dev.interieur.jeu.grand"></h3>
+      <div class="armes-scene armes-taille-reelle" tabindex="0" role="group" aria-labelledby="jeu-grand-titre"><canvas id="cv-jeu-grand" class="armes-canvas-reel" width="1920" height="1080" aria-hidden="true"></canvas></div>
+    </section>
+
+    <section id="vue-gros-plan" class="atelier-section" aria-labelledby="gros-plan-titre">
+      <h2 id="gros-plan-titre" class="atelier-heading" data-i18n="dev.interieur.grosplan.titre"></h2>
+      <p class="atelier-note" data-i18n="dev.interieur.grosplan.intro"></p>
+      <div class="armes-champs">
+        <div class="armes-champ"><label for="ctl-rotation" data-i18n="dev.interieur.rotation"></label><select id="ctl-rotation" class="armes-select"></select></div>
+      </div>
+      <div class="armes-scene"><canvas id="cv-gros-plan" class="decor-canvas" width="720" height="440" aria-hidden="true"></canvas></div>
+    </section>
+
+    <section id="vue-planche" class="atelier-section" aria-labelledby="planche-titre">
+      <h2 id="planche-titre" class="atelier-heading" data-i18n="dev.interieur.planche.titre"></h2>
+      <p class="atelier-note" data-i18n="dev.interieur.planche.intro"></p>
+      <div id="planche" class="decor-planche"></div>
+    </section>
+
+    <section id="plan" class="atelier-section" aria-labelledby="plan-titre">
+      <h2 id="plan-titre" class="atelier-heading" data-i18n="dev.interieur.plan.titre"></h2>
+      <p class="atelier-note" data-i18n="dev.interieur.plan.intro"></p>
+      <p id="plan-resume" class="atelier-note"></p>
+      <ul class="atelier-note i9-legende">
+        <li><span class="i9-pastille i9-p-passe" aria-hidden="true"></span><span data-i18n="dev.interieur.plan.legende.passe"></span></li>
+        <li><span class="i9-pastille i9-p-libre" aria-hidden="true"></span><span data-i18n="dev.interieur.plan.legende.libre"></span></li>
+        <li><span class="i9-pastille i9-p-fenetre" aria-hidden="true"></span><span data-i18n="dev.interieur.plan.legende.fenetre"></span></li>
+        <li><span class="i9-pastille i9-p-lampe" aria-hidden="true"></span><span data-i18n="dev.interieur.plan.legende.lampe"></span></li>
+      </ul>
+      <h3 id="plan-rdc-titre" class="armes-sous-titre" data-i18n="dev.interieur.plan.rdc"></h3>
+      <figure id="plan-rdc" class="i9-plan" tabindex="0" aria-labelledby="plan-rdc-titre"></figure>
+      <h3 id="plan-etage-titre" class="armes-sous-titre" data-i18n="dev.interieur.plan.etage"></h3>
+      <figure id="plan-etage" class="i9-plan" tabindex="0" aria-labelledby="plan-etage-titre"></figure>
+      <div class="armes-tableau-hote" tabindex="0" role="region" aria-labelledby="table-objets-titre">
+        <table id="table-objets" class="armes-tableau">
+          <caption id="table-objets-titre" data-i18n="dev.interieur.plan.objets"></caption>
+          <thead><tr><th scope="col" data-i18n="dev.interieur.col.id"></th><th scope="col" data-i18n="dev.interieur.col.objet"></th><th scope="col" data-i18n="dev.interieur.col.place"></th><th scope="col" data-i18n="dev.interieur.col.emprise"></th><th scope="col" data-i18n="dev.interieur.col.hauteur"></th><th scope="col" data-i18n="dev.interieur.col.tirs"></th><th scope="col" data-i18n="dev.interieur.col.collision"></th><th scope="col" data-i18n="dev.interieur.col.triangles"></th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="armes-tableau-hote" tabindex="0" role="region" aria-labelledby="table-chemins-titre">
+        <table id="table-chemins" class="armes-tableau">
+          <caption id="table-chemins-titre" data-i18n="dev.interieur.plan.chemins"></caption>
+          <thead><tr><th scope="col" data-i18n="dev.interieur.col.etage"></th><th scope="col" data-i18n="dev.interieur.col.fenetre"></th><th scope="col" data-i18n="dev.interieur.col.cellules"></th><th scope="col" data-i18n="dev.interieur.col.coupees"></th><th scope="col" data-i18n="dev.interieur.col.allongement"></th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="lampe" class="atelier-section" aria-labelledby="lampe-titre">
+      <h2 id="lampe-titre" class="atelier-heading" data-i18n="dev.interieur.lampe.titre"></h2>
+      <p class="atelier-note" data-i18n="dev.interieur.lampe.intro"></p>
+      <p id="lampe-mesures" class="atelier-note armes-mesures"></p>
+      <div class="i9-paire">
+        <figure class="decor-vignette"><canvas id="cv-lampe-avant" width="480" height="360" aria-hidden="true"></canvas><figcaption data-i18n="dev.interieur.lampe.avant"></figcaption></figure>
+        <figure class="decor-vignette"><canvas id="cv-lampe-apres" width="480" height="360" aria-hidden="true"></canvas><figcaption data-i18n="dev.interieur.lampe.apres"></figcaption></figure>
+      </div>
+      <h3 id="lampe-jeu-titre" class="armes-sous-titre" data-i18n="dev.interieur.lampe.jeu"></h3>
+      <div class="armes-scene armes-taille-reelle" tabindex="0" role="group" aria-labelledby="lampe-jeu-titre"><canvas id="cv-lampe-jeu" class="armes-canvas-reel" width="667" height="375" aria-hidden="true"></canvas></div>
+    </section>
+
+    <section id="ouvertures" class="atelier-section" aria-labelledby="ouv-titre">
+      <h2 id="ouv-titre" class="atelier-heading" data-i18n="dev.interieur.ouv.titre"></h2>
+      <p class="atelier-note" data-i18n="dev.interieur.ouv.intro"></p>
+      <p id="ouv-mesures" class="atelier-note armes-mesures"></p>
+      <div id="ouv-planche" class="i9-ouv-planche"></div>
+    </section>
+
+    <section id="caisses" class="atelier-section" aria-labelledby="caisses-titre">
+      <h2 id="caisses-titre" class="atelier-heading" data-i18n="dev.interieur.caisses.titre"></h2>
+      <p class="atelier-note" data-i18n="dev.interieur.caisses.intro"></p>
+      <div id="caisses-planche" class="i9-caisses"></div>
+    </section>
+
+    <section id="scenes" class="atelier-section" aria-labelledby="scenes-titre">
+      <h2 id="scenes-titre" class="atelier-heading" data-i18n="dev.interieur.scenes.titre"></h2>
+      <p class="atelier-note" data-i18n="dev.interieur.scenes.intro"></p>
+      <div id="scenes-planche" class="i9-scenes"></div>
+    </section>
+
+    <section id="budget" class="atelier-section" aria-labelledby="budget-titre">
+      <h2 id="budget-titre" class="atelier-heading" data-i18n="dev.interieur.budget.titre"></h2>
+      <p id="budget-plan" class="atelier-note"></p>
+      <div class="armes-tableau-hote" tabindex="0" role="region" aria-labelledby="table-budget-titre">
+        <table id="table-budget" class="armes-tableau">
+          <caption id="table-budget-titre" data-i18n="dev.interieur.budget.table"></caption>
+          <thead><tr><th scope="col" data-i18n="dev.interieur.col.objet"></th><th scope="col" data-i18n="dev.interieur.col.variante"></th><th scope="col" data-i18n="dev.interieur.col.triangles"></th><th scope="col" data-i18n="dev.interieur.col.reel"></th><th scope="col" data-i18n="dev.interieur.col.emprise"></th><th scope="col" data-i18n="dev.interieur.col.hauteur"></th><th scope="col" data-i18n="dev.interieur.col.tirs"></th><th scope="col" data-i18n="dev.interieur.col.collision"></th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="contenu" class="atelier-section" aria-labelledby="contenu-titre">
+      <h2 id="contenu-titre" class="atelier-heading" data-i18n="dev.interieur.contenu.titre"></h2>
+      <ul id="contenu-liste" class="atelier-note"></ul>
+    </section>
+
+    <section id="choix" class="atelier-section" aria-labelledby="choix-titre">
+      <h2 id="choix-titre" class="atelier-heading" data-i18n="dev.interieur.choix.titre"></h2>
+      <p class="atelier-note" data-i18n="dev.interieur.choix.intro"></p>
+      <div class="armes-champs">
+        <div class="armes-champ"><label for="ctl-caisses" data-i18n="dev.interieur.choix.caisses"></label><select id="ctl-caisses" class="armes-select"></select></div>
+        <div class="armes-champ"><label for="ctl-arme" data-i18n="dev.interieur.choix.arme"></label><select id="ctl-arme" class="armes-select"></select></div>
+        <div class="armes-champ"><label for="ctl-histoire" data-i18n="dev.interieur.choix.histoire"></label><select id="ctl-histoire" class="armes-select"></select></div>
+        <div class="armes-champ"><label for="ctl-chargement" data-i18n="dev.interieur.choix.chargement"></label><select id="ctl-chargement" class="armes-select"></select></div>
+      </div>
+      <h3 id="choix-interieur-titre" class="armes-sous-titre" data-i18n="dev.interieur.choix.fichierInterieur"></h3>
+      <pre id="choix-interieur" class="decor-json" tabindex="0" aria-labelledby="choix-interieur-titre"></pre>
+      <h3 id="choix-menu-titre" class="armes-sous-titre" data-i18n="dev.interieur.choix.fichierMenu"></h3>
+      <pre id="choix-menu" class="decor-json" tabindex="0" aria-labelledby="choix-menu-titre"></pre>
+    </section>
+  </main>
+</body>
+</html>

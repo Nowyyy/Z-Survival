@@ -76,6 +76,28 @@
   --ouv-carte-texte: var(--menu-texte);
   --ouv-carte-doux: var(--menu-texte-doux);
   --ouv-sombre: var(--menu-scene-vignette);
+  /* Lot 9i (atelier, avant le « GO 9i ») : caisses d'époque et M1 Garand des ouvertures (js/menu/ouverture/caisses-epoque.js, garand.js) */
+  --ouv-munitions: #6b5a3c;
+  --ouv-munitions-clair: #84704c;
+  --ouv-munitions-sombre: #3e3322;
+  --ouv-pochoir: #e0b43a;
+  --ouv-corde: #b39b6a;
+  --ouv-cantine: #4f4a2e;
+  --ouv-cantine-clair: #635d3a;
+  --ouv-cantine-sombre: #2e2b1a;
+  --ouv-ferrure: #5c5850;
+  --ouv-nom: #e6e0cc;
+  --ouv-cuir: #6a3f22;
+  --ouv-cuir-clair: #84532f;
+  --ouv-cuir-sombre: #3a2212;
+  --ouv-sangle-cuir: #2f1c10;
+  --ouv-boucle: #a8945a;
+  --ouv-arm-noyer: #5a3a22;
+  --ouv-arm-noyer-veine: #3a2414;
+  --ouv-arm-phosphate: #3c3f3a;
+  --ouv-arm-phosphate-clair: #5e6157;
+  --ouv-arm-cuir: #6b4528;
+  --ouv-arm-cuir-sombre: #44291a;
   /* Interface par-dessus la scène */
   --ouv-passer-fond: rgb(5 5 5 / 80%);
   --ouv-passer-bord: var(--menu-classement-rang);
