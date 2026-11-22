@@ -62,7 +62,9 @@ test.describe('cône de tir : tirage des balles', () => {
 test.describe('statistiques : dégâts, cadence, vitesse', () => {
   for (const [lvl, delay] of [[0, 0.4], [10, 0.15]]) {
     test(`cadence : intervalle entre tirs ${delay} s au niveau ${lvl} (±10 %, temps de jeu)`, async ({ page }) => {
-      await open(page, `&empty=1&nospawn=1&lvl=cadence:${lvl}`);
+      // Retours du lot 9j : munitions illimitées ; depuis le lot 9e, le pistolet recharge après 7 balles, et au niveau 10 (0,15 s) le rechargement
+      // tombait dans les 3 s mesurées (intervalle moyen faussé : 0,32 s ; test du palier complet, rejoué ici parce que ses bornes de triangles ont changé).
+      await open(page, `&empty=1&nospawn=1&lvl=cadence:${lvl}&munitions=illimitees`);
       await page.evaluate(() => { window.__zs.setInput({ aim: { angle: 0 } }); window.__zs.setPlayer(800, 450); });
       // Un zombie qui reste sur la ligne : replacé à chaque pas.
       const times = await page.evaluate(() => {
