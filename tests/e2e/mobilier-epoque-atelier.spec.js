@@ -45,6 +45,10 @@ test('atelier du mobilier : chaque aspect (actuel et variantes) en vue du jeu, d
       if (v !== 'actuel') expect(r.ecarts.max, `${a}/${v}`).toBeLessThanOrEqual(0.1);
     }
   }
+  // Retours du propriétaire : éboulis des escaliers fermés (actuel, A, B, C), chaque dessin moins coûteux que l'éboulis du lot 3g.
+  await expect(page.locator('#vues-escaliers figure')).toHaveCount(4);
+  const esc = (await page.evaluate(() => window.__zsMobilier.mesures())).escaliers;
+  for (const v of ['A', 'B', 'C']) expect(esc[v].corps, v).toBeLessThan(esc.actuel.corps);
   // M22 (étagère renversée) et le tas P6 (gravats) sont les pièces montrées par défaut.
   expect(await page.locator('#ctl-piece-renversee').inputValue()).toBe('M22');
   expect(await page.locator('#ctl-piece-gravats').inputValue()).toBe('P6');
@@ -67,6 +71,7 @@ test('atelier du mobilier : chaque aspect (actuel et variantes) en vue du jeu, d
   const c = await page.evaluate(() => window.__zsMobilier.choix());
   expect(c.variantes.caisses).toBe('C');
   expect(c.pieces).toEqual({ M22: 'caisses' });
+  expect(c.escaliers).toBe('C');
   await expect(page.locator('#choix-fichier')).toContainText('"M22": "caisses"');
   // Gros plan et grande vue (1920 × 1080).
   const g = await page.evaluate(() => window.__zsMobilier.grosPlan('comptoir', 'A', 1.2));

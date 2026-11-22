@@ -12,7 +12,9 @@ import { segmentRects } from '../core/shape.js';
 import { couleursEpoque } from '../core/decor-epoque.js';
 import { createV2Kit } from '../game/character-v2.js';
 import { slotsWithEpoch } from '../core/persos-variants.js';
-import { ASPECTS, CORPS, VARIANTES, ecarts, lireChoix, modeleMeuble, specsMobilier, unitHash } from '../core/mobilier-epoque.js';
+import { ASPECTS, CORPS, VARIANTES, VARIANTES_ESCALIER, ecarts, lireChoix, modeleEscalier, modeleMeuble, specsMobilier, unitHash } from '../core/mobilier-epoque.js';
+import { rubbleBoxes } from '../core/portes-aspect.js';
+import { parseZones, zonesToWorld } from '../core/zones.js';
 import { TEXTES } from '../core/mobilier-epoque-atlas.js';
 import { geometrieDetails, teintes, textureMobilier, trianglesCorps } from '../game/mobilier-epoque-mesh.js';
 
@@ -27,10 +29,10 @@ const charger = async (chemin) => {
   if (!r.ok) throw new Error(`${chemin} : ${r.status}`);
   return r.json();
 };
-const [dict, donnees, choixJson, mobilier, world, etageWorld, tirs, feuxJson, decorCfg, render, texturesJson, lumieres, params, characters, poses, epoqueJson, variantsJson] = await Promise.all([
+const [dict, donnees, choixJson, mobilier, world, etageWorld, tirs, feuxJson, decorCfg, render, texturesJson, lumieres, params, characters, poses, epoqueJson, variantsJson, zonesJson] = await Promise.all([
   'data/i18n/atelier-mobilier.json', 'data/game/mobilier-epoque.json', 'data/game/mobilier-epoque-choix.json', 'data/game/maps/rez-de-chaussee/mobilier.world.json', 'data/game/maps/rez-de-chaussee/world.json', 'data/game/maps/rez-de-chaussee/etage.world.json',
   'data/game/maps/rez-de-chaussee/tirs.world.json', 'data/game/maps/rez-de-chaussee/feux.json', 'data/game/maps/rez-de-chaussee/decor.json', 'data/game/render.json', 'data/game/textures.json', 'data/game/lumieres.json', 'data/game/maps/params.json',
-  'data/game/characters-v2.json', 'data/game/poses-v2.json', 'data/game/persos-epoque.json', 'data/game/zombie-variants.json',
+  'data/game/characters-v2.json', 'data/game/poses-v2.json', 'data/game/persos-epoque.json', 'data/game/zombie-variants.json', 'data/game/maps/rez-de-chaussee/zones.json',
 ].map(charger));
 const t = (key, p) => fmt(translate(dict, key), p);
 for (const node of document.querySelectorAll('[data-i18n]')) node.textContent = t(node.dataset.i18n);
@@ -42,7 +44,7 @@ const palette = readPalette();
 const lookup = createTokenLookup();
 const couleurs = couleursEpoque(donnees.couleurs, lookup);
 const choix0 = lireChoix(choixJson);
-const etat = { variantes: { ...choix0.variantes }, pieces: { ...choix0.pieces }, lumiere: 'lampe', cadre: true, montree: {}, gp: { aspect: 'caisses', variante: 'A' }, yaw: 0.7 };
+const etat = { escaliers: choix0.escaliers, escalierMontre: null, variantes: { ...choix0.variantes }, pieces: { ...choix0.pieces }, lumiere: 'lampe', cadre: true, montree: {}, gp: { aspect: 'caisses', variante: 'A' }, yaw: 0.7 };
 
 // --- Pièces (mêmes calculs que npm run carte) ------------------------------------------------------------------------------------------------------
 const remplaces = new Set((decorCfg.interieur?.objets ?? []).filter((o) => o?.remplace).map((o) => `${o.floor}:${o.remplace}`));
@@ -369,6 +371,83 @@ function dessinerAspect(a) {
   }
 }
 
+// --- Éboulis des escaliers fermés (retours du propriétaire) : blocs de zones.json, dessin d'aujourd'hui (lot 3g) et variantes A, B, C ---------------
+const zonesMonde = zonesToWorld(parseZones(zonesJson), world.transform);
+const blocsEscalier = zonesMonde.doors.flatMap((d) => (Array.isArray(d.blocks) ? d.blocks : Object.entries(d.blocks ?? {}).flatMap(([f, l]) => (l ?? []).map((b) => ({ floor: f, ...b }))))
+  .filter((b) => b && !b.wall && b.rect).map((b) => ({ id: b.id ?? d.id, porte: d.id, floor: b.floor ?? 'rdc', rect: b.rect })));
+const escaliers = blocsEscalier.map((b) => ({ id: `${b.porte} (${b.floor})`, porte: b.porte, floor: b.floor, obstacle: null, hauteur: Math.min((b.rect.hauteur ?? 60) - 1, 66), rect: { x: b.rect.x + 1, y: b.rect.y + 1, w: b.rect.w - 2, h: b.rect.h - 2 } }));
+const dessinEscalier = (b, v) => (v === 'actuel' ? { corps: corpsDesBoites(rubbleBoxes(b.rect, b.hauteur, b.porte), b.porte), details: [], hauteur: b.hauteur } : { ...modeleEscalier({ rect: b.rect, variante: v, id: b.porte, hauteur: b.hauteur }), details: [] });
+function creerSectionEscaliers() {
+  if (!escaliers.length) return;
+  etat.escalierMontre = escaliers[0].id;
+  const sec = document.createElement('section');
+  sec.className = 'atelier-section';
+  sec.id = 'escaliers';
+  sec.setAttribute('aria-labelledby', 'escaliers-titre');
+  const h2 = document.createElement('h2');
+  h2.className = 'atelier-heading';
+  h2.id = 'escaliers-titre';
+  h2.textContent = t('dev.mobilier.escaliers.titre');
+  const desc = document.createElement('p');
+  desc.className = 'atelier-note m9-aspect-desc';
+  desc.textContent = t('dev.mobilier.escaliers.desc');
+  const champ = document.createElement('div');
+  champ.className = 'armes-champ';
+  const lab = document.createElement('label');
+  lab.htmlFor = 'ctl-escalier';
+  lab.textContent = t('dev.mobilier.escaliers.bloc');
+  const sel = document.createElement('select');
+  sel.id = 'ctl-escalier';
+  sel.className = 'armes-select m9-select-piece';
+  for (const b of escaliers) sel.append(new Option(b.id, b.id));
+  sel.addEventListener('change', () => {
+    etat.escalierMontre = sel.value;
+    dessinerEscaliers();
+  });
+  champ.append(lab, sel);
+  const champs = document.createElement('div');
+  champs.className = 'armes-champs';
+  champs.append(champ);
+  const vues = document.createElement('div');
+  vues.className = 'm9-vues';
+  vues.id = 'vues-escaliers';
+  sec.append(h2, desc, champs, vues);
+  hoteAspects.append(sec);
+  const li = document.createElement('li');
+  const lien = document.createElement('a');
+  lien.className = 'atelier-link';
+  lien.href = '#escaliers';
+  lien.textContent = t('dev.mobilier.escaliers.titre');
+  li.append(lien);
+  nav.insertBefore(li, nav.children[1]);
+}
+function dessinerEscaliers() {
+  const hote = $('vues-escaliers');
+  if (!hote) return;
+  hote.replaceChildren();
+  const b = escaliers.find((q) => q.id === etat.escalierMontre) ?? escaliers[0];
+  mesures.escaliers = {};
+  for (const v of ['actuel', ...VARIANTES_ESCALIER]) {
+    const dessin = dessinEscalier(b, v);
+    const fig = document.createElement('figure');
+    fig.className = 'decor-vignette';
+    fig.dataset.variante = v;
+    if (etat.escaliers === v) fig.dataset.retenue = 'oui';
+    const cv = document.createElement('canvas');
+    cv.width = 667;
+    cv.height = 375;
+    cv.id = `cv-escaliers-${v}`;
+    cv.setAttribute('aria-hidden', 'true');
+    const cap = document.createElement('figcaption');
+    cap.textContent = t('dev.mobilier.escaliers.legende', { nom: v === 'actuel' ? t('dev.mobilier.actuel') : t(`dev.mobilier.escaliers.${v}`), tris: dessin.corps.length, h: n1(dessin.hauteur) });
+    fig.append(cv, cap);
+    hote.append(fig);
+    const centre = poserScene(b, dessin);
+    const m = vueJeu(cv, centre);
+    mesures.escaliers[v] = { bloc: b.id, calls: m.calls, triangles: m.triangles, corps: dessin.corps.length, hauteur: dessin.hauteur };
+  }
+}
+
 // --- Gros plan (tourne) et grande vue ----------------------------------------------------------------------------------------------------------------
 let gp = null;
 function preparerGrosPlan() {
@@ -537,7 +616,7 @@ function remplirContenu() {
     ul.append(li);
   }
 }
-const proposition = () => ({ variantes: { ...etat.variantes }, pieces: { ...etat.pieces } });
+const proposition = () => ({ variantes: { ...etat.variantes }, pieces: { ...etat.pieces }, escaliers: etat.escaliers });
 function remplirChoix() {
   const hote = $('choix-champs');
   hote.replaceChildren();
@@ -559,6 +638,23 @@ function remplirChoix() {
     champ.append(lab, sel);
     hote.append(champ);
   }
+  const champ = document.createElement('div');
+  champ.className = 'armes-champ';
+  const lab = document.createElement('label');
+  lab.htmlFor = 'ctl-choix-escaliers';
+  lab.textContent = t('dev.mobilier.escaliers.titre');
+  const sel = document.createElement('select');
+  sel.id = 'ctl-choix-escaliers';
+  sel.className = 'armes-select';
+  for (const v of ['actuel', ...VARIANTES_ESCALIER]) sel.append(new Option(v === 'actuel' ? t('dev.mobilier.choix.actuel') : t(`dev.mobilier.escaliers.${v}`), v));
+  sel.value = etat.escaliers;
+  sel.addEventListener('change', () => {
+    etat.escaliers = sel.value;
+    dessinerEscaliers();
+    $('choix-fichier').textContent = JSON.stringify(proposition(), null, 2);
+  });
+  champ.append(lab, sel);
+  hote.append(champ);
   $('choix-fichier').textContent = JSON.stringify(proposition(), null, 2);
 }
 
@@ -566,6 +662,7 @@ function toutMettreAJour(aspectsChanges) {
   pieces = specs();
   if (aspectsChanges) for (const a of ASPECTS) remplirSelectPieces(a);
   for (const a of ASPECTS) dessinerAspect(a);
+  dessinerEscaliers();
   dessinerPlan();
   remplirTablePieces();
   const b = remplirBudget();
@@ -582,6 +679,7 @@ try {
   sl.addEventListener('change', () => {
     etat.lumiere = sl.value;
     for (const a of ASPECTS) dessinerAspect(a);
+    dessinerEscaliers();
     preparerGrosPlan();
   });
   const sc = $('ctl-cadre');
@@ -590,9 +688,11 @@ try {
   sc.addEventListener('change', () => {
     etat.cadre = sc.value === 'oui';
     for (const a of ASPECTS) dessinerAspect(a);
+    dessinerEscaliers();
     preparerGrosPlan();
   });
   creerSections();
+  creerSectionEscaliers();
   for (const a of ASPECTS) remplirSelectPieces(a);
   remplirGp();
   $('ctl-gp-aspect').addEventListener('change', () => {

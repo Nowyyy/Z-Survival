@@ -17,7 +17,7 @@ import { parseColor } from '../core/color.js';
 import { angleRotor, burntCarParts, carFireSpots, craterTriangles, helicopterRotor, placeHelicopter, reglagesRotor, ROTOR_PIECES, teinteAcier, toleHelicoptere, trailTriangles, uvTole } from '../core/epaves.js';
 import { MATIERES, atlasEpoque, couleursEpoque, filsTelegraphe, objetsDeSection, specCratere, trianglesFils } from '../core/decor-epoque.js';
 import { MATIERES as MATIERES_INTERIEUR, atlasInterieur, objetsDeSection as objetsInterieur } from '../core/interieur-epoque.js';
-import { modeleMeuble } from '../core/mobilier-epoque.js';
+import { modeleEscalier, modeleMeuble } from '../core/mobilier-epoque.js';
 import { geometrieDetails, teintes as teintesMobilier, textureMobilier, trianglesCorps } from './mobilier-epoque-mesh.js';
 import { plankSettings } from '../core/plank-layout.js';
 import { plankSheet } from '../core/texgen.js';
@@ -1265,7 +1265,11 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
         visual = visual.h <= visual.w ? { x: visual.x, y: visual.y + visual.h / 2 - thin / 2, w: visual.w, h: thin } : { x: visual.x + visual.w / 2 - thin / 2, y: visual.y, w: thin, h: visual.h };
       }
       const height = bl.wall && tallWalls ? DOOR_TALL : r.hauteur - 1;
-      const boxes = plain ? [{ ...rectBox(visual, 0, height), region: 'tole', faces: 'tout' }] : (bl.wall ? doorBoxes(visual, height, bl.id) : rubbleBoxes(visual, Math.min(height, 66), bl.id));
+      // Retours du propriétaire après le lot 9j : éboulis plus fin (variante de mobilier.world.json → epoque.escaliers ; js/core/mobilier-epoque.js),
+      // même maillage, même enfoncement ; ?test=1&decor=avant ou « actuel » : l'éboulis du lot 3g.
+      const esc = !plain && !bl.wall && render.mobilierEpoque !== false && render.escaliersVariante && render.escaliersVariante !== 'actuel' ? modeleEscalier({ rect: visual, variante: render.escaliersVariante, id: bl.id, hauteur: Math.min(height, 66) }) : null;
+      if (esc) builder.triangles(trianglesCorps(esc.corps, region));
+      const boxes = esc ? [] : plain ? [{ ...rectBox(visual, 0, height), region: 'tole', faces: 'tout' }] : (bl.wall ? doorBoxes(visual, height, bl.id) : rubbleBoxes(visual, Math.min(height, 66), bl.id));
       boxes.forEach((b, j) => {
         const rg = region(b.region);
         builder.box(b, { rect: rg, scale: rg.scale, seed: 900 + j }, b.faces);

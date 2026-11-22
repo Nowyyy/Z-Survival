@@ -244,6 +244,7 @@ export function generateMapFiles(id = 'rez-de-chaussee') {
     const doc = JSON.parse(result.mobilier);
     const tirsDoc = result.tirs ? JSON.parse(result.tirs) : {};
     const feuxUrl = new URL(`${id}/feux.json`, ROOT);
+    const choixMobilier = lireChoixMobilier(lireData('mobilier-epoque-choix.json'));
     const specs = specsMobilier({
       pieces: doc.pieces,
       obstacles: { rdc: out.world.obstacles, etage: etageWorldOut?.obstacles ?? [] },
@@ -251,7 +252,7 @@ export function generateMapFiles(id = 'rez-de-chaussee') {
       tirs: { rdc: tirsDoc.rdc?.ids ?? [], etage: tirsDoc.etage?.ids ?? [] },
       feux: existsSync(feuxUrl) ? JSON.parse(readFileSync(feuxUrl, 'utf8')).feux : [],
       remplaces: new Set((out.decor.interieur?.objets ?? []).filter((o) => o?.remplace).map((o) => `${o.floor}:${o.remplace}`)),
-      choix: lireChoixMobilier(lireData('mobilier-epoque-choix.json')),
+      choix: choixMobilier,
     });
     const compte = { rdc: { corps: 0, details: 0 }, etage: { corps: 0, details: 0 } };
     for (const sp of specs) {
@@ -261,7 +262,8 @@ export function generateMapFiles(id = 'rez-de-chaussee') {
       compte[sp.floor].corps += m.compte.corps;
       compte[sp.floor].details += m.compte.details;
     }
-    doc.epoque = { couleurs: lireData('mobilier-epoque.json')?.couleurs ?? {}, triangles: compte };
+    // Retours du propriétaire : variante de l'éboulis des escaliers fermés (blocs de zones.json, dessinés par la partie).
+    doc.epoque = { couleurs: lireData('mobilier-epoque.json')?.couleurs ?? {}, triangles: compte, escaliers: choixMobilier.escaliers };
     result.mobilier = `${formatJson(doc)}\n`;
     result.mobilierEpoqueReport = { pieces: specs.length, triangles: compte };
   }

@@ -82,5 +82,12 @@
   "dev.mobilier.choix.titre": "Choix",
   "dev.mobilier.choix.intro": "Variante retenue par aspect (« actuel » garde le dessin du lot 3g) et aspects forcés pièce par pièce (tableau du plan). Le texte ci-dessous est à recopier dans data/game/mobilier-epoque-choix.json, ou à donner dans le message « GO 9j ».",
   "dev.mobilier.choix.fichier": "data/game/mobilier-epoque-choix.json proposé",
-  "dev.mobilier.choix.actuel": "actuel (lot 3g)"
+  "dev.mobilier.choix.actuel": "actuel (lot 3g)",
+  "dev.mobilier.escaliers.titre": "Éboulis des escaliers",
+  "dev.mobilier.escaliers.desc": "Retour du propriétaire (« quelque chose de plus fin ») : ce qui ferme les escaliers tant que leur porte n'est pas ouverte (blocs de zones.json, même collision, s'enfonce à l'ouverture). Actuel : gros tas de blocs de pierre (lot 3g). A : éboulis fin et bas (dalles, petites pierres et briques, lattes, une poutre). B : barricade de planches clouées sur deux tréteaux. C : chevaux de frise et trois rangs de barbelés (retenue par défaut).",
+  "dev.mobilier.escaliers.bloc": "Escalier",
+  "dev.mobilier.escaliers.A": "A : éboulis fin",
+  "dev.mobilier.escaliers.B": "B : barricade de planches",
+  "dev.mobilier.escaliers.C": "C : chevaux de frise et barbelés",
+  "dev.mobilier.escaliers.legende": "{nom} — {tris} triangles · hauteur {h}"
 }
