@@ -210,8 +210,32 @@ function coucheMoteur(c, n, sr, graine) {
   return out;
 }
 
-const COUCHES = { ton: coucheTon, bruit: coucheBruit, modes: coucheModes, grains: coucheGrains, notes: coucheNotes, moteur: coucheMoteur };
+// Jeu (lot 9i, retour du propriétaire : le tir du Garand dans les ouvertures) : recette de la partie (format de data/game/sounds.json, rendue par
+// renderSound de js/core/synth.js, variante `variante`), ramenée à la fréquence du menu (interpolation linéaire) et placée à `at`. synth.js n'est
+// jamais importé ici (fichiers du démarrage du menu inchangés) : l'appelant le charge à la demande (besoinJeu) et le passe (outils.rendreJeu) ;
+// sans lui, la couche est muette.
+function coucheJeu(c, n, sr, graine, outils) {
+  const out = new Float64Array(n);
+  if (!estObjet(c.recette) || typeof outils?.rendreJeu !== 'function') return out;
+  const r = outils.rendreJeu(c.recette, Math.max(0, Math.trunc(num(c.variante, 0))));
+  const x = r?.samples;
+  const sr0 = num(r?.sampleRate, 0);
+  if (!x?.length || !(sr0 > 0)) return out;
+  const i0 = Math.max(0, Math.round(num(c.at, 0) * sr));
+  const pas = sr0 / sr;
+  for (let i = 0; i0 + i < n; i += 1) {
+    const u = i * pas;
+    const j = Math.floor(u);
+    if (j + 1 >= x.length) break;
+    out[i0 + i] = x[j] + (x[j + 1] - x[j]) * (u - j);
+  }
+  return out;
+}
+
+const COUCHES = { ton: coucheTon, bruit: coucheBruit, modes: coucheModes, grains: coucheGrains, notes: coucheNotes, moteur: coucheMoteur, jeu: coucheJeu };
 export const SORTES_COUCHES = Object.freeze(Object.keys(COUCHES));
+// Vrai si la variante demande le moteur de la partie (couche « jeu ») : l'appelant charge alors js/core/synth.js avant le rendu.
+export const besoinJeu = (son, varianteId) => (trouverVariante(son, varianteId)?.couches ?? []).some((c) => c?.t === 'jeu');
 
 // Écho : ligne à retard [retard (s), réinjection, part] (queue des signatures, des explosions) ; même longueur que l'entrée.
 function echo(x, sr, [retard, reinjection, part]) {
@@ -238,7 +262,7 @@ export function trouverVariante(son, id) {
 }
 
 // Rendu d'une variante. graine : version (entier dès 1). Une variante absente ou vide donne un tampon vide.
-export function rendreSon(son, varianteId, graine = 1, sampleRate = FREQUENCE) {
+export function rendreSon(son, varianteId, graine = 1, sampleRate = FREQUENCE, outils = {}) {
   const sr = Number.isFinite(sampleRate) && sampleRate >= 8000 && sampleRate <= 48000 ? Math.round(sampleRate) : FREQUENCE;
   const v = trouverVariante(son, varianteId);
   const vide = { samples: new Float32Array(0), sampleRate: sr, duree: 0, crete: 0 };
@@ -250,7 +274,7 @@ export function rendreSon(son, varianteId, graine = 1, sampleRate = FREQUENCE) {
   v.couches.forEach((c, k) => {
     const fn = estObjet(c) ? COUCHES[c.t] : null;
     if (!fn) return;
-    const y = fn(c, n, sr, hashSeed(base, k));
+    const y = fn(c, n, sr, hashSeed(base, k), outils);
     const g = num(c.gain, 1);
     for (let i = 0; i < n; i += 1) x[i] += y[i] * g;
   });

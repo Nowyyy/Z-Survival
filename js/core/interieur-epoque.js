@@ -44,6 +44,8 @@ export const MATIERES = Object.freeze({
   cadran: { region: 'cadran', ajuste: true, teinte: 'neutre' }, clavier: { region: 'clavier', ajuste: true, teinte: 'neutre' }, papier: { region: 'papier', ajuste: true, teinte: 'neutre' },
   medical: { region: 'medical', ajuste: true, teinte: 'neutre' }, carte: { region: 'carte', ajuste: true, teinte: 'neutre' }, feuille: { region: 'feuilles', ajuste: true, teinte: 'neutre' },
   verre: { region: 'verre', echelle: 6, teinte: 'neutre', lueur: true },
+  // Retour du propriétaire : étui du téléphone en toile kaki claire (en cuir, il avait la couleur de la table et ne se voyait pas).
+  etoffe: { region: 'toile', echelle: 24, teinte: 'etoffe' },
 });
 
 function hash(x, y, s) {
@@ -332,15 +334,15 @@ export function modeleRadio(variante, { hMax = 30 } = {}) {
   return { modele: m };
 }
 
-// Téléphone de campagne (étui de cuir ≈ 0,25 × 0,1 × 0,2 m) : étui fermé à sangle ; étui ouvert, combiné posé à côté ; avec bobine de câble.
+// Téléphone de campagne (étui ≈ 0,25 × 0,1 × 0,2 m, en toile kaki claire : retour du propriétaire, en cuir il se confondait avec la table) : étui fermé à sangle ; étui ouvert, combiné posé à côté ; avec bobine de câble.
 export function modeleTelephone(variante) {
   const v = ['etui', 'ouvert', 'bobine'].includes(variante) ? variante : 'etui';
   const m = modele();
-  m.boite('etui', 'cuir', 'deco', [-3.5, 3.5], [0, 3], [-2.8, 2.8]);
+  m.boite('etui', 'etoffe', 'deco', [-3.5, 3.5], [0, 3], [-2.8, 2.8]);
   m.boite('sangle', 'cuir', 'deco', [-0.6, 0.6], [0, 3.4], [-3, 3]);
   if (v === 'etui') m.boite('boucle', 'acier', 'deco', [-0.8, 0.8], [2.6, 3.5], [2.6, 3.1]);
   else {
-    m.boite('rabat', 'cuir', 'deco', [-3.5, 3.5], [0, 0.5], [-2.8, 2.8], { rx: 60, t: [0, 3, -2.8] });
+    m.boite('rabat', 'etoffe', 'deco', [-3.5, 3.5], [0, 0.5], [-2.8, 2.8], { rx: 60, t: [0, 3, -2.8] });
     m.boite('combine', 'bakelite', 'deco', [-3, 3], [3, 3.8], [-0.6, 0.6], v === 'ouvert' ? { ry: 25, t: [5, -3, 3] } : { t: [0, 0, 0.5] });
     m.boite('combine-bout', 'bakelite', 'deco', [-1, 1], [3, 4.3], [-1, 1], v === 'ouvert' ? { ry: 25, t: [7.5, -3, 1.8] } : { t: [-2.6, 0, 0.5] });
     if (v === 'bobine') {

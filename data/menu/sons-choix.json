@@ -1,5 +1,5 @@
 {
-  "_note": "Variantes choisies à l'oreille sur atelier-sons-menu.html.",
+  "_note": "Variantes choisies à l'oreille sur atelier-sons-menu.html ; ouv-tir D : tir du M1 Garand des ouvertures (demande du propriétaire, lot 9i).",
   "choix": {
     "clic": "A",
     "achat": "B",
@@ -13,7 +13,7 @@
     "chute-rebond": "B",
     "ouv-pas": "B",
     "ouv-tapis": "A",
-    "ouv-tir": "A",
+    "ouv-tir": "D",
     "ouv-impact": "A",
     "ouv-couvercle": "B",
     "ouv-lumiere": "A",

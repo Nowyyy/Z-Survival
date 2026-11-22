@@ -9,6 +9,7 @@ import { chronologie, lireOuvertures } from '../core/ouverture.js';
 import { translate } from '../i18n.js';
 import { creerMusique } from '../menu/sons/musique.js';
 import { mesurerSon, rendreSon } from '../menu/sons/synthese.js';
+import { renderSound } from '../core/synth.js'; // lot 9i : couche « jeu » (tir du Garand des ouvertures)
 
 const fmt = (text, params) => String(text).replace(/\{(\w+)\}/g, (_, k) => String(params?.[k] ?? ''));
 const charger = async (path) => {
@@ -84,7 +85,7 @@ function rendu(id, variante, version = 1) {
   const cle = `${id}:${variante}:${version}`;
   if (!tampons.has(cle)) {
     const t0 = performance.now();
-    const r = rendreSon(sons.get(id), variante, version);
+    const r = rendreSon(sons.get(id), variante, version, undefined, { rendreJeu: renderSound });
     tampons.set(cle, { samples: r.samples, sampleRate: r.sampleRate, mesures: mesurerSon(r.samples, r.sampleRate), ms: performance.now() - t0, buffer: null });
   }
   return tampons.get(cle);

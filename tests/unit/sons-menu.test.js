@@ -7,6 +7,7 @@ import { readFileSync } from 'node:fs';
 import { admettreClic, creerClic, GROUPES, indiceSon, instantsPas, lireChoix, lireSons, sonsOuverture, texteChoix } from '../../js/core/sons-menu.js';
 import { chronologie, lireOuvertures } from '../../js/core/ouverture.js';
 import { CRETE_MAX_DB, FREQUENCE, mesurerSon, rendreSon, SORTES_COUCHES } from '../../js/menu/sons/synthese.js';
+import { renderSound } from '../../js/core/synth.js';
 
 const lire = (f) => JSON.parse(readFileSync(f, 'utf8'));
 const brut = lire('data/menu/sons.json');
@@ -18,7 +19,8 @@ const MO = 1024 * 1024;
 const rendus = new Map();
 const rendu = (s, v, g = 1) => {
   const cle = `${s.id}:${v}:${g}`;
-  if (!rendus.has(cle)) rendus.set(cle, rendreSon(s, v, g));
+  // Lot 9i : la couche « jeu » (tir du Garand, ouv-tir D) rend sa recette avec js/core/synth.js, passé comme le font le calculateur et le repli.
+  if (!rendus.has(cle)) rendus.set(cle, rendreSon(s, v, g, undefined, { rendreJeu: renderSound }));
   return rendus.get(cle);
 };
 const tous = catalogue.sons.flatMap((s) => s.variantes.flatMap((v) => Array.from({ length: s.versions }, (_, k) => [s, v, k + 1])));
