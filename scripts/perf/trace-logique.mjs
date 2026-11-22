@@ -5,6 +5,9 @@
 //         [--out dossier] [--scenarios 1,2,3,4,5,6] [--steps 600] [--os (matrices des os aux pas 100, 300 et 600, voir plus bas)]
 //         [--extra '&decor=avant' (lot 9i : paramètres ajoutés à chaque adresse)] [--relance N (lot 9d : partie libérée puis recréée N fois dans la page avant les pas)]
 //         node scripts/perf/trace-logique.mjs --compare dossierA dossierB  (compare deux exécutions pas à pas ; code 1 au premier écart)
+//         node scripts/perf/trace-logique.mjs --reference [fichier] dossier  (lot 9j : compare une exécution à la référence enregistrée,
+//         scripts/perf/trace-reference.json par défaut ; code 1 au premier écart)
+//         node scripts/perf/trace-logique.mjs --enregistre dossierA dossierB  (lot 9j : deux exécutions identiques → nouvelle référence)
 //
 // Six scénarios (jeu.html?test=1&seed=1…, 667 × 375, onglet « caché » : la boucle d'images ne démarre jamais, seul step() fait avancer la
 // partie, une image dessinée après chaque pas, donc les poses aussi) : (1) R1 manche 5 (zombies, tirs automatiques, siège, réparation) ;
@@ -14,6 +17,12 @@
 // tirs, laser, caméra, journaux) : sérialisation qui garde les nombres exacts (String(n) relit le même double ; -0, NaN et Infinity écrits
 // tels quels), puis SHA-256. Écrit, par scénario, un fichier JSONL (pas, empreinte, état) et un résumé (empreinte finale, empreinte de chaîne).
 //
+// Lot 9j : chaque pas porte aussi deux empreintes séparées : « logique » (tous les champs sauf pose) et « pose » (le champ pose seul : animation
+// du joueur, apparence et triangles de son personnage, champ que les lots de rendu changent) ; le résumé donne leurs chaînes (empreinte des
+// empreintes de chaque pas : deux chaînes égales ⇔ empreintes identiques à chaque pas). La référence (scripts/perf/trace-reference.json : date,
+// hash de la base, champs couverts) garde, par scénario, les finales et les trois chaînes ; --reference compare les trois, et dit à part si seul
+// le champ pose diffère.
+//
 // --os : exécution séparée (elle dessine une image de plus aux pas 100, 300 et 600 par sampleScreen, ce qui peut changer l'état visuel : ne pas
 // la comparer à une exécution sans --os) ; relève alors la matrice monde (16 nombres) de chaque os (THREE.Bone) de la scène.
 import { spawn } from 'node:child_process';
@@ -21,6 +30,7 @@ import { createHash } from 'node:crypto';
 import { mkdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { chromium } from '@playwright/test';
 
 const args = process.argv.slice(2);
@@ -35,6 +45,59 @@ const EXTRA = (() => {
   return i >= 0 && i + 1 < args.length ? args[i + 1] : '';
 })();
 const sha = (s) => createHash('sha256').update(s).digest('hex');
+
+// --- Lot 9j : référence enregistrée -----------------------------------------------------------------------------------------------------
+const REFERENCE = new URL('./trace-reference.json', import.meta.url);
+if (flag('enregistre')) {
+  const i = args.indexOf('--enregistre');
+  const [a, b] = [args[i + 1], args[i + 2]];
+  const ra = JSON.parse(readFileSync(join(a, 'resume.json'), 'utf8'));
+  const rb = JSON.parse(readFileSync(join(b, 'resume.json'), 'utf8'));
+  const cle = (r) => JSON.stringify(r.scenarios.map((sc) => [sc.id, sc.pas, sc.finale, sc.chaine, sc.chaineLogique, sc.chainePose]));
+  if (cle(ra) !== cle(rb)) {
+    console.log('Les deux exécutions diffèrent : aucune référence enregistrée.');
+    process.exit(1);
+  }
+  const doc = {
+    _provisoire: 'Référence de scripts/perf/trace-logique.mjs (lot 9j) : deux exécutions de suite, identiques à chaque pas, sur la base nommée. Ne jamais éditer à la main : relancer le script (--enregistre).',
+    date: opt('date', new Date().toISOString().slice(0, 10)),
+    base: opt('hash', ''),
+    pas: ra.steps,
+    champs: ra.champs,
+    pose: 'chaine : tous les champs ; chaineLogique : tous sauf pose ; chainePose : pose seul',
+    scenarios: ra.scenarios.map((sc) => ({ id: sc.id, nom: sc.nom, pas: sc.pas, finale: sc.finale, finaleLogique: sc.finaleLogique, chaine: sc.chaine, chaineLogique: sc.chaineLogique, chainePose: sc.chainePose })),
+  };
+  writeFileSync(REFERENCE, `${JSON.stringify(doc, null, 1)}\n`);
+  console.log(`Référence enregistrée : ${fileURLToPath(REFERENCE)}`);
+  process.exit(0);
+}
+if (flag('reference')) {
+  const i = args.indexOf('--reference');
+  const rest = args.slice(i + 1).filter((x) => !x.startsWith('--'));
+  const fichier = rest.length > 1 ? rest[0] : fileURLToPath(REFERENCE);
+  const dossier = rest.at(-1);
+  const ref = JSON.parse(readFileSync(fichier, 'utf8'));
+  const run = JSON.parse(readFileSync(join(dossier, 'resume.json'), 'utf8'));
+  let bad = 0;
+  for (const r of ref.scenarios) {
+    const sc = run.scenarios.find((x) => x.id === r.id);
+    if (!sc) {
+      console.log(`${r.id} : absent de ${dossier}`);
+      bad += 1;
+      continue;
+    }
+    // Exécution d'un ancien format (sans empreintes séparées) : seule la chaîne complète se compare.
+    const ancien = sc.chaineLogique === undefined;
+    const logique = ancien ? sc.chaine === r.chaine : sc.chaineLogique === r.chaineLogique;
+    const pose = ancien ? sc.chaine === r.chaine : sc.chainePose === r.chainePose;
+    if (logique && pose && sc.chaine === r.chaine) console.log(`${r.id} : ${sc.pas} pas, identiques à chaque pas à la référence du ${ref.date} (finale ${sc.finale.slice(0, 16)})`);
+    else {
+      bad += 1;
+      console.log(ancien ? `${r.id} : ÉCART à la référence (ancien format : chaîne complète seulement)` : `${r.id} : ÉCART à la référence : logique ${logique ? 'identique' : 'DIFFÉRENTE'}, pose ${pose ? 'identique' : 'DIFFÉRENTE'} (comparer pas à pas avec --compare)`);
+    }
+  }
+  process.exit(bad ? 1 : 0);
+}
 
 // --- Comparaison de deux exécutions ----------------------------------------------------------------------------------------------------
 if (flag('compare')) {
@@ -80,6 +143,8 @@ if (flag('compare')) {
   process.exit(bad ? 1 : 0);
 }
 
+// Champs logiques lus dans getState() (même liste que KEYS dans la page, plus bas).
+const CHAMPS = ['time', 'dead', 'worldOver', 'player', 'economy', 'kills', 'waves', 'floor', 'aim', 'shots', 'enemies', 'bullets', 'windows', 'debris', 'laser', 'laserEnd', 'camera', 'stairLog', 'events', 'spawnLog', 'pose', 'stats'];
 const STEPS = Math.max(1, Number(opt('steps', '600')) || 600);
 const OUT = opt('out', join(tmpdir(), 'zs-trace', String(Date.now())));
 const BONES = flag('os');
@@ -156,6 +221,17 @@ async function run(sc) {
       for (const k of KEYS) o[k] = s[k];
       return ser(o);
     };
+    // Lot 9j : une seule lecture de getState() par pas : état complet (empreinte d'avant), tous les champs sauf pose, pose seul.
+    window.__parts = () => {
+      const s = zs.getState();
+      const o = {};
+      const sans = {};
+      for (const k of KEYS) {
+        o[k] = s[k];
+        if (k !== 'pose') sans[k] = s[k];
+      }
+      return [ser(o), ser(sans), ser(s.pose)];
+    };
     const state = zs.getState();
     if (at) zs.setPlayer(at[0], at[1]);
     // Dégâts et cadence au maximum (sans rien stocker) : des tués, donc de l'argent et les animations de mort, dans les 600 pas.
@@ -201,11 +277,11 @@ async function run(sc) {
       for (let k = from; k < to; k += 1) {
         window.__act(k);
         window.__zs.step(0.05);
-        out.push(window.__logic());
+        out.push(window.__parts());
       }
       return out;
     }, { from: i, to: Math.min(STEPS, i + CHUNK) });
-    for (const etat of part) lines.push({ pas: lines.length + 1, empreinte: sha(etat), etat });
+    for (const [etat, logique, pose] of part) lines.push({ pas: lines.length + 1, empreinte: sha(etat), logique: sha(logique), pose: sha(pose), etat });
     if (BONES) {
       for (const cp of CHECKPOINTS.filter((c) => c > i && c <= i + CHUNK && c <= STEPS)) {
         // Seuls les pas multiples de CHUNK sont atteints ici : 100, 300 et 600 le sont.
@@ -236,7 +312,9 @@ async function run(sc) {
   writeFileSync(file, `${lines.map((l) => JSON.stringify(l)).join('\n')}\n`);
   if (BONES) writeFileSync(join(OUT, `os-${sc.id}.json`), JSON.stringify(bones));
   const chain = sha(lines.map((l) => l.empreinte).join(''));
-  return { id: sc.id, nom: sc.nom, pas: lines.length, finale: lines.at(-1).empreinte, chaine: chain, erreurs: errors, temps: last.time, kills: last.kills, zombies: last.enemies, mort: last.dead, os: BONES ? bones.map((b) => b.bones) : null };
+  const chaineLogique = sha(lines.map((l) => l.logique).join(''));
+  const chainePose = sha(lines.map((l) => l.pose).join(''));
+  return { id: sc.id, nom: sc.nom, pas: lines.length, finale: lines.at(-1).empreinte, finaleLogique: lines.at(-1).logique, chaine: chain, chaineLogique, chainePose, erreurs: errors, temps: last.time, kills: last.kills, zombies: last.enemies, mort: last.dead, os: BONES ? bones.map((b) => b.bones) : null };
 }
 
 const summary = [];
@@ -245,7 +323,7 @@ for (const sc of SCENARIOS) {
   summary.push(r);
   console.log(`scénario ${r.id} (${r.nom}) : ${r.pas} pas, finale ${r.finale.slice(0, 16)}, chaîne ${r.chaine.slice(0, 16)}, temps ${r.temps}, tués ${r.kills}, zombies ${r.zombies}${r.os ? `, os ${r.os.join('/')}` : ''}${r.erreurs.length ? `, ERREURS ${r.erreurs.join(' | ')}` : ''}`);
 }
-writeFileSync(join(OUT, 'resume.json'), JSON.stringify({ base: BASE, steps: STEPS, os: BONES, scenarios: summary }, null, 1));
+writeFileSync(join(OUT, 'resume.json'), JSON.stringify({ base: BASE, steps: STEPS, os: BONES, champs: CHAMPS, extra: EXTRA, scenarios: summary }, null, 1));
 console.log(`Résultats : ${OUT}`);
 await browser.close();
 server?.kill();
