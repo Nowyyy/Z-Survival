@@ -288,6 +288,12 @@ export function createDebugMenu({ dict, search = '', planksMax = PLANKS_MAX, arm
   aInterieur.textContent = t('game.debug.interieur.lien');
   lienInterieur.append(aInterieur);
   row(sections.mesure, 'atelier-interieur', 'game.debug.interieur', lienInterieur);
+  // Lot 9j : lien vers l'atelier du mobilier de 1942 (page technique ; quitter la partie : la page est rechargée au retour).
+  const lienMobilier = el('div', ['options-values']);
+  const aMobilier = el('a', ['button', 'button-quiet', 'options-value'], { href: 'atelier-mobilier.html', id: 'debug-atelier-mobilier' });
+  aMobilier.textContent = t('game.debug.mobilier.lien');
+  lienMobilier.append(aMobilier);
+  row(sections.mesure, 'atelier-mobilier', 'game.debug.mobilier', lienMobilier);
 
   // Lot 9e : section « Armes » : chaque bouton agit tout de suite sur la partie en cours (débogage, mode essai inutile : rien n'est écrit).
   if (armes) {

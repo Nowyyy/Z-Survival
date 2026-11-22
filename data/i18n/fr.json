@@ -534,6 +534,8 @@
   "game.debug.decor.lien": "Ouvrir l'atelier",
   "game.debug.interieur": "Atelier de l'intérieur et du menu de 1942",
   "game.debug.interieur.lien": "Ouvrir l'atelier",
+  "game.debug.mobilier": "Atelier du mobilier de 1942",
+  "game.debug.mobilier.lien": "Ouvrir l'atelier",
   "game.debug.section.armes": "Armes",
   "game.debug.armes.note": "Effet immédiat sur la partie en cours ; rien n'est gardé.",
   "game.debug.armes.donner": "Donner une arme",
