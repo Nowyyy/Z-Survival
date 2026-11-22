@@ -208,12 +208,12 @@ describe('budget de rendu', () => {
 
 describe('fichier de choix', () => {
   it('invalide ou absent : variantes par défaut, aucun aspect forcé ; « actuel » accepté ; aspect inconnu ignoré', () => {
-    // Retours du propriétaire : escaliers (éboulis des escaliers fermés), C par défaut.
+    // Retours du propriétaire : escaliers (éboulis des escaliers fermés), A par défaut (éboulis fin, choisi par le propriétaire ; avant : C).
     expect(lireChoix(null)).toEqual({ variantes: { ...DEFAUTS }, pieces: {}, escaliers: DEFAUT_ESCALIER });
-    expect(lireChoix('texte')).toEqual({ variantes: { ...DEFAUTS }, pieces: {}, escaliers: 'C' });
+    expect(lireChoix('texte')).toEqual({ variantes: { ...DEFAUTS }, pieces: {}, escaliers: 'A' });
     expect(lireChoix({ escaliers: 'B' }).escaliers).toBe('B');
     expect(lireChoix({ escaliers: 'actuel' }).escaliers).toBe('actuel');
-    expect(lireChoix({ escaliers: 'Z' }).escaliers).toBe('C');
+    expect(lireChoix({ escaliers: 'Z' }).escaliers).toBe('A');
     const c = lireChoix({ variantes: { caisses: 'C', gravats: 'actuel', etagere: 'Z', muret: 3 }, pieces: { M22: 'caisses', P3: 'licorne', _note: 'gravats' } });
     expect(c.variantes.caisses).toBe('C');
     expect(c.variantes.gravats).toBe('actuel');

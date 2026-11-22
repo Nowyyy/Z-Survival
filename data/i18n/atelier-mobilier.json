@@ -84,7 +84,7 @@
   "dev.mobilier.choix.fichier": "data/game/mobilier-epoque-choix.json proposé",
   "dev.mobilier.choix.actuel": "actuel (lot 3g)",
   "dev.mobilier.escaliers.titre": "Éboulis des escaliers",
-  "dev.mobilier.escaliers.desc": "Retour du propriétaire (« quelque chose de plus fin ») : ce qui ferme les escaliers tant que leur porte n'est pas ouverte (blocs de zones.json, même collision, s'enfonce à l'ouverture). Actuel : gros tas de blocs de pierre (lot 3g). A : éboulis fin et bas (dalles, petites pierres et briques, lattes, une poutre). B : barricade de planches clouées sur deux tréteaux. C : chevaux de frise et trois rangs de barbelés (retenue par défaut).",
+  "dev.mobilier.escaliers.desc": "Retour du propriétaire (« quelque chose de plus fin ») : ce qui ferme les escaliers tant que leur porte n'est pas ouverte (blocs de zones.json, même collision, s'enfonce à l'ouverture). Actuel : gros tas de blocs de pierre (lot 3g). A : éboulis fin et bas (dalles, petites pierres et briques, lattes, une poutre ; retenu par le propriétaire). B : barricade de planches clouées sur deux tréteaux. C : chevaux de frise et trois rangs de barbelés.",
   "dev.mobilier.escaliers.bloc": "Escalier",
   "dev.mobilier.escaliers.A": "A : éboulis fin",
   "dev.mobilier.escaliers.B": "B : barricade de planches",
