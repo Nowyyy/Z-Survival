@@ -1,6 +1,6 @@
 // Projection du budget de dessin (lot 3j) : 10 zombies variés (3 marcheurs, 3 petits, 2 voûtés, 2 grands, comme les mesures du jeu) et
 // le joueur, plus le sang à pleine charge et 6 cadavres, pour une variante (A, B, C, riche) ou pour un fichier « Mes choix » ; comparés à la référence
-// mesurée sur main (R1, R2, U1, U4), aux limites actuelles (30 000 triangles, 300 appels) et aux limites de refonte (45 000, 400).
+// mesurée sur main (R1, R2, U1, U4), aux limites actuelles (30 000 triangles, 300 appels) et aux limites de refonte (60 000, 400 ; 45 000 avant les retours du lot 9j).
 // Imprime, n'écrit rien. Usage : node scripts/personnages/projection.mjs [mes-choix.txt | data/game/persos-choix.json]
 import { readFileSync } from 'node:fs';
 import { performance } from 'node:perf_hooks';
@@ -12,7 +12,7 @@ import { characters, load, resolve, skeletons, slotOf } from './lib.mjs';
 
 // Références mesurées sur main (c166e53) par scripts/personnages/mesure-rendu.mjs (667 × 375, 10 zombies, planches, ombres, cône).
 export const REFERENCE = { R1: { calls: 203, triangles: 14370 }, R2: { calls: 194, triangles: 14988 }, U1: { calls: 210, triangles: 15208 }, U4: { calls: 216, triangles: 16092 } };
-export const LIMITS = { current: { calls: 300, triangles: 30000 }, refonte: { calls: 400, triangles: 45000 } };
+export const LIMITS = { current: { calls: 300, triangles: 30000 }, refonte: { calls: 400, triangles: 60000 } }; // retours du lot 9j : 60 000 (décision du propriétaire ; avant : 45 000)
 export const CROWD = ['joueur', 'marcheur', 'marcheur', 'marcheur', 'petit', 'petit', 'petit', 'voute', 'voute', 'grand', 'grand'];
 
 // Coût d'un personnage : appels et triangles (passe principale + passe d'ombre).

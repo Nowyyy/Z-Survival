@@ -7,7 +7,7 @@ import { clearanceZones, decorToWorld, placeDecor, solidesDecor, totalTriangles 
 import { compareFloor } from '../js/core/ecarts.js';
 import { floorProblems } from '../js/core/floor-rules.js';
 import { boxTriangles, lookOf, pieceBoxes } from '../js/core/mobilier-aspect.js';
-import { lireChoix as lireChoixMobilier, modeleMeuble, specsMobilier } from '../js/core/mobilier-epoque.js';
+import { emplacementsMurs, lireChoix as lireChoixMobilier, modeleMeuble, modeleMur, specsMobilier } from '../js/core/mobilier-epoque.js';
 import { analyzeMap, planToWorld } from '../js/core/maps.js';
 import { decorProblems, generateDecor } from '../js/core/decor.js';
 import { firesToWorld, lampsToWorld, lampTriangles } from '../js/core/lamps.js';
@@ -263,9 +263,24 @@ export function generateMapFiles(id = 'rez-de-chaussee') {
       compte[sp.floor].details += m.compte.details;
     }
     // Retours du propriétaire : variante de l'éboulis des escaliers fermés (blocs de zones.json, dessinés par la partie).
-    doc.epoque = { couleurs: lireData('mobilier-epoque.json')?.couleurs ?? {}, triangles: compte, escaliers: choixMobilier.escaliers };
+    // Retours du propriétaire : décor des murs (emplacements générés, déterministes ; dessin seulement), dessiné si murs est vrai dans le fichier de choix.
+    const zwM = zonesToWorld(zones, out.world.transform);
+    const rectSeg = (o) => (o && [o.x1, o.y1, o.x2, o.y2].every((v) => Number.isFinite(v)) ? { x: Math.min(o.x1, o.x2), y: Math.min(o.y1, o.y2), w: Math.max(1, Math.abs(o.x2 - o.x1)), h: Math.max(1, Math.abs(o.y2 - o.y1)) } : null);
+    const lampesListe = result.lampes ? JSON.parse(result.lampes).lampes : [];
+    const murs = [];
+    for (const [f, w] of [['rdc', out.world], ['etage', etageWorldOut]]) {
+      if (!w) continue;
+      const portes = zwM.doors.flatMap((d) => [...(Array.isArray(d.blocks) ? d.blocks : []).filter((b) => b.floor === f).flatMap((b) => [b.rect, rectSeg(b.opening)]), ...(d.floor === f ? [rectSeg(d.opening)] : [])]).filter(Boolean);
+      murs.push(...emplacementsMurs({
+        floor: f, murs: segmentRects(w.walls, params.wallThickness), contour: w.contour, obstacles: w.obstacles, fenetres: w.windows,
+        portes, escaliers: (w.stairs ?? []).filter((q) => Number.isFinite(q.w)), lampes: lampesListe.filter((q) => q.floor === f),
+        objetsMur: (out.decor.interieur?.objets ?? []).filter((o) => o.floor === f && o.type === 'carte' && o.emprise).map((o) => ({ x: o.emprise.x + o.emprise.w / 2, y: o.emprise.y + o.emprise.h / 2 })),
+      }));
+    }
+    const trianglesMurs = murs.reduce((n, m) => n + modeleMur(m).compte.details, 0);
+    doc.epoque = { couleurs: lireData('mobilier-epoque.json')?.couleurs ?? {}, triangles: compte, escaliers: choixMobilier.escaliers, mursActifs: choixMobilier.murs, trianglesMurs, murs };
     result.mobilier = `${formatJson(doc)}\n`;
-    result.mobilierEpoqueReport = { pieces: specs.length, triangles: compte };
+    result.mobilierEpoqueReport = { pieces: specs.length, triangles: compte, murs: murs.length, trianglesMurs, mursActifs: choixMobilier.murs };
   }
   // Lot 9h : rapport et problèmes du décor d'époque (contrôle fait avant l'écriture de decor.json).
   result.decorEpoqueReport = null;
@@ -322,7 +337,7 @@ if (isMain) {
   }
   for (const v of problems) console.log(`PROBLÈME (étage) : ${v}`);
   if (mobilierReport) console.log(`Mobilier d'après le modèle : ${mobilierReport.count} pièces, ${mobilierReport.triangles} triangles.`);
-  if (mobilierEpoqueReport) console.log(`Mobilier de 1942 : ${mobilierEpoqueReport.pieces} pièces ; rez-de-chaussée ${mobilierEpoqueReport.triangles.rdc.corps} + ${mobilierEpoqueReport.triangles.rdc.details}, étage ${mobilierEpoqueReport.triangles.etage.corps} + ${mobilierEpoqueReport.triangles.etage.details} triangles (corps + détails).`);
+  if (mobilierEpoqueReport) console.log(`Mobilier de 1942 : ${mobilierEpoqueReport.pieces} pièces ; rez-de-chaussée ${mobilierEpoqueReport.triangles.rdc.corps} + ${mobilierEpoqueReport.triangles.rdc.details}, étage ${mobilierEpoqueReport.triangles.etage.corps} + ${mobilierEpoqueReport.triangles.etage.details} triangles (corps + détails) ; décor des murs : ${mobilierEpoqueReport.murs} objets, ${mobilierEpoqueReport.trianglesMurs} triangles (${mobilierEpoqueReport.mursActifs ? 'dessiné' : 'pas encore dessiné : murs false'}).`);
   if (decorReport) {
     console.log(`Décor léger : ${decorReport.count} éléments, ${decorReport.triangles} triangles.`);
     for (const w of decorReport.warnings) console.log(`Décor léger : ${w}`);

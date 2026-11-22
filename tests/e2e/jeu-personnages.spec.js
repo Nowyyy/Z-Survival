@@ -36,7 +36,7 @@ test.describe('personnages du lot 1c-C', () => {
     console.log(`lot 1c-C : ${s.render.calls} appels de dessin (objectif 240), ${s.render.triangles} triangles`);
     expect(s.render.calls).toBeLessThanOrEqual(400); // lot 3m : limites de refonte relevées par le propriétaire (avant : 300)
     expect(s.render.calls).toBeLessThanOrEqual(240);
-    expect(s.render.triangles).toBeLessThanOrEqual(45_000); // lot 3j : variantes « riche » par défaut, plafond de triangles relevé à la limite de refonte (choix du propriétaire)
+    expect(s.render.triangles).toBeLessThanOrEqual(60_000); // retours du lot 9j : plafond relevé à 60 000 par le propriétaire (avant : 45 000) ; lot 3j : variantes « riche » par défaut, plafond de triangles relevé à la limite de refonte (choix du propriétaire)
   });
 
   // Lot 5e : « les poses des zombies s'appliquent : bras tendus, hanches qui balancent » (angles de js/core/pose.js, ?perso=actuel) retiré avec
@@ -78,6 +78,6 @@ test.describe('personnages du lot 1c-C', () => {
     await page.evaluate(() => window.__zs.sampleScreen(0, 0, 4, 4));
     const s = await state(page);
     expect(s.render.calls).toBeLessThanOrEqual(400); // lot 3m : limites de refonte relevées par le propriétaire (avant : 300)
-    expect(s.render.triangles).toBeLessThanOrEqual(45_000); // lot 3j : variantes « riche » par défaut, plafond de triangles relevé à la limite de refonte (choix du propriétaire)
+    expect(s.render.triangles).toBeLessThanOrEqual(60_000); // retours du lot 9j : plafond relevé à 60 000 par le propriétaire (avant : 45 000) ; lot 3j : variantes « riche » par défaut, plafond de triangles relevé à la limite de refonte (choix du propriétaire)
   });
 });

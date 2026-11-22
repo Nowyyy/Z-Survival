@@ -103,7 +103,7 @@ test.describe('textures du lot 1c-B', () => {
     expect(s.enemies.length).toBe(8);
     console.log(`appels de dessin : ${s.render.calls}, triangles : ${s.render.triangles}`);
     expect(s.render.calls).toBeLessThanOrEqual(400); // lot 3m : limites de refonte relevées par le propriétaire (avant : 300)
-    expect(s.render.triangles).toBeLessThanOrEqual(45_000); // lot 3j : variantes « riche » par défaut, plafond de triangles relevé à la limite de refonte (choix du propriétaire)
+    expect(s.render.triangles).toBeLessThanOrEqual(60_000); // retours du lot 9j : plafond relevé à 60 000 par le propriétaire (avant : 45 000) ; lot 3j : variantes « riche » par défaut, plafond de triangles relevé à la limite de refonte (choix du propriétaire)
   });
 });
 

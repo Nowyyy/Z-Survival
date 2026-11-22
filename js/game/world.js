@@ -17,7 +17,7 @@ import { parseColor } from '../core/color.js';
 import { angleRotor, burntCarParts, carFireSpots, craterTriangles, helicopterRotor, placeHelicopter, reglagesRotor, ROTOR_PIECES, teinteAcier, toleHelicoptere, trailTriangles, uvTole } from '../core/epaves.js';
 import { MATIERES, atlasEpoque, couleursEpoque, filsTelegraphe, objetsDeSection, specCratere, trianglesFils } from '../core/decor-epoque.js';
 import { MATIERES as MATIERES_INTERIEUR, atlasInterieur, objetsDeSection as objetsInterieur } from '../core/interieur-epoque.js';
-import { modeleEscalier, modeleMeuble } from '../core/mobilier-epoque.js';
+import { modeleEscalier, modeleMeuble, modeleMur } from '../core/mobilier-epoque.js';
 import { geometrieDetails, teintes as teintesMobilier, textureMobilier, trianglesCorps } from './mobilier-epoque-mesh.js';
 import { plankSettings } from '../core/plank-layout.js';
 import { plankSheet } from '../core/texgen.js';
@@ -765,6 +765,15 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
     });
   }
 
+  // Retours du propriétaire après le lot 9j : décor des murs (mobilier.world.json → epoque.murs, quand epoque.mursActifs ; dessin seulement), dans les
+  // détails du mobilier de 1942 de son étage (aucun appel de plus) ; ?test=1&decor=avant : rien.
+  if (render.mobilierEpoque !== false && Array.isArray(render.mobilierMurs)) {
+    for (const m of render.mobilierMurs) {
+      if (!detailsMobilier[m?.floor]) continue;
+      detailsMobilier[m.floor].push(...modeleMur(m).details);
+      mobilierEpoque.murs = (mobilierEpoque.murs ?? 0) + 1;
+    }
+  }
   // Lot 9j : maillages des détails du mobilier de 1942 (groupe de l'étage ; le rez-de-chaussée reste dessiné à l'étage), matière Lambert à l'atlas
   // du mobilier (256 px, aucune image) et couleurs de sommet ; sans ombre portée, réception des ombres, mur percé comme les meubles.
   if (floors.some((f) => detailsMobilier[f].length)) {

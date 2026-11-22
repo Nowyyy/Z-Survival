@@ -498,7 +498,7 @@ test.describe('vagues du lot 2', () => {
     expect(r.types.sort()).toEqual([...TYPES].sort());
     expect(r.gaits.sort()).toEqual([...GAITS].sort());
     expect(r.render.calls).toBeLessThanOrEqual(400); // lot 3m : limites de refonte relevées par le propriétaire (avant : 300)
-    expect(r.render.triangles).toBeLessThanOrEqual(45000); // lot 3m : limites de refonte relevées par le propriétaire (avant : 30000)
+    expect(r.render.triangles).toBeLessThanOrEqual(60_000); // retours du lot 9j : plafond relevé à 60 000 par le propriétaire (avant : 45 000) ; lot 3m : limites de refonte relevées par le propriétaire (avant : 30000)
   });
 
   test('aucune requête externe, aucun stockage, aucun cookie, console propre pendant une vague', async ({ page, baseURL }) => {

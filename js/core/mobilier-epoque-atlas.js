@@ -10,18 +10,20 @@ export const REGIONS = Object.freeze({
   munitions: R(0, 0), rations: R(64, 0), bache: R(128, 0), sac: R(192, 0),
   jerrycan: R(0, 64), briques: R(64, 64), platre: R(128, 64), conserves: R(192, 64),
   couverture: R(0, 128), tiroirs: R(64, 128), dossiers: R(128, 128), bureau: R(192, 128),
-  sacsable: R(0, 192), pierre: R(64, 192), etabli: R(128, 192), uni: R(192, 192),
+  sacsable: R(0, 192), pierre: R(64, 192), etabli: R(128, 192),
+  // Retours du propriétaire (décor des murs) : la case du blanc partagée en quatre (32 px) : blanc, affiche, horloge, tableau d'ordres.
+  uni: { x: 192, y: 192, w: 32, h: 32 }, affiche: { x: 224, y: 192, w: 32, h: 32 }, horloge: { x: 192, y: 224, w: 32, h: 32 }, ordres: { x: 224, y: 224, w: 32, h: 32 },
 });
 export function regionUv(id, taille = ATLAS_TAILLE) {
   const r = REGIONS[id] ?? REGIONS.uni;
   return { u0: (r.x + 1) / taille, v0: (r.y + 1) / taille, u1: (r.x + r.w - 1) / taille, v1: (r.y + r.h - 1) / taille };
 }
 // Textes au pochoir (inventés : calibre générique, ration, numéros de lot).
-export const TEXTES = Object.freeze({ munitions: ['CAL .30', 'LOT 4417'], rations: ['RATIONS', 'NO 12'] });
+export const TEXTES = Object.freeze({ munitions: ['CAL .30', 'LOT 4417'], rations: ['RATIONS', 'NO 12'], affiche: ['AVIS'] });
 // Police de pochoir 3 × 5 (rangées du haut vers le bas, bits de gauche à droite).
 export const GLYPHES = Object.freeze({
   A: [2, 5, 7, 5, 5], C: [7, 4, 4, 4, 7], I: [7, 2, 2, 2, 7], L: [4, 4, 4, 4, 7], N: [5, 7, 7, 7, 5], O: [7, 5, 5, 5, 7], R: [6, 5, 6, 5, 5],
-  S: [7, 4, 7, 1, 7], T: [7, 2, 2, 2, 2], 0: [7, 5, 5, 5, 7], 1: [2, 6, 2, 2, 7], 2: [7, 1, 7, 4, 7], 3: [7, 1, 3, 1, 7], 4: [5, 5, 7, 1, 1], 7: [7, 1, 2, 2, 2],
+  S: [7, 4, 7, 1, 7], T: [7, 2, 2, 2, 2], V: [5, 5, 5, 5, 2], 0: [7, 5, 5, 5, 7], 1: [2, 6, 2, 2, 7], 2: [7, 1, 7, 4, 7], 3: [7, 1, 3, 1, 7], 4: [5, 5, 7, 1, 1], 7: [7, 1, 2, 2, 2],
   '.': [0, 0, 0, 0, 2], ' ': [0, 0, 0, 0, 0],
 });
 
@@ -217,6 +219,34 @@ export function atlasMobilier({ taille = ATLAS_TAILLE, couleurs = {} } = {}) {
   region('uni', (u, v, x, y) => {
     const g = 225 + 20 * hash(x, y, 28);
     return [g, g, g];
+  });
+  // Affiche « AVIS » (texte générique inventé) : papier jauni, bandeau sombre au titre clair, lignes de texte, bord usé.
+  region('affiche', (u, v, x, y) => {
+    let col = fois(c('papier'), grain(x, y, 29, 0.1));
+    if (v > 0.68 && v < 0.94 && u > 0.08 && u < 0.92) col = surTexte(u, v, TEXTES.affiche[0], [0.2, 0.72, 0.8, 0.9]) ? c('papier') : c('encre');
+    else if (v > 0.12 && v < 0.6 && u > 0.14 && u < 0.86 && y % 3 === 0 && hash(x >> 1, y, 30) > 0.25) col = c('encre');
+    if (u < 0.04 || u > 0.96 || v < 0.04 || v > 0.96) col = fois(col, 0.75);
+    return col;
+  });
+  // Horloge murale arrêtée : cadre de bois, cadran clair, douze traits, aiguilles figées.
+  region('horloge', (u, v) => {
+    const d = Math.hypot(u - 0.5, v - 0.5);
+    if (d > 0.46) return c('manche');
+    if (d > 0.42) return fois(c('laiton'), 0.8);
+    const a = Math.atan2(v - 0.5, u - 0.5);
+    if (d > 0.33 && Math.abs(((a / (Math.PI / 6)) % 1 + 1) % 1 - 0.5) > 0.42) return c('encre');
+    if (Math.abs(u - 0.5) < 0.03 && v > 0.5 && v < 0.82) return c('encre');
+    if (Math.abs(v - 0.5) < 0.03 && u > 0.5 && u < 0.72) return c('encre');
+    return c('papier');
+  });
+  // Tableau d'ordres : liège sombre, feuilles épinglées (lignes), punaises de laiton.
+  region('ordres', (u, v, x, y) => {
+    let col = fois(c('carton'), 0.55 * grain(x, y, 31, 0.3));
+    for (const [a, b, w, h] of [[0.08, 0.5, 0.36, 0.42], [0.52, 0.55, 0.38, 0.36], [0.2, 0.08, 0.4, 0.36], [0.64, 0.1, 0.28, 0.34]]) {
+      if (u > a && u < a + w && v > b && v < b + h) col = (y % 3 === 0 && u > a + 0.04 && u < a + w - 0.04 && v < b + h - 0.08) ? c('encre') : c('papier');
+      if (Math.hypot(u - (a + w / 2), v - (b + h - 0.04)) < 0.035) col = c('laiton');
+    }
+    return col;
   });
   return { width: N, height: N, data, octets: Math.round(N * N * 4 * 4 / 3) };
 }

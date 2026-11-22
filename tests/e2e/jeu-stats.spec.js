@@ -62,7 +62,9 @@ test.describe('cône de tir : tirage des balles', () => {
 test.describe('statistiques : dégâts, cadence, vitesse', () => {
   for (const [lvl, delay] of [[0, 0.4], [10, 0.15]]) {
     test(`cadence : intervalle entre tirs ${delay} s au niveau ${lvl} (±10 %, temps de jeu)`, async ({ page }) => {
-      await open(page, `&empty=1&nospawn=1&lvl=cadence:${lvl}`);
+      // Retours du lot 9j : munitions illimitées ; depuis le lot 9e, le pistolet recharge après 7 balles, et au niveau 10 (0,15 s) le rechargement
+      // tombait dans les 3 s mesurées (intervalle moyen faussé : 0,32 s ; test du palier complet, rejoué ici parce que ses bornes de triangles ont changé).
+      await open(page, `&empty=1&nospawn=1&lvl=cadence:${lvl}&munitions=illimitees`);
       await page.evaluate(() => { window.__zs.setInput({ aim: { angle: 0 } }); window.__zs.setPlayer(800, 450); });
       // Un zombie qui reste sur la ligne : replacé à chaque pas.
       const times = await page.evaluate(() => {
@@ -158,8 +160,8 @@ test.describe('budget et sons au niveau maximal', () => {
     expect(r.count).toBe(10);
     expect(r.cone).not.toBeNull();
     expect(r.render.calls).toBeLessThanOrEqual(400); // lot 3m : limites de refonte relevées par le propriétaire (avant : 300)
-    expect(r.render.triangles).toBeLessThanOrEqual(45000); // lot 3m : limites de refonte relevées par le propriétaire (avant : 30000)
-    expect(r.render.triangles).toBeLessThanOrEqual(45000); // lot 3m : limites de refonte relevées par le propriétaire (avant : 30000) ; lot 3 : +24 triangles de planches (14 858 + 10 au lot 2b, 14 862 + 120 = 14 982 mesurés)
+    expect(r.render.triangles).toBeLessThanOrEqual(60_000); // retours du lot 9j : plafond relevé à 60 000 par le propriétaire (avant : 45 000) ; lot 3m : limites de refonte relevées par le propriétaire (avant : 30000)
+    expect(r.render.triangles).toBeLessThanOrEqual(60_000); // retours du lot 9j : plafond relevé à 60 000 par le propriétaire (avant : 45 000) ; lot 3m : limites de refonte relevées par le propriétaire (avant : 30000) ; lot 3 : +24 triangles de planches (14 858 + 10 au lot 2b, 14 862 + 120 = 14 982 mesurés)
   });
 
 });

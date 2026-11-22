@@ -10,6 +10,7 @@
 // - Feu posé (feux.json : P9, Q2) : une caisse sous le centre du feu, dessus à la hauteur du lot 3g.
 // Repère : x du jeu → x, hauteur → y, y du jeu → z (haut de l'écran = nord). Aucun symbole politique, aucune marque, aucun emblème ; textes inventés.
 import { regionUv } from './mobilier-epoque-atlas.js';
+import { pointInPolygon } from './shape.js';
 import { isNum, num } from './vec.js';
 
 export const HAUTEUR_ARME = 43; // ce qui est dessiné plus bas laisse passer balles et laser (règle du lot 8j)
@@ -52,6 +53,7 @@ export const MATIERES = Object.freeze({
   fer: { region: 'uni', echelle: 10, teinte: 'fer-blanc' }, acier: { region: 'uni', echelle: 10, teinte: 'acier' }, noir: { region: 'uni', echelle: 10, teinte: 'noir' },
   manche: { region: 'uni', echelle: 10, teinte: 'manche' }, carton: { region: 'uni', echelle: 10, teinte: 'carton' }, toile: { region: 'uni', echelle: 10, teinte: 'toile' },
   corde: { region: 'uni', echelle: 10, teinte: 'corde' }, laiton: { region: 'uni', echelle: 10, teinte: 'laiton' }, verre: { region: 'uni', echelle: 10, teinte: 'verre-eteint' },
+  affiche: { region: 'affiche', ajuste: true, teinte: 'neutre' }, horloge: { region: 'horloge', ajuste: true, teinte: 'neutre' }, ordres: { region: 'ordres', ajuste: true, teinte: 'neutre' },
   brique: { region: 'uni', echelle: 10, teinte: 'brique' }, gravats: { region: 'uni', echelle: 10, teinte: 'gravats' }, gravier: { region: 'uni', echelle: 10, teinte: 'platre-sombre' }, papier: { region: 'uni', echelle: 10, teinte: 'papier' },
 });
 
@@ -68,7 +70,9 @@ export function lireChoix(json) {
   const p = j.pieces && typeof j.pieces === 'object' && !Array.isArray(j.pieces) ? j.pieces : {};
   for (const [id, a] of Object.entries(p)) if (typeof id === 'string' && !id.startsWith('_') && ASPECTS.includes(a)) pieces[id] = a;
   const escaliers = j.escaliers === 'actuel' || VARIANTES_ESCALIER.includes(j.escaliers) ? j.escaliers : DEFAUT_ESCALIER;
-  return { variantes, pieces, escaliers };
+  // Décor des murs (retours du propriétaire) : murs : true (dessiné dans la partie) ou false ; absent ou invalide : false.
+  const murs = j.murs === true;
+  return { variantes, pieces, escaliers, murs };
 }
 
 // Aspect de 1942 d'une pièce d'après son aspect du lot 3g (lookOf) et son rectangle (étagère presque carrée : renversée).
@@ -1070,4 +1074,143 @@ export function modeleEscalier(spec) {
     hauteur = Math.max(hauteur, p[1]);
   }
   return { variante, corps: tris.corps, hauteur: r3(hauteur), emprise: tris.corps.length ? { x: r3(x0), y: r3(z0), w: r3(x1 - x0), h: r3(z1 - z0) } : null, compte: { corps: tris.corps.length } };
+}
+
+// --- Décor des murs (retours du propriétaire : « générer du décor pour mur, pas partout, meubler un peu ») ---------------------------------------------
+// Le dessin seulement : aucune collision, aucun effet sur les tirs, le laser, les chemins ni les règles. Détails de l'atlas du mobilier (maillage de
+// l'étage, sans ombre, aucun appel de plus). A : accroché au mur (seulement sur les faces que voit la caméra, tournées vers le sud) ; B : posé au pied
+// du mur (au sol, quelques unités de profondeur, contre n'importe quelle face).
+export const TYPES_MUR = Object.freeze(['affiche', 'briques', 'carte', 'horloge', 'ordres', 'etagere', 'portemanteau']);
+export const TYPES_SOL = Object.freeze(['planches', 'sacs', 'bidons', 'fusil', 'papiers']);
+const TIRAGE_MUR = ['etagere', 'etagere', 'etagere', 'portemanteau', 'portemanteau', 'portemanteau', 'ordres', 'ordres', 'carte', 'affiche', 'briques', 'horloge'];
+const TIRAGE_SOL = ['planches', 'planches', 'sacs', 'sacs', 'bidons', 'bidons', 'papiers', 'fusil'];
+const LARGEURS = { affiche: 16, briques: 22, carte: 26, horloge: 10, ordres: 24, etagere: 34, portemanteau: 22, planches: 30, sacs: 34, bidons: 24, fusil: 14, papiers: 26 };
+const PROFONDEURS = { affiche: 1, briques: 1, carte: 1, horloge: 2, ordres: 2, etagere: 7, portemanteau: 7, planches: 11, sacs: 14, bidons: 9, fusil: 8, papiers: 16 };
+
+// Taille agrandie (comme les objets du lot 9i, « taille × 2 ») : à la taille du jeu, un objet de 10 unités fait 4 px ; une face de mur se voit très
+// écrasée (75°). Largeur et profondeur × 1,8 ; hauteur × 1,2 accroché (sous le haut du mur), × 1,5 au sol (70 au plus).
+export const ECHELLE_MURS = Object.freeze({ plan: 1.8, mur: 1.2, sol: 1.5 });
+const rectBase = (spec, k = 1) => {
+  const w = (LARGEURS[spec?.type] ?? 20) * k;
+  const d = (PROFONDEURS[spec?.type] ?? 4) * k;
+  const { x, y, face } = spec ?? {};
+  if (face === 's') return { x: x - w / 2, y, w, h: d };
+  if (face === 'n') return { x: x - w / 2, y: y - d, w, h: d };
+  if (face === 'e') return { x, y: y - w / 2, w: d, h: w };
+  return { x: x - d, y: y - w / 2, w: d, h: w };
+};
+// Rectangle au sol d'un objet du décor des murs : contre la face (x, y : milieu de l'objet sur la face ; face : direction de la pièce, n, s, e, w).
+export function rectMur(spec) {
+  return rectBase(spec, ECHELLE_MURS.plan);
+}
+
+function objetMur(B, type, L, D, id) {
+  const plaqueMur = (mat, u0, u1, y0, y1, uv = [[0, 0], [0, 1], [1, 1], [1, 0]]) => B.plaque('details', mat, [[u0, y0, 0.35], [u0, y1, 0.35], [u1, y1, 0.35], [u1, y0, 0.35]], { uv, vers: [(u0 + u1) / 2, (y0 + y1) / 2, 20] });
+  if (type === 'affiche') plaqueMur('affiche', 0, L, 26, 47);
+  else if (type === 'briques') {
+    // Plâtre arraché : un pan de briques à nu, bords irréguliers.
+    const j = (k) => (unitHash(id, k) - 0.5) * 4;
+    B.plaque('details', 'briques', [[j(1), 8 + j(2), 0.35], [2 + j(3), 30 + j(4), 0.35], [L + j(5), 27 + j(6), 0.35], [L - 3 + j(7), 6 + j(8), 0.35]], { uv: [[0, 0], [0, 0.6], [0.6, 0.6], [0.6, 0]], vers: [L / 2, 18, 20] });
+  } else if (type === 'carte') plaqueMur('bureau', 0, L, 24, 44, [[0.5, 0], [0.5, 1], [1, 1], [1, 0]]);
+  else if (type === 'horloge') {
+    B.boite('details', 'manche', [0, L], [40, 50], [0, 1.4], { faces: 'cotes' });
+    B.plaque('details', 'horloge', [[0, 40, 1.5], [0, 50, 1.5], [L, 50, 1.5], [L, 40, 1.5]], { uv: [[0, 0], [0, 1], [1, 1], [1, 0]], vers: [L / 2, 45, 20] });
+  } else if (type === 'ordres') {
+    B.boite('details', 'manche', [0, L], [20, 38], [0, 1.4], { faces: 'cotes' });
+    B.plaque('details', 'ordres', [[0.8, 20.8, 1.5], [0.8, 37.2, 1.5], [L - 0.8, 37.2, 1.5], [L - 0.8, 20.8, 1.5]], { uv: [[0, 0], [0, 1], [1, 1], [1, 0]], vers: [L / 2, 29, 20] });
+  } else if (type === 'etagere') {
+    B.boite('details', 'manche', [0, L], [32, 34], [0, D]);
+    rangee(B, 1, L - 1, 0.3, D - 0.3, 34, 9, id, 700, 'intendance');
+  } else if (type === 'portemanteau') {
+    B.boite('details', 'manche', [0, L], [44, 46.5], [0, 2]);
+    B.boite('details', 'toile', [1.5, 10], [16, 44], [0.4, 4.5], { retrait: 0.08 });
+    B.boite('details', 'olive', [12, 19.5], [38.5, 44], [0, 6.5], { retrait: 0.3 });
+  } else if (type === 'planches') {
+    // Trois planches appuyées contre le mur : pied à 9 du mur, tête contre le mur.
+    for (let k = 0; k < 3; k += 1) {
+      const u = 2 + k * ((L - 10) / 2) + unitHash(id, 10 + k) * 2;
+      const haut = 30 + unitHash(id, 20 + k) * 14;
+      const pied = 7 + unitHash(id, 30 + k) * 3;
+      B.hexa('details', 'manche', [[u, 0, pied - 1.5], [u, 0, pied + 1.5], [u + 6, 0, pied + 1.5], [u + 6, 0, pied - 1.5], [u, haut, 0.3], [u, haut, 2.5], [u + 6, haut, 2.5], [u + 6, haut, 0.3]]);
+    }
+  } else if (type === 'sacs') {
+    sac(B, [0, L * 0.5], [0, D], 11, -6);
+    sac(B, [L * 0.48, L], [1, D], 10, 8);
+  } else if (type === 'bidons') {
+    jerrycan(B, [0, 10], [0, 7], 15);
+    B.cylindre('details', 'olive-sombre', 17, 4.5, 0, 16, 4.2, 6);
+  } else if (type === 'fusil') {
+    B.barre('details', 'manche', [L / 2, 0.5, D - 1.5], [L / 2 + 1, 22, 1.2], 2.2);
+    B.barre('details', 'acier', [L / 2 + 1, 22, 1.2], [L / 2 + 1.6, 38, 0.6], 1.1);
+  } else {
+    B.dessus('details', 'dossiers', [1, L * 0.55], 0.2, [2, D * 0.7], { fenetre: [0, 0, 1, 0.5] });
+    B.dessus('details', 'dossiers', [L * 0.45, L - 1], 0.35, [D * 0.3, D - 1], { fenetre: [0, 0, 1, 0.5] });
+  }
+}
+
+// Dessin d'un objet du décor des murs : { id, type, x, y, face, floor } → { details, rect, hauteur, compte }.
+export function modeleMur(spec) {
+  const s = spec && typeof spec === 'object' ? spec : {};
+  if (![...TYPES_MUR, ...TYPES_SOL].includes(s.type) || !isNum(s.x) || !isNum(s.y) || !['n', 's', 'e', 'w'].includes(s.face)) return { details: [], rect: null, hauteur: 0, compte: { details: 0 } };
+  // Construit à la taille de base, puis agrandi autour du milieu de l'objet sur la face (au sol).
+  const rect = rectMur(s);
+  const c = cadre(rectBase(s), s.face);
+  const B = constructeur(c);
+  objetMur(B, s.type, c.L, c.D, String(s.id ?? ''));
+  const kp = ECHELLE_MURS.plan;
+  const kh = TYPES_MUR.includes(s.type) ? ECHELLE_MURS.mur : ECHELLE_MURS.sol;
+  for (const q of B.pieces) q.pts = q.pts.map((pt) => [s.x + (pt[0] - s.x) * kp, Math.min(HAUTEUR_MAX, pt[1] * kh), s.y + (pt[2] - s.y) * kp]);
+  const tris = trianguler(B.pieces, rect, HAUTEUR_MAX, String(s.id ?? ''), true);
+  const hauteur = Math.max(0, ...tris.details.flatMap((t) => t.p.map((p) => p[1])));
+  return { details: tris.details, rect, hauteur: r3(hauteur), compte: { details: tris.details.length } };
+}
+
+const touche = (a, b) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+const gonfle = (r, m) => ({ x: r.x - m, y: r.y - m, w: r.w + 2 * m, h: r.h + 2 * m });
+// Emplacements du décor des murs d'un étage, déterministes. entrees : { floor, murs (rectangles), contour, obstacles, fenetres ([{ x, y }]),
+// portes (rectangles des ouvertures), escaliers (rectangles), lampes ([{ x, y }]), objetsMur ([{ x, y }] : cartes du lot 9i), densite (0 à 1) }.
+// Faces parcourues tous les 130, à 70 des bouts ; écartés : à moins de 160 d'une fenêtre, 60 d'une porte, 40 d'un escalier, 50 d'une lampe ou d'une
+// carte du lot 9i (objets accrochés), devant un obstacle, hors du bâtiment ; gardés : un sur deux environ (densité), accrochés seulement sur les
+// faces tournées vers le sud (que voit la caméra ; est et ouest parfois), au sol ailleurs. → [{ id, floor, pose, type, x, y, face }].
+export function emplacementsMurs({ floor = 'rdc', murs = [], contour = [], obstacles = [], fenetres = [], portes = [], escaliers = [], lampes = [], objetsMur = [], densite = 0.55 } = {}) {
+  const out = [];
+  const poly = (Array.isArray(contour) ? contour : []).map((q) => (Array.isArray(q) ? q : [q?.x, q?.y]));
+  const dedans = (x, y) => pointInPolygon(x, y, poly) && !murs.some((m) => x > m.x && x < m.x + m.w && y > m.y && y < m.y + m.h);
+  const pres = (liste, x, y, d) => (Array.isArray(liste) ? liste : []).some((q) => q && isNum(q.x) && isNum(q.y) && Math.hypot(q.x - x, q.y - y) < d);
+  const bloque = [...(Array.isArray(obstacles) ? obstacles : []).map((o) => gonfle(o, 4)), ...(Array.isArray(portes) ? portes : []).map((r) => gonfle(r, 60)), ...(Array.isArray(escaliers) ? escaliers : []).map((r) => gonfle(r, 40))];
+  (Array.isArray(murs) ? murs : []).forEach((m, mi) => {
+    for (const face of ['s', 'n', 'e', 'w']) {
+      const horiz = face === 's' || face === 'n';
+      const len = horiz ? m.w : m.h;
+      if (len < 160) continue;
+      const n = Math.floor((len - 140) / 130) + 1;
+      for (let k = 0; k < n; k += 1) {
+        const t = 70 + k * 130 + (len - 140 - (n - 1) * 130) / 2;
+        const x = horiz ? m.x + t : face === 'e' ? m.x + m.w : m.x;
+        const y = horiz ? (face === 's' ? m.y + m.h : m.y) : m.y + t;
+        const id = `${floor}-m${mi}${face}${k}`;
+        // Faces sud (vues de face par la caméra) : presque toutes garnies ; les autres : une sur deux environ (densite).
+        if (unitHash(id, 1) > (face === 's' ? Math.min(1, densite + 0.3) : densite)) continue;
+        const px = x + (face === 'e' ? 6 : face === 'w' ? -6 : 0);
+        const py = y + (face === 's' ? 6 : face === 'n' ? -6 : 0);
+        if (!dedans(px, py)) continue;
+        if (pres(fenetres, x, y, 160)) continue;
+        // Accroché : faces sud surtout (85 %), est et ouest parfois (vues de biais, 35 %) ; jamais sur une face nord (jamais vue).
+        const accroche = unitHash(id, 2) < (face === 's' ? 0.85 : face === 'n' ? 0 : 0.35);
+        // Tirage pondéré (objets qui se voient de dessus d'abord) ; jamais le même objet que le précédent de l'étage.
+        const types = accroche ? TIRAGE_MUR : TIRAGE_SOL;
+        let type = types[Math.floor(unitHash(id, 3) * types.length)];
+        const avant = out.filter((o) => o.floor === floor).at(-1)?.type;
+        for (let q = 1; type === avant && q < types.length; q += 1) type = types[(Math.floor(unitHash(id, 3) * types.length) + q) % types.length];
+        if (accroche && (pres(lampes, x, y, 50) || pres(objetsMur, x, y, 50))) continue;
+        const r = rectMur({ type, x, y, face });
+        // Accroché : la place au pied du mur doit être libre sur 16 (personne ne voit un objet derrière un meuble).
+        const zone = !accroche ? r : face === 's' ? { ...r, h: 16 } : face === 'e' ? { ...r, w: 16 } : { ...r, x: r.x + r.w - 16, w: 16 };
+        if (bloque.some((b) => touche(zone, b))) continue;
+        if (out.some((o) => o.floor === floor && Math.hypot(o.x - x, o.y - y) < 110)) continue;
+        out.push({ id, floor, pose: accroche ? 'mur' : 'sol', type, x: r3(x), y: r3(y), face });
+      }
+    }
+  });
+  return out;
 }
