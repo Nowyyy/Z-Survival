@@ -1,0 +1,150 @@
+{
+  "_provisoire": "Lot 9j : mobilier de 1942 (dessin seulement : collisions, tirs et chemins gardent les boîtes du lot 3g). couleurs : teintes des détails et couleurs de l'atlas du mobilier (js/core/mobilier-epoque-atlas.js), dérivées de jetons existants de css/tokens.css (jeton, vers, part : mélange linéaire, comme data/game/interieur-epoque.json) ; aucune couleur en dur, aucun jeton nouveau ; rien de vif (près des fenêtres comme ailleurs). Modèles et variantes : js/core/mobilier-epoque.js ; choix : data/game/mobilier-epoque-choix.json ; noms affichés : data/i18n/atelier-mobilier.json ; fiche : Docs/ref/decor-epoque.md (« Mobilier »). Textes du pochoir inventés ; aucune marque, aucun symbole politique, aucun emblème. Valeurs provisoires.",
+  "couleurs": {
+    "olive": {
+      "jeton": "--game-tree",
+      "vers": "--game-paint-3",
+      "part": 0.35
+    },
+    "olive-sombre": {
+      "jeton": "--game-tree",
+      "vers": "--game-boot",
+      "part": 0.35
+    },
+    "pochoir": {
+      "jeton": "--game-plank",
+      "vers": "--game-wreck-hull",
+      "part": 0.45
+    },
+    "encre": {
+      "jeton": "--game-lamp-metal",
+      "vers": "--game-boot",
+      "part": 0.3
+    },
+    "bois-clair": {
+      "jeton": "--game-wood",
+      "vers": "--game-plank-dark",
+      "part": 0.4
+    },
+    "bois-tiroir": {
+      "jeton": "--game-wood-dark",
+      "vers": "--game-wood",
+      "part": 0.35
+    },
+    "toile": {
+      "jeton": "--game-wreck-hull",
+      "vers": "--game-tree",
+      "part": 0.55
+    },
+    "jute": {
+      "jeton": "--game-plank-dark",
+      "vers": "--game-wreck-hull",
+      "part": 0.3
+    },
+    "corde": {
+      "jeton": "--game-plank-dark",
+      "vers": "--game-plank",
+      "part": 0.3
+    },
+    "fer-blanc": {
+      "jeton": "--game-wreck-metal",
+      "vers": "--game-metal",
+      "part": 0.35
+    },
+    "etiquette": {
+      "jeton": "--game-paint-3",
+      "vers": "--game-wood-dark",
+      "part": 0.55
+    },
+    "brique": {
+      "jeton": "--game-rust",
+      "vers": "--game-wood-dark",
+      "part": 0.3
+    },
+    "mortier": {
+      "jeton": "--game-gravel",
+      "vers": "--game-wreck-hull",
+      "part": 0.35
+    },
+    "platre": {
+      "jeton": "--game-wreck-hull",
+      "vers": "--game-wall",
+      "part": 0.3
+    },
+    "platre-sombre": {
+      "jeton": "--game-wall",
+      "vers": "--game-wreck-hull",
+      "part": 0.4
+    },
+    "gravats": {
+      "jeton": "--game-gravel",
+      "vers": "--game-soil",
+      "part": 0.45
+    },
+    "pierre": {
+      "jeton": "--game-wall-base",
+      "vers": "--game-wreck-hull",
+      "part": 0.35
+    },
+    "papier": {
+      "jeton": "--game-plank",
+      "vers": "--game-wreck-hull",
+      "part": 0.35
+    },
+    "carton": {
+      "jeton": "--game-plank-dark",
+      "vers": "--game-plank",
+      "part": 0.35
+    },
+    "cuir-vert": {
+      "jeton": "--game-tree",
+      "vers": "--game-wall",
+      "part": 0.2
+    },
+    "couverture": {
+      "jeton": "--game-tree",
+      "vers": "--game-wreck-hull",
+      "part": 0.3
+    },
+    "couverture-bande": {
+      "jeton": "--game-plank-dark",
+      "vers": "--game-tree",
+      "part": 0.3
+    },
+    "acier": {
+      "jeton": "--game-metal",
+      "vers": "--game-wall",
+      "part": 0.35
+    },
+    "noir": {
+      "jeton": "--game-boot",
+      "vers": "--game-lamp-metal",
+      "part": 0.4
+    },
+    "manche": {
+      "jeton": "--game-wood",
+      "vers": "--game-wood-dark",
+      "part": 0.4
+    },
+    "laiton": {
+      "jeton": "--game-lamp-reservoir",
+      "vers": "--game-wood",
+      "part": 0.3
+    },
+    "verre-eteint": {
+      "jeton": "--game-wreck-glass",
+      "vers": "--game-boot",
+      "part": 0.3
+    },
+    "carte-relief": {
+      "jeton": "--game-plank-dark",
+      "vers": "--game-rust",
+      "part": 0.3
+    },
+    "carte-eau": {
+      "jeton": "--game-paint-2",
+      "vers": "--game-plank",
+      "part": 0.35
+    }
+  }
+}

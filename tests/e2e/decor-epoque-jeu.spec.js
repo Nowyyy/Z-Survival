@@ -6,6 +6,8 @@ import { waitReady } from './helpers.js';
 // d'époque la voiture en flammes (même feu à deux foyers), des objets s'ajoutent ; ?test=1&decor=avant rend le décor d'avant (référence). Budget : au plus
 // +4 appels et +3 000 triangles par rapport au décor d'avant (lot 9i : ?decor=avant retire aussi l'intérieur d'époque, deux maillages, et la lampe coudée du
 // joueur, un appel : +7 appels et +5 000 triangles en tout, 9h et 9i réunis), plafonds 400 appels et 45 000 triangles (R1, R2, U1, U4 × Élevé, Moyen, Faible).
+// Lot 9j : ?decor=avant rend aussi le mobilier du lot 3g (le mobilier de 1942 ajoute au plus +2 appels et +1 108 triangles) ; assertions inchangées :
+// mesuré 9h, 9i et 9j réunis, au plus +5 appels et +3 618 triangles (Faible U4).
 const decor = JSON.parse(readFileSync('data/game/maps/rez-de-chaussee/decor.json', 'utf8'));
 const U = (px) => px * 5 + 800; // scripts/perf/mesurer.mjs : position en pixels du plan → unités du jeu
 const SCENES = [

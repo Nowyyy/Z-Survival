@@ -1,0 +1,33 @@
+/* Lot 9j — Atelier du mobilier de 1942 (page technique) : jetons de tokens.css seulement (aucune couleur ici). */
+.m9-vues {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 20rem), 1fr));
+  gap: var(--space-3);
+}
+
+.m9-vues canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: var(--radius-sm);
+}
+
+.m9-aspect-desc {
+  max-width: 70ch;
+}
+
+.i9-plan .m9-piece { fill-opacity: 0.75; stroke: var(--color-bg); stroke-width: 2; }
+.i9-plan .m9-feu { fill: var(--color-money); stroke: var(--color-bg); stroke-width: 2; }
+.m9-a-caisses { fill: var(--color-money); background: var(--color-money); }
+.m9-a-gravats { fill: var(--color-text-muted); background: var(--color-text-muted); }
+.m9-a-etagere { fill: var(--color-success); background: var(--color-success); }
+.m9-a-renversee { fill: var(--color-warning); background: var(--color-warning); }
+.m9-a-classeur { fill: var(--color-money-blue); background: var(--color-money-blue); }
+.m9-a-bureau { fill: var(--color-money-medaille); background: var(--color-money-medaille); }
+.m9-a-tabouret { fill: var(--color-focus); background: var(--color-focus); }
+.m9-a-comptoir { fill: var(--color-action); background: var(--color-action); }
+.m9-a-muret { fill: var(--color-text); background: var(--color-text); }
+
+.m9-select-piece {
+  min-height: 44px;
+}

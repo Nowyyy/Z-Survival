@@ -7,6 +7,7 @@ import { clearanceZones, decorToWorld, placeDecor, solidesDecor, totalTriangles 
 import { compareFloor } from '../js/core/ecarts.js';
 import { floorProblems } from '../js/core/floor-rules.js';
 import { boxTriangles, lookOf, pieceBoxes } from '../js/core/mobilier-aspect.js';
+import { lireChoix as lireChoixMobilier, modeleMeuble, specsMobilier } from '../js/core/mobilier-epoque.js';
 import { analyzeMap, planToWorld } from '../js/core/maps.js';
 import { decorProblems, generateDecor } from '../js/core/decor.js';
 import { firesToWorld, lampsToWorld, lampTriangles } from '../js/core/lamps.js';
@@ -230,6 +231,40 @@ export function generateMapFiles(id = 'rez-de-chaussee') {
     result.tirsReport = { counts: Object.fromEntries(Object.entries(conv.doc).map(([f, d]) => [f, `${d.ids.length} objets, ${d.grilles.length} grilles`])), problems: conv.problems };
     result.problems.push(...conv.problems.map((v) => `tirs : ${v}`));
   }
+  // Lot 9j : mobilier de 1942 (le dessin seulement) : pour chaque pièce dessinée du lot 3g (hors tables du lot 9i), spécification de son dessin
+  // (aspect, variante retenue dans data/game/mobilier-epoque-choix.json, rectangle cible, hauteur et classe de tirs du lot 3g, côté ouvert, feu posé)
+  // ajoutée à mobilier.world.json (clé epoque de la pièce ; couleurs de data/game/mobilier-epoque.json). Les boîtes du lot 3g restent la référence
+  // des collisions, des tirs et des feux : world.json, etage.world.json, tirs.world.json et lampes.world.json ne changent pas.
+  result.mobilierEpoqueReport = null;
+  if (result.mobilier) {
+    const lireData = (nom) => {
+      const url = new URL(`../${nom}`, ROOT);
+      return existsSync(url) ? JSON.parse(readFileSync(url, 'utf8')) : null;
+    };
+    const doc = JSON.parse(result.mobilier);
+    const tirsDoc = result.tirs ? JSON.parse(result.tirs) : {};
+    const feuxUrl = new URL(`${id}/feux.json`, ROOT);
+    const specs = specsMobilier({
+      pieces: doc.pieces,
+      obstacles: { rdc: out.world.obstacles, etage: etageWorldOut?.obstacles ?? [] },
+      murs: { rdc: segmentRects(out.world.walls, params.wallThickness), etage: etageWorldOut ? segmentRects(etageWorldOut.walls, params.wallThickness) : [] },
+      tirs: { rdc: tirsDoc.rdc?.ids ?? [], etage: tirsDoc.etage?.ids ?? [] },
+      feux: existsSync(feuxUrl) ? JSON.parse(readFileSync(feuxUrl, 'utf8')).feux : [],
+      remplaces: new Set((out.decor.interieur?.objets ?? []).filter((o) => o?.remplace).map((o) => `${o.floor}:${o.remplace}`)),
+      choix: lireChoixMobilier(lireData('mobilier-epoque-choix.json')),
+    });
+    const compte = { rdc: { corps: 0, details: 0 }, etage: { corps: 0, details: 0 } };
+    for (const sp of specs) {
+      doc.pieces[sp.id].epoque = { aspect: sp.aspect, variante: sp.variante, rect: sp.rect, hauteur: sp.hauteur, passe: sp.passe, ouverture: sp.ouverture, ...(sp.feu ? { feu: sp.feu } : {}) };
+      if (sp.variante === 'actuel') continue;
+      const m = modeleMeuble({ ...doc.pieces[sp.id].epoque, id: sp.id });
+      compte[sp.floor].corps += m.compte.corps;
+      compte[sp.floor].details += m.compte.details;
+    }
+    doc.epoque = { couleurs: lireData('mobilier-epoque.json')?.couleurs ?? {}, triangles: compte };
+    result.mobilier = `${formatJson(doc)}\n`;
+    result.mobilierEpoqueReport = { pieces: specs.length, triangles: compte };
+  }
   // Lot 9h : rapport et problèmes du décor d'époque (contrôle fait avant l'écriture de decor.json).
   result.decorEpoqueReport = null;
   if (ctlEpoque) {
@@ -261,7 +296,7 @@ if (isMain) {
   const args = process.argv.slice(2);
   const check = args.includes('--verifie');
   const id = args.find((a) => !a.startsWith('--')) ?? 'rez-de-chaussee';
-  const { world, decor, etage, report, etageReport, problems, decorInterieur, decorReport, mobilier, mobilierReport, wrecksReport, lampes, lampesReport, tirs, tirsReport, decorEpoqueReport, collisionsReport, interieurReport } = generateMapFiles(id);
+  const { world, decor, etage, report, etageReport, problems, decorInterieur, decorReport, mobilier, mobilierReport, wrecksReport, lampes, lampesReport, tirs, tirsReport, decorEpoqueReport, collisionsReport, interieurReport, mobilierEpoqueReport } = generateMapFiles(id);
   const files = [['world.json', world], ['decor.json', decor], ...(etage === null ? [] : [['etage.world.json', etage]]), ...(decorInterieur === null ? [] : [['decor-interieur.world.json', decorInterieur]]), ...(mobilier ? [['mobilier.world.json', mobilier]] : []), ...(lampes ? [['lampes.world.json', lampes]] : []), ...(tirs ? [['tirs.world.json', tirs]] : [])].map(([name, text]) => [name, text, new URL(`${id}/${name}`, ROOT)]);
   if (check) {
     const stale = files.filter(([, text, url]) => !existsSync(url) || readFileSync(url, 'utf8') !== text).map(([name]) => name);
@@ -285,6 +320,7 @@ if (isMain) {
   }
   for (const v of problems) console.log(`PROBLÈME (étage) : ${v}`);
   if (mobilierReport) console.log(`Mobilier d'après le modèle : ${mobilierReport.count} pièces, ${mobilierReport.triangles} triangles.`);
+  if (mobilierEpoqueReport) console.log(`Mobilier de 1942 : ${mobilierEpoqueReport.pieces} pièces ; rez-de-chaussée ${mobilierEpoqueReport.triangles.rdc.corps} + ${mobilierEpoqueReport.triangles.rdc.details}, étage ${mobilierEpoqueReport.triangles.etage.corps} + ${mobilierEpoqueReport.triangles.etage.details} triangles (corps + détails).`);
   if (decorReport) {
     console.log(`Décor léger : ${decorReport.count} éléments, ${decorReport.triangles} triangles.`);
     for (const w of decorReport.warnings) console.log(`Décor léger : ${w}`);

@@ -217,6 +217,9 @@ export async function demarrerPartie() {
   const decorAvant = testMode && query.get('decor') === 'avant';
   if (decorAvant) delete decor.epoque;
   // Lot 9i : decor=avant vaut aussi pour l'intérieur : sans les objets d'époque (clé interieur de decor.json) ni leurs obstacles (kind « epoque »).
+  // Lot 9j : decor=avant vaut aussi pour le mobilier : boîtes du lot 3g (clé epoque des pièces de mobilier.world.json ignorée).
+  render.mobilierEpoque = !decorAvant;
+  render.mobilierCouleurs = mobilier?.epoque?.couleurs ?? null;
   if (decorAvant) {
     delete decor.interieur;
     for (const w of [world, upperWorld]) if (w && Array.isArray(w.obstacles)) w.obstacles = w.obstacles.filter((o) => o.kind !== 'epoque');
