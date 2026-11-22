@@ -28,7 +28,7 @@ export const VARIANTES = Object.freeze({
 // zones.json, js/core/portes-aspect.js → rubbleBoxes), corps seulement (maillage de chaque bloc, qui s'enfonce quand la porte s'ouvre) :
 // A éboulis fin et bas, B barricade de planches sur tréteaux, C chevaux de frise et barbelés.
 export const VARIANTES_ESCALIER = Object.freeze(['A', 'B', 'C']);
-export const DEFAUT_ESCALIER = 'C'; // le plus fin (retours du propriétaire)
+export const DEFAUT_ESCALIER = 'A'; // éboulis fin, retenu par le propriétaire (retours 1)
 export const DEFAUTS = Object.freeze({ caisses: 'A', gravats: 'A', etagere: 'A', renversee: 'A', classeur: 'A', bureau: 'A', tabouret: 'A', comptoir: 'A', muret: 'A' });
 
 // Corps : régions de l'atlas des meubles (atlas-props de data/game/textures.json) et leur échelle (unités du monde par largeur de région).

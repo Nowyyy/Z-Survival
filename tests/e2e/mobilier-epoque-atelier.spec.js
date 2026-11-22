@@ -71,7 +71,7 @@ test('atelier du mobilier : chaque aspect (actuel et variantes) en vue du jeu, d
   const c = await page.evaluate(() => window.__zsMobilier.choix());
   expect(c.variantes.caisses).toBe('C');
   expect(c.pieces).toEqual({ M22: 'caisses' });
-  expect(c.escaliers).toBe('C');
+  expect(c.escaliers).toBe('A'); // retours du propriétaire : éboulis fin retenu (avant : C)
   await expect(page.locator('#choix-fichier')).toContainText('"M22": "caisses"');
   // Gros plan et grande vue (1920 × 1080).
   const g = await page.evaluate(() => window.__zsMobilier.grosPlan('comptoir', 'A', 1.2));
