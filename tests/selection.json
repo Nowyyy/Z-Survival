@@ -955,6 +955,15 @@
       "complet": []
     },
     {
+      "id": "equilibrage",
+      "description": "Lot 9k : mesures de l'équilibrage des armes (modèle pur, joueur automatique avec achats, emplacements possibles des caisses), scripts hors du jeu.",
+      "sources": ["scripts/equilibrage/**"],
+      "dependances": ["armes", "carte", "menu", "noyau", "vagues"],
+      "vitest": [],
+      "e2e": [],
+      "complet": []
+    },
+    {
       "id": "armes",
       "description": "Armes (lot 9c : modèles, atlas, caisse, visuels 2D, poses de tenue ; lot 9e : table des armes de la partie, armes portées, chargeurs, changement d'arme, tenue sur le personnage, interface des armes).",
       "sources": [

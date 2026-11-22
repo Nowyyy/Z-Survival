@@ -48,3 +48,42 @@ Atelier seulement (`atelier-armes.html`, à retirer au lot 13) : **rien n'est br
 
 ## Tests
 - Vitest `armes.test.js` (budgets, longueurs à 2 % et dans l'ordre, déterminisme, atlas, caisse sous 43, choix invalide, SVG) ; Playwright `armes-atelier.spec.js` (toutes les variantes, un appel, vues, craie, comparaison, planche, visuels, choix, mouvement réduit, axe, aucune requête, aucune écriture, lien de débogage) ; bureau et mobile en local.
+
+## Achat et équilibrage (lot 9k — partie A : relevé sur `origin/dev` `5d3d766`)
+Mesures reproductibles : `node scripts/equilibrage/armes.mjs [--joueur résultats.json]` (aisance, en texte), `node scripts/equilibrage/joueur.mjs` (joueur automatique du lot 9e avec achats, profils `nu` et `equipe`, tables de remplacement servies par interception), `node scripts/equilibrage/caisses.mjs` (emplacements possibles). Modèle pur : `scripts/equilibrage/modele.mjs`.
+### Difficulté par vague (`waves.json`, `enemies.json`)
+| Vague | 1 | 5 R | 10 R | 11 | 15 R | 20 R | 21 | 25 R | 28 | 31 | 40 R |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| Zombies / présents au plus | 5 / 6 | 16 / 8 | 30 / 10 | 26 / 10 | 48 / 10 | 69 / 10 | 57 / 10 | 94 / 10 | 85 / 10 | 98 / 10 | 150 / 10 |
+| Intervalle d'apparition (s) | 2,50 | 2,04 | 1,58 | 1,50 | 1,22 | 0,94 | 0,90 | 0,90 | 0,90 | 0,90 | 0,90 |
+| Vie marcheur / moyenne | 50 / 50 | 150 / 148 | 275 / 325 | 303 / 363 | 443 / 563 | 713 / 899 | 785 / 1 005 | 1 149 / 1 459 | 1 500 / 1 916 | 1 500 / 1 919 | 1 500 / 1 896 |
+| Demande (PV par seconde) | 20 | 73 | 206 | 243 | 462 | 953 | 1 116 | 1 621 | 2 129 | 2 133 | 2 107 |
+- Vie ×(1 + 0,5 (v − 1)) jusqu'à la 9, puis ×1,1 par vague, **plafond ×30 atteint à la manche 28** ; intervalle ×0,95 par vague, **plancher 0,9 s dès la 21** ; présents : 10 dès la 9 ; total plafonné à 150 (35 et 40) ; coups ×1,05 par vague (10 → 30, plafond ×3 vers la 24). **De la 28 à la 40 (et au-delà en infini, mêmes données), la demande ne monte plus** : seul le nombre de zombies grandit.
+### Équipement et personnages
+- Aucun objet ne donne dégâts, cadence, précision ni portée (décision du lot 8h : « l'arme fait l'attaque, l'équipement fait la survie ») ; le Survivant n'a aucun effet : **l'aisance d'une arme est la même avec et sans équipement**.
+- Équipement de référence proposé (`EQUIPEMENT_REFERENCE`) : six objets rares au niveau 8 (milieu de 1 à 15 : casque kevlar, gilet pare-balles, gants tactiques, treillis, rangers, trousse de secours), Survivant → niveaux vie 10 (plafond), régénération 10, réparation 5, vitesse 5 : **vie 220 (100), soin 11 par tué (1), planche 0,95 s (1,8), vitesse ×1,2** ; chutes 1 dans les deux profils. Le joueur automatique, immobile et sans réparation, ne profite que de la vie et du soin.
+- Effet mesuré aujourd'hui : **aucun** (les deux profils meurent en manche 5) ; même avec des coups de zombie divisés par 5, +1 à +1,5 manche seulement.
+### Aisance actuelle (1,0 = Colt sans équipement, moyenne des vagues 1 à 10 ; précision du joueur automatique 0,89 pour le Colt, 0,8 par défaut pour les autres)
+| Arme | 1 | 10 | 11 | 20 | 21 | 30 | 31 | 40 |
+|---|---|---|---|---|---|---|---|---|
+| Colt M1911 (25, 0,4 s, 7 / ∞, 1,4 + 0,3 s) | 2,88 | 0,27 | 0,23 | 0,06 | 0,05 | 0,03 | 0,03 | 0,03 |
+| Winchester M1897 (55 × 8) | 18,7 | 2,00 | 1,57 | 0,43 | 0,36 | 0,19 | 0,19 | 0,19 |
+| Kar98k (320, 1,05 s) | 1,88 | 0,85 | 0,79 | 0,20 | **0,19** | 0,11 | 0,11 | 0,11 |
+| Thompson M1928 (90, 0,09 s) | 17,9 | 2,74 | 2,24 | 0,66 | 0,55 | 0,30 | **0,30** | 0,30 |
+- Garand 0,30 à la 31, StG 44 0,61, BAR 0,50, MG42 1,00 (tableau complet : `armes.mjs --armes-vues toutes`). Le Kar98k (balle par balle, 5 coups) et la Thompson sont aujourd'hui bien trop faibles à leur vague de la carte 1 ; le pompe y est trop fort.
+### Joueur automatique (lot 9e, graines 1 à 6 ; immobile au départ, vise le plus proche, ne répare pas)
+- **Sans et avec l'équipement : mort en manche 5** (193 à 235 s ; 32 à 42 tués ; médianes 335 et 355 Zollars). La « mort en manche 10 » du seed vient du profil `?lvl=all:10` du lot 9e (dégâts ×2,5, cadence 0,15 s), que plus rien ne donne depuis le lot 8h.
+- Essais (non retenus) : Colt à 50, 75, 100 de dégâts → manches 6–7, 7–9, 8–9 ; coups de zombie ÷2,5 ou ÷5 → +0 à +2 manches ; visée « d'abord les zombies entrés » → aucun gain. Sous la menace, le Colt recharge 43 % du temps ; **la mort vient d'une rafale dès que l'arme tue moins vite qu'ils n'arrivent (aisance brute ≲ 0,9)** : chaque zombie en trop frappe 10 à 15 par seconde contre 100 de vie.
+- Gains d'une partie aujourd'hui (les deux profils) : 335–355 Zollars, 80 médailles (quatre manches), 0 diamant.
+### Zollars
+- 10 par zombie tué par balle, 1 par planche (le joueur automatique n'en pose pas) : 50, 70, 80, 100 aux manches 1 à 4 ; si tout est tué : **1 460 à l'ouverture de la manche 11, 5 630 à la 21, 13 580 à la 31** (avant tout achat). Aucune autre dépense en Zollars aujourd'hui (portes gratuites).
+### Touches prises (`event.code`)
+- Déplacement KeyW/A/S/D et flèches ; **R** recharger, **E** changer d'arme, **1** / **2** emplacements, molette ; Échap et **P** pause, **F plein écran**, **M** son ; réparation automatique (sans touche). **F est donc prise** : touche d'achat à proposer en B (libres : B, G, V, Espace…).
+### Emplacements possibles (`caisses.mjs` : caisse 70 × 30 contre un mur ; fenêtre ≥ 160, porte ≥ 60, escalier ≥ 40, lampe ≥ 50, meuble 0 ou ≥ 50, décor des murs ≥ 60)
+- **Aile** (pièce 2, rez-de-chaussée) : 8 places, dont mur nord face sud (1420, 935 ; fenêtre 211), mur nord de la poche face sud (955, 1875 ; porte 100), mur ouest face est (1080, 1295 ; fenêtre 361).
+- **Étage de gauche** (pièce 3) : 8 places, dont mur est face ouest (1455, 1530 ; fenêtre 553, lampe 85), mur ouest face est (1085, 1550 ; fenêtre 403).
+- **Étage de droite** (pièce 4) : 2 places seulement : face sud (1565, 1965 ; porte 130, lampe 102) et face ouest (2230, 2345 ; fenêtre 170, escalier 60).
+### Références
+- Trace logique (6 × 600 pas) : **identique à chaque pas** à `trace-reference.json` (lot 9j). Lighthouse mobile, 5 passes : `index.html` 90, 90, 89, 90, 89 (médiane 90) ; `jeu.html` 81, 80, 80, 79, 79 (médiane 80) ; CLS 0. Rendu, arrivées et captures : relevés en C sur une copie servie de `5d3d766`.
+### Plan
+- **B** proposition (`data/game/armes-partie.proposition.json`, non lu par le jeu) : table des quatre armes, prix, rachat, valeurs des zombies si nécessaire, deux places par pièce, touche, son ; arrêt. **C** (après « GO 9k ») caisses (`npm run carte`), module pur d'achat, message, bouton, son, débogage, `?equilibrage=avant`. **D** table appliquée, joueur automatique avec achats, mesures finales, tests des bornes. **E** nouvelle référence de la trace, CI, journal, bilan, fusion dans `dev`.
