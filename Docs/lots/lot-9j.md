@@ -1,0 +1,38 @@
+# Lot 9j — Mobilier de 1942 : piles de caisses, gravats, étagères, classeurs, bureaux, comptoirs du lot 3g redessinés (V0.9)
+## Base
+- `origin/dev` `de25a4f` (seed 0.41, bilan 9i présent, `main` ancêtre de `dev`) ; dernier déploiement Pages de `dev` en échec à l'envoi (« artifact metadata », incident GitHub, tests verts) ; clone complété (`git fetch --unshallow`) ; branche `lot-9j` (la session proposait `claude/nice-hypatia-tg1xn3` : j'ai suivi le prompt). Fiche : `Docs/ref/decor-epoque.md` (« Mobilier »).
+- Commits : A `09a7716`, B `41af393` (atelier, arrêt), C `da57a11`, D (ce bilan) ; aucune fusion avant le GO.
+## Référence de la trace
+- `scripts/perf/trace-reference.json` (2026-11-22, `de25a4f`, 6 × 600 pas, 22 champs de `getState()`) : quatre exécutions de suite identiques à chaque pas ; finales 630b3fed…, c787713e…, 72d446e9…, fa4bfe49…, 4cf10a77…, 4ea6da5e…. Le script garde l'empreinte complète (`pose` compris) et ajoute, par pas, « logique » (tout sauf `pose`) et « pose » (seul) ; `--enregistre A B` (deux exécutions identiques → référence), `--reference dossier` (dit si la logique ou `pose` diffère).
+## Choix du propriétaire — « go 9j » sans autre précision : variantes par défaut, **A partout**, aucun aspect forcé (`data/game/mobilier-epoque-choix.json`). Avant le GO : noms des objets du gros plan demandés et donnés, aucune retouche.
+## Mobilier (variante A ; hauteur dessinée ; P : tirs par-dessus, B : arrêtés ; triangles corps + détails)
+| Aspect | Variante | Pièces | Hauteur | Tirs | Triangles |
+|---|---|---|---|---|---|
+| Pile de caisses | munitions (couvercles olive « CAL .30 / LOT 4417 », bâche pliée) | M1 M7 M10 M26 M29 M32 P5 P9 P10 P13, E2 Q2 Q5 Q6 | 29,7 à 70 | P et B (comme avant) | 860 |
+| Gravats | charpente effondrée (poutres cassées, briques, plâtre) | P3 P6 P7 P8 | 23,7 à 33,1 | P | 1 048 |
+| Étagère | intendance en bois (conserves, couvertures, rations) | P1 P2 P4 P11 R-G37 R-G39, Q1 | 64 à 70 | B | 926 |
+| Étagère renversée | couchée sur le dos, contenu répandu | M22, Q3 | 18 | P | 450 |
+| Classeurs | tôle olive, tiroir du haut ouvert, dossiers | M12 M15 M17 M18 M19 M21 | 45 à 70 | B | 246 |
+| Bureau | d'officier (sous-main, encrier) | M3 M4 | 51 | B | 136 |
+| Tabouret | de bois, caisse à côté | M34 | 70 | B | 80 |
+| Comptoir | établi (outils, étau, lampe tempête éteinte) | M33 M35 | 64,6 | B | 264 |
+| Muret | sacs de sable (jute) | E1 | 48 | B | 150 |
+- Total 4 160 triangles (avant 3 052) ; corps dans le maillage des meubles (ombre comme avant), détails dans un maillage par étage sans ombre, atlas généré de 256 px (16 régions). Variantes B et C, aspects forcés : atelier et fichier de choix.
+## Emprises — chaque pièce dessinée dans son rectangle cible (sa collision, partagée entre pièces qui se recouvrent : M1/M3/M7, M12/M15, M17/M18, M26/M29, P3/R-G37) ; sommets ramenés dans le rectangle ; écart au sol ≤ 0,5 % par côté (M34), 0 ailleurs ; vides dessinés du lot 3g comblés (M1 : 80 à droite, P3 : 80 à gauche, M26 : 50 en haut) ; feux de P9 et Q2 posés sur une caisse à la hauteur d'avant. Tableau complet : `atelier-mobilier.html` (« Plan des pièces »).
+## Zombies et chemins — arrivées (manche 10, graines 1 à 6) **identiques au fichier près** : 60/60, médianes F1 3,3 · F2 5,1 · F3 3,75 · F4 5,35 · F5 3,35 · F6 2,8 · F8 3,25 · U1 2,22 · U2 5,25 · U3 3,75 · U4 4,53 · U5 2,8 · U6 3,15 · U7 8,65 s ; `blocage.mjs` (deux étages) : 0 coincé, fichier identique.
+## Preuves
+- **G1** référence enregistrée et stable (4 exécutions). **G2** trace 6 × 600 identique à chaque pas à la référence (logique et `pose`), avant et après l'intégration ; fichiers comparés à `origin/dev`, **identiques à l'octet** : `world.json`, `etage.world.json`, `tirs.world.json`, `zones.json`, `lampes.world.json`, `decor.json`, `decor-interieur.world.json`, `data/game/tirs-traversables.json`, `lumieres.json`, `lampes.json` ; seul `mobilier.world.json` change (clé `epoque` par pièce, boîtes du lot 3g gardées) ; `?test=1&decor=avant` : 0 pièce de 1942 (boîtes du lot 3g).
+- **G3** voir « Zombies et chemins » ; règles de carte vertes (`npm run carte --verifie`). **G4** rendu (`mesurer.mjs --ref --ref-memes-reglages`) : Élevé R1 78 → 79 appels / 38 053 → 39 005 triangles, R2 77 → 78 / 37 963 → 38 915, U1 77 → 79 / 38 349 → 39 457, U4 100 → 102 / 40 111 → 41 219 ; Moyen et Faible : +1 ou +2 appels, −144 à +1 108 triangles ; pire écart **+2 appels, +1 108 triangles** ; pire choix possible : +1 434 (test). Éclairage (R1, R2, U1, U4, lumières, intensités, positions, feux) identique. Aucune ombre portée de plus. Captures avant / après de chaque aspect, lampe et lune, 667 × 375 et 1920 × 1080.
+- **G5** textes peints « CAL .30 », « LOT 4417 », « RATIONS », « NO 12 » (inventés) ; aucun symbole politique, aucune marque, aucun emblème ; tout en code (test : aucune image ni modèle). **G6** aucune requête externe ni écriture (atelier) ; Lighthouse mobile, 5 passes, médianes : `jeu.html` 81 → 80, `index.html` 90 → 90.
+## Tests adaptés — nouveaux : `mobilier-epoque.test.js` (22), `mobilier-epoque-atelier.spec.js` (2). Adaptés, raison en commentaire : `graphismes.spec` (+3 modules), `decor-epoque-jeu.spec` (commentaire : `decor=avant` rend aussi le mobilier ; assertions inchangées, mesuré +5 appels / +3 618 triangles), `lot1-regles`, `data-changelog`, `publication.test`, `publication.spec` (`lot-9j`) ; `tests/selection.json`, `scripts/tests/classement.json`. Vitest 176 → 177 fichiers ; aucune assertion retirée.
+## CI — `lot-9j` : A et B vertes ; C et D : voir le message de livraison (lues avant la fusion).
+## Points ouverts — rendu jugé sur captures seulement ; à la taille du jeu, une pièce fait 10 à 150 px : classeurs (20 × 25) et bureau restent de petits blocs ; M26 et M29 se recouvrent en collision (tirs arrêtés au-dessus des caisses basses de M29 : déjà le cas avant) ; la mesure Moyen varie de −144 à +564 triangles selon la passe de référence.
+## Idées — aspect « caisses » pour M22 si l'étagère renversée ne se lit pas ; une variante C pour classeurs et bureau ; casiers à courrier ; textes au pochoir choisis par le propriétaire.
+## Entrée du journal — `lot-9j` (v0.9, 2026-11-22) « Mobilier de 1942 » (4 points) ; bloc `[lot-9j]` (`afficher: oui`).
+## Lignes à ajouter à `CLAUDE.md` et `conventions.md`
+- `CLAUDE.md` : « Mobilier de 1942 (lot 9j) : mobilier.world.json → epoque (npm run carte, mobilier-epoque-choix.json) ; js/core/mobilier-epoque.js ; boîtes du lot 3g = collisions, tirs, feux ; ?test=1&decor=avant ; atelier-mobilier.html. »
+- `conventions.md` : « Mobilier de 1942 : dessin dans le rectangle cible de chaque pièce (sa collision, partagée), écart au sol ≤ 10 %, classe de tirs gardée ; corps dans le maillage des meubles, détails par étage sans ombre ; textes au pochoir inventés. »
+## Passages du seed à réécrire par le propriétaire — « Époque » et « Monde » : mobilier de 1942 fait (lot 9j) ; plan en lots : 9j fait, suite 9k.
+## À faire par moi
+1. Sur PC et téléphone, jouer quelques manches et parcourir les deux étages en regardant le mobilier (reconnaît-on chaque objet ?).
+2. Rapporter les retours (variantes et pièces : `data/game/mobilier-epoque-choix.json`, puis `npm run carte`).
