@@ -57,10 +57,10 @@ test('atelier du mobilier : chaque aspect (actuel et variantes) en vue du jeu, d
   await expect(page.locator('#plan-rdc svg .m9-feu')).toHaveCount(1);
   await expect(page.locator('#plan-etage svg .m9-feu')).toHaveCount(1);
   await expect(page.locator('#table-pieces tbody tr')).toHaveCount(39);
-  // Budget de la sélection : au plus +1 500 triangles sur les deux étages.
+  // Budget de la sélection : au plus +450 triangles sur les deux étages (plafond absolu de 45 000 : pire cas du sang à 44 451 sur origin/dev).
   const b = await page.evaluate(() => window.__zsMobilier.budget());
   expect(b.rdc0 + b.etage0).toBe(3052);
-  expect(b.delta).toBeLessThanOrEqual(1500);
+  expect(b.delta).toBeLessThanOrEqual(450);
   // Choix : une variante change la proposition ; un aspect forcé (M22 → caisses) apparaît dans « pieces ».
   await page.locator('#ctl-choix-caisses').selectOption('C');
   await page.locator('#table-pieces select[data-piece="M22"]').selectOption('caisses');

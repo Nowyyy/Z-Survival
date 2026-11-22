@@ -283,7 +283,7 @@ function uvFace(poly, n, regionCoins, echelle, ajuste, graine) {
 
 // Triangulation, sommets ramenés dans le rectangle et sous le plafond ; faces orientées vers l'extérieur (centre de la pièce), dessous retirés.
 // → { corps: [{ region, p, n, uv }], details: [{ mat, p, n, uv }] } (uv des corps : fractions de leur région ; des détails : atlas du mobilier).
-function trianguler(pieces, rect, plafond, graine) {
+function trianguler(pieces, rect, plafond, graine, sansNord = false) {
   const out = { corps: [], details: [] };
   const clampP = (p) => [Math.min(rect.x + rect.w, Math.max(rect.x, p[0])), Math.min(plafond, Math.max(0, p[1])), Math.min(rect.y + rect.h, Math.max(rect.y, p[2]))];
   pieces.forEach((piece, k) => {
@@ -308,6 +308,9 @@ function trianguler(pieces, rect, plafond, graine) {
           n = n.map((v) => -v);
         }
         if (n[1] < -0.7) continue; // dessous : jamais vu par la caméra du jeu
+        // Faces tournées vers le nord : jamais vues par la caméra du jeu (au sud de ce qu'elle regarde) ; retirées des détails seulement (les corps
+        // les gardent : l'ombre portée se calcule sur les faces arrière vues de la lune, au sud-ouest).
+        if (sansNord && !corps && n[2] < -0.5) continue;
       }
       if (!poly.every((p) => p.every(isNum))) continue;
       const area = Math.hypot(...cross(sub(poly[1], poly[0]), sub(poly[2], poly[0])));
@@ -379,11 +382,11 @@ function jerrycan(B, [u0, u1], [v0, v1], h) {
 // Pile de caisses (aspect « caisses ») : A munitions, B ravitaillement (sacs, jerrycan), C dépôt bâché. feu : { u, v } local, la caisse sous le feu
 // a son dessus à H.
 function pileCaisses(B, L, D, H, id, variante, feu) {
-  const nu = Math.max(1, Math.round(L / 42));
-  const nv = Math.max(1, Math.round(D / 36));
+  const nu = Math.max(1, Math.round(L / 46));
+  const nv = Math.max(1, Math.round(D / 40));
   const cu = L / nu;
   const cv = D / nv;
-  const deux = H >= 30; // deux rangs de haut
+  const deux = H >= 30 && variante !== 'C'; // deux rangs de haut (sous la bâche : un seul rang, invisible dessous)
   const lid = variante === 'B' ? 'rations' : variante === 'C' ? null : 'munitions';
   const cellules = [];
   for (let i = 0; i < nu; i += 1) for (let j = 0; j < nv; j += 1) cellules.push({ i, j, u0: i * cu, u1: (i + 1) * cu, v0: j * cv, v1: (j + 1) * cv });
@@ -449,8 +452,8 @@ function pileCaisses(B, L, D, H, id, variante, feu) {
 // Tas de gravats : bosses irrégulières jusqu'aux bords (plus hautes au centre), dessus de briques ou de plâtre ; A poutres cassées et briques,
 // B pans de mur de brique à plat et chaise renversée, C plaques de plâtre et lattes.
 function tasGravats(B, L, D, H, id, variante) {
-  const nu = Math.max(2, Math.round(L / 55));
-  const nv = Math.max(1, Math.round(D / 45));
+  const nu = Math.max(2, Math.round(L / 75));
+  const nv = Math.max(1, Math.round(D / 60));
   const cu = L / nu;
   const cv = D / nv;
   const peau = variante === 'C' ? 'platre' : 'briques';
@@ -458,15 +461,15 @@ function tasGravats(B, L, D, H, id, variante) {
     const k = i * 13 + j;
     const central = 1 - Math.min(1, Math.hypot((i + 0.5) / nu - 0.5, (j + 0.5) / nv - 0.5) * 1.6);
     const bord = i === 0 || j === 0 || i === nu - 1 || j === nv - 1;
-    // Blocs qui se chevauchent (débordent de 25 % sur leurs voisins), tailles et retraits tirés : un tas, pas un carrelage.
-    const u0 = i === 0 ? 0 : (i - 0.25 * unitHash(id, k)) * cu;
-    const u1 = i === nu - 1 ? L : (i + 1 + 0.25 * unitHash(id, k + 1)) * cu;
-    const v0 = j === 0 ? 0 : (j - 0.25 * unitHash(id, k + 2)) * cv;
-    const v1 = j === nv - 1 ? D : (j + 1 + 0.25 * unitHash(id, k + 3)) * cv;
+    // Blocs qui se chevauchent (débordent de 40 % sur leurs voisins, tournés de ±17°), tailles et retraits tirés : un tas, pas un carrelage.
+    const u0 = i === 0 ? 0 : (i - 0.4 * unitHash(id, k)) * cu;
+    const u1 = i === nu - 1 ? L : (i + 1 + 0.4 * unitHash(id, k + 1)) * cu;
+    const v0 = j === 0 ? 0 : (j - 0.4 * unitHash(id, k + 2)) * cv;
+    const v1 = j === nv - 1 ? D : (j + 1 + 0.4 * unitHash(id, k + 3)) * cv;
     const h = Math.min(H * 0.75, (bord ? 3 : 6) + central * H * 0.5 + unitHash(id, k + 4) * 6);
     const dy = [0, 1, 2, 3].map((q) => (unitHash(id, k * 4 + q + 9) - 0.5) * h * 0.8);
-    const ret = 0.1 + unitHash(id, k + 5) * 0.18;
-    const rot = (unitHash(id, k + 6) - 0.5) * 16;
+    const ret = 0.08 + unitHash(id, k + 5) * 0.26;
+    const rot = (unitHash(id, k + 6) - 0.5) * 34;
     B.boite('details', 'gravats', [u0, u1], [0, h], [v0, v1], { retrait: ret, dy, faces: 'cotes', rot });
     const R = (u, v) => {
       const a = rot * DEG;
@@ -482,7 +485,7 @@ function tasGravats(B, L, D, H, id, variante) {
       return [pu, h + dy[q] + 0.15, pv];
     }));
     // Éclat posé sur le bloc (un sur deux).
-    if (unitHash(id, k + 8) > 0.65) {
+    if (unitHash(id, k + 8) > 0.75) {
       const su = (u1 - u0) * 0.3;
       const sv = (v1 - v0) * 0.3;
       const pu = lerp(u0 + su, u1 - su * 2, unitHash(id, k + 10));
@@ -649,13 +652,13 @@ function etagereRenversee(B, L, D, H, id, variante) {
     B.boite('corps', 'etagere', [3, L - 3], [0, 1.5], [v0 + 3, v1 - 3]);
     const n = Math.max(2, Math.round(L / 32));
     for (let q = 1; q < n; q += 1) B.boite('corps', 'etagere', [(q * L) / n - 1, (q * L) / n + 1], [0, hs - 2], [v0 + 3, v1 - 3]);
-    for (let q = 0; q < n; q += 1) if (unitHash(id, 200 + q) > 0.5) rangee(B, (q * L) / n + 2, ((q + 1) * L) / n - 2, v0 + 4, v1 - 4, 1.5, hs - 5, id, 220 + q * 10, 'intendance');
+    for (let q = 0; q < n; q += 1) if (unitHash(id, 200 + q) > 0.6) rangee(B, (q * L) / n + 2, ((q + 1) * L) / n - 2, v0 + 4, v1 - 4, 1.5, hs - 5, id, 220 + q * 10, 'intendance');
   }
   // Contenu répandu autour (jusqu'aux bords du rectangle).
   const bandes = large ? [[0, v0 - 0.5], [v1 + (variante === 'B' ? 10 : 0.5), D]] : [[0, v0 - 0.5], [v1 + 0.5, D]];
   bandes.forEach(([b0, b1], bi) => {
     if (b1 - b0 < 4) return;
-    const n = Math.max(2, Math.round(((L / 16) * (b1 - b0)) / 64));
+    const n = Math.max(2, Math.round(((L / 16) * (b1 - b0)) / 90));
     for (let q = 0; q < n; q += 1) {
       const r = unitHash(id, 400 + bi * 50 + q);
       const u = lerp(0, L - 14, (q + unitHash(id, 420 + bi * 50 + q) * 0.8) / n);
@@ -843,7 +846,7 @@ function muret(B, L, D, H, id, variante) {
 const HAUTEURS = { caisses: 40, gravats: 30, etagere: 64, renversee: 18, classeur: 60, bureau: 48, tabouret: 46, comptoir: 54, muret: 48 };
 
 // Dessin de 1942 d'une pièce. spec : { aspect, variante, rect: { x, y, w, h } (rectangle cible), hauteur (dessin du lot 3g), passe (les tirs passent),
-// ouverture (n, s, e, w), feu ({ x, y } du jeu ou null), id }. → { corps, details, hauteur, emprise: { x, y, w, h }, compte: { corps, details } }.
+// ouverture (n, s, e, w), feu ({ x, y } du jeu ou null), id, complet (gros plan de l'atelier : faces nord des détails gardées) }. → { corps, details, hauteur, emprise: { x, y, w, h }, compte: { corps, details } }.
 export function modeleMeuble(spec) {
   const s = spec && typeof spec === 'object' ? spec : {};
   const rect = s.rect && [s.rect.x, s.rect.y, s.rect.w, s.rect.h].every(isNum) && s.rect.w > 0 && s.rect.h > 0 ? s.rect : null;
@@ -879,7 +882,7 @@ export function modeleMeuble(spec) {
   const hautBrut = Math.max(0, ...B.pieces.flatMap((q) => q.pts.map((pt) => pt[1])));
   const f = passe && hautBrut > PLAFOND_PASSE ? PLAFOND_PASSE / hautBrut : !passe && hautBrut > 0 && hautBrut < PLANCHER_BLOQUE ? (PLANCHER_BLOQUE + 0.5) / hautBrut : 1;
   if (f !== 1) for (const q of B.pieces) q.pts = q.pts.map((pt) => [pt[0], pt[1] * f, pt[2]]);
-  const tris = trianguler(B.pieces, rect, plafond, id);
+  const tris = trianguler(B.pieces, rect, plafond, id, s.complet !== true);
   const tout = [...tris.corps, ...tris.details];
   let emprise = null;
   let hauteur = 0;
