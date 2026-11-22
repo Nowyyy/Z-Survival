@@ -3,8 +3,10 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import {
   ASPECTS, CORPS, DEFAUTS, ECART_MAX, HAUTEUR_ARME, HAUTEUR_MAX, MATIERES, VARIANTES, aspectDuLook, cadre, ciblesMobilier, ecarts, entreesMobilier, lireChoix,
-  modeleMeuble, ouvertureDe, piecesEpoque, specsMobilier,
+  modeleMeuble, ouvertureDe, piecesEpoque, specsMobilier, VARIANTES_ESCALIER, DEFAUT_ESCALIER, modeleEscalier,
 } from '../../js/core/mobilier-epoque.js';
+import { rubbleBoxes } from '../../js/core/portes-aspect.js';
+import { parseZones, zonesToWorld } from '../../js/core/zones.js';
 import { ATLAS_TAILLE, GLYPHES, REGIONS, TEXTES, atlasMobilier, regionUv, surTexte } from '../../js/core/mobilier-epoque-atlas.js';
 import { segmentRects } from '../../js/core/shape.js';
 
@@ -206,8 +208,12 @@ describe('budget de rendu', () => {
 
 describe('fichier de choix', () => {
   it('invalide ou absent : variantes par défaut, aucun aspect forcé ; « actuel » accepté ; aspect inconnu ignoré', () => {
-    expect(lireChoix(null)).toEqual({ variantes: { ...DEFAUTS }, pieces: {} });
-    expect(lireChoix('texte')).toEqual({ variantes: { ...DEFAUTS }, pieces: {} });
+    // Retours du propriétaire : escaliers (éboulis des escaliers fermés), C par défaut.
+    expect(lireChoix(null)).toEqual({ variantes: { ...DEFAUTS }, pieces: {}, escaliers: DEFAUT_ESCALIER });
+    expect(lireChoix('texte')).toEqual({ variantes: { ...DEFAUTS }, pieces: {}, escaliers: 'C' });
+    expect(lireChoix({ escaliers: 'B' }).escaliers).toBe('B');
+    expect(lireChoix({ escaliers: 'actuel' }).escaliers).toBe('actuel');
+    expect(lireChoix({ escaliers: 'Z' }).escaliers).toBe('C');
     const c = lireChoix({ variantes: { caisses: 'C', gravats: 'actuel', etagere: 'Z', muret: 3 }, pieces: { M22: 'caisses', P3: 'licorne', _note: 'gravats' } });
     expect(c.variantes.caisses).toBe('C');
     expect(c.variantes.gravats).toBe('actuel');
@@ -221,6 +227,7 @@ describe('fichier de choix', () => {
     const c = lireChoix(j);
     for (const a of ASPECTS) expect(j.variantes[a], a).toBe(c.variantes[a]);
     expect(Object.keys(j.pieces ?? {}).filter((k) => !k.startsWith('_'))).toEqual(Object.keys(c.pieces));
+    expect(j.escaliers).toBe(c.escaliers);
   });
 
   it('un aspect forcé change l\'aspect de la pièce, pas son rectangle ni sa classe de tirs', () => {
@@ -308,5 +315,43 @@ describe('dans la partie (après « GO 9j »)', () => {
     const m = readFileSync('js/game/main.js', 'utf8');
     expect(m).toMatch(/render\.mobilierEpoque = !decorAvant;/);
     expect(m).toMatch(/const decorAvant = testMode && query\.get\('decor'\) === 'avant';/);
+  });
+});
+
+describe('éboulis des escaliers fermés (retours du propriétaire : « quelque chose de plus fin »)', () => {
+  const z = zonesToWorld(parseZones(lire(`${D}zones.json`)), world.transform);
+  const blocs = z.doors.flatMap((d) => (Array.isArray(d.blocks) ? d.blocks : Object.values(d.blocks ?? {}).flat()).filter((b) => b && !b.wall && b.rect).map((b) => ({ porte: d.id, rect: { x: b.rect.x + 1, y: b.rect.y + 1, w: b.rect.w - 2, h: b.rect.h - 2 }, h: Math.min((b.rect.hauteur ?? 60) - 1, 66) })));
+
+  it('deux escaliers fermés (porte-2, porte-3) ; chaque variante reste dans le dessin du bloc, au plus 66 de haut, et coûte moins que l\'éboulis du lot 3g', () => {
+    expect(blocs.map((b) => b.porte)).toEqual(['porte-2', 'porte-3']);
+    for (const b of blocs) {
+      const avant = rubbleBoxes(b.rect, b.h, b.porte).reduce((n, q) => n + (q.faces === 'cotes' ? 8 : 10), 0);
+      for (const v of VARIANTES_ESCALIER) {
+        const m = modeleEscalier({ rect: b.rect, variante: v, id: b.porte, hauteur: b.h });
+        const tag = `${b.porte} ${v}`;
+        expect(m.corps.length, tag).toBeGreaterThan(0);
+        expect(m.corps.length, tag).toBeLessThan(avant);
+        expect(m.hauteur, tag).toBeLessThanOrEqual(66);
+        expect(dansRect({ corps: m.corps, details: [] }, b.rect), tag).toBe(true);
+        // Le bloc reste barré d'un bout à l'autre de sa largeur (grand côté).
+        const large = b.rect.w >= b.rect.h;
+        expect(large ? m.emprise.w : m.emprise.h, tag).toBeGreaterThanOrEqual((large ? b.rect.w : b.rect.h) * 0.95);
+        for (const t of m.corps) expect(Object.values(CORPS).some((c) => c.region === t.region)).toBe(true);
+      }
+    }
+  });
+
+  it('déterministe ; entrée invalide : rien ; variante inconnue : la variante par défaut', () => {
+    const b = blocs[0];
+    expect(JSON.stringify(modeleEscalier({ rect: b.rect, variante: 'C', id: 'x', hauteur: 59 }))).toBe(JSON.stringify(modeleEscalier({ rect: b.rect, variante: 'C', id: 'x', hauteur: 59 })));
+    expect(modeleEscalier(null).corps).toEqual([]);
+    expect(modeleEscalier({ rect: b.rect, variante: '?', id: 'x' }).variante).toBe(DEFAUT_ESCALIER);
+  });
+
+  it('mobilier.world.json porte la variante retenue (fichier de choix) ; la partie la dessine dans le maillage du bloc, decor=avant rend l\'éboulis du lot 3g', () => {
+    expect(mobilier.epoque.escaliers).toBe(lireChoix(lire('data/game/mobilier-epoque-choix.json')).escaliers);
+    const w = readFileSync('js/game/world.js', 'utf8');
+    expect(w).toMatch(/!plain && !bl\.wall && render\.mobilierEpoque !== false && render\.escaliersVariante && render\.escaliersVariante !== 'actuel' \? modeleEscalier\(/);
+    expect(readFileSync('js/game/main.js', 'utf8')).toMatch(/render\.escaliersVariante = mobilier\?\.epoque\?\.escaliers \?\? null;/);
   });
 });

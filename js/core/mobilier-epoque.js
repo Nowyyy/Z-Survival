@@ -24,6 +24,11 @@ export const VARIANTES = Object.freeze({
   caisses: ['A', 'B', 'C'], gravats: ['A', 'B', 'C'], etagere: ['A', 'B', 'C'], renversee: ['A', 'B'], classeur: ['A', 'B'],
   bureau: ['A', 'B'], tabouret: ['A', 'B'], comptoir: ['A', 'B'], muret: ['A', 'B'],
 });
+// Retours du propriétaire après le lot 9j (« l'éboulement des escaliers : quelque chose de plus fin ») : éboulis des escaliers fermés (blocs de
+// zones.json, js/core/portes-aspect.js → rubbleBoxes), corps seulement (maillage de chaque bloc, qui s'enfonce quand la porte s'ouvre) :
+// A éboulis fin et bas, B barricade de planches sur tréteaux, C chevaux de frise et barbelés.
+export const VARIANTES_ESCALIER = Object.freeze(['A', 'B', 'C']);
+export const DEFAUT_ESCALIER = 'C'; // le plus fin (retours du propriétaire)
 export const DEFAUTS = Object.freeze({ caisses: 'A', gravats: 'A', etagere: 'A', renversee: 'A', classeur: 'A', bureau: 'A', tabouret: 'A', comptoir: 'A', muret: 'A' });
 
 // Corps : régions de l'atlas des meubles (atlas-props de data/game/textures.json) et leur échelle (unités du monde par largeur de région).
@@ -53,6 +58,7 @@ export const MATIERES = Object.freeze({
 // --- Choix ---------------------------------------------------------------------------------------------------------------------------------------
 // data/game/mobilier-epoque-choix.json : { variantes: { aspect: variante | "actuel" }, pieces: { identifiant: aspect } }. Entrée inconnue ou
 // invalide (fichier illisible compris) : la variante par défaut, l'aspect proposé pour la pièce.
+// Retours du propriétaire : escaliers : variante de l'éboulis des escaliers fermés (VARIANTES_ESCALIER ou « actuel »).
 export function lireChoix(json) {
   const j = json && typeof json === 'object' && !Array.isArray(json) ? json : {};
   const v = j.variantes && typeof j.variantes === 'object' ? j.variantes : {};
@@ -61,7 +67,8 @@ export function lireChoix(json) {
   const pieces = {};
   const p = j.pieces && typeof j.pieces === 'object' && !Array.isArray(j.pieces) ? j.pieces : {};
   for (const [id, a] of Object.entries(p)) if (typeof id === 'string' && !id.startsWith('_') && ASPECTS.includes(a)) pieces[id] = a;
-  return { variantes, pieces };
+  const escaliers = j.escaliers === 'actuel' || VARIANTES_ESCALIER.includes(j.escaliers) ? j.escaliers : DEFAUT_ESCALIER;
+  return { variantes, pieces, escaliers };
 }
 
 // Aspect de 1942 d'une pièce d'après son aspect du lot 3g (lookOf) et son rectangle (étagère presque carrée : renversée).
@@ -958,4 +965,109 @@ export function specsMobilier({ pieces, obstacles = {}, murs = {}, tirs = {}, fe
     const feu = fe ? { x: r3(p.plan.x + p.plan.w / 2), y: r3(p.plan.y + p.plan.h / 2) } : null;
     return { id: p.id, floor: p.floor, obstacle, collision: p.obstacle, depart: p.plan, rect, aspect, aspectPropose, variante: choix.variantes[aspect], hauteur: r3(p.hauteur), passe, ouverture: ouvertureDe(rect, murs[p.floor]), feu };
   });
+}
+
+// --- Éboulis des escaliers fermés (retours du propriétaire) -------------------------------------------------------------------------------------------
+// rect : dessin du bloc (rectangle de la collision, 1 de retrait) ; u le long du grand côté (la largeur de l'escalier barré), v en travers.
+function eboulisFin(B, L, D, H, id) {
+  // Dalles basses et inclinées qui couvrent le bloc, puis petites pierres et briques, lattes et une poutre : un tas bas, pas un mur de blocs.
+  const nu = Math.max(2, Math.round(L / 48));
+  const nv = Math.max(2, Math.round(D / 40));
+  for (let i = 0; i < nu; i += 1) for (let j = 0; j < nv; j += 1) {
+    const k = i * 7 + j;
+    const u0 = i === 0 ? 0 : (i - 0.3 * unitHash(id, k)) * (L / nu);
+    const u1 = i === nu - 1 ? L : (i + 1 + 0.3 * unitHash(id, k + 1)) * (L / nu);
+    const v0 = j === 0 ? 0 : (j - 0.3 * unitHash(id, k + 2)) * (D / nv);
+    const v1 = j === nv - 1 ? D : (j + 1 + 0.3 * unitHash(id, k + 3)) * (D / nv);
+    const centre = 1 - Math.min(1, Math.hypot((i + 0.5) / nu - 0.5, (j + 0.5) / nv - 0.5) * 1.5);
+    const h = 4 + centre * 12 + unitHash(id, k + 4) * 4;
+    B.boite('corps', 'colonne', [u0, u1], [0, h], [v0, v1], { retrait: 0.15 + unitHash(id, k + 5) * 0.15, rot: (unitHash(id, k + 6) - 0.5) * 24, dy: [0, 1, 2, 3].map((q) => (unitHash(id, k * 4 + q + 9) - 0.5) * h * 0.7) });
+  }
+  for (let q = 0; q < 12; q += 1) {
+    const u = lerp(3, L - 10, unitHash(id, 100 + q));
+    const v = lerp(3, D - 8, unitHash(id, 120 + q));
+    const centre = 1 - Math.min(1, Math.hypot(u / L - 0.5, v / D - 0.5) * 1.6);
+    const y = 2 + centre * 12;
+    const brique = unitHash(id, 140 + q) > 0.5;
+    B.boite('corps', brique ? 'barriere' : 'colonne', [u, u + (brique ? 8 : 6)], [y, y + (brique ? 3 : 4)], [v, v + (brique ? 4 : 5)], { rot: unitHash(id, 160 + q) * 180 });
+  }
+  for (let q = 0; q < 3; q += 1) {
+    const v = lerp(D * 0.2, D * 0.8, unitHash(id, 200 + q));
+    const u0 = lerp(0, L * 0.4, unitHash(id, 210 + q));
+    const len = L * (0.35 + unitHash(id, 220 + q) * 0.3);
+    const y = 6 + unitHash(id, 230 + q) * 10;
+    B.barre('corps', 'etagere', [u0, y, v], [Math.min(L, u0 + len), y + (unitHash(id, 240 + q) - 0.5) * 10, v + (unitHash(id, 250 + q) - 0.5) * 20], 2);
+  }
+  B.barre('corps', 'bois-sombre', [L * 0.15, 4, D * 0.3], [L * 0.8, Math.min(H - 2, 28), D * 0.65], 6);
+}
+
+function barricade(B, L, D, H, id) {
+  // Deux tréteaux (pieds en X) et trois planches clouées en travers de l'escalier, au milieu du bloc ; une planche en biais, deux tombées au sol.
+  const c = D / 2;
+  const hb = Math.min(H, 46);
+  for (const u of [L * 0.12, L * 0.88]) {
+    B.barre('corps', 'bois-sombre', [u - 6, 0, c - 10], [u, hb - 6, c], 2.6);
+    B.barre('corps', 'bois-sombre', [u + 6, 0, c + 10], [u, hb - 6, c], 2.6);
+    B.barre('corps', 'bois-sombre', [u - 6, 0, c + 10], [u, hb - 6, c], 2.6);
+    B.barre('corps', 'bois-sombre', [u + 6, 0, c - 10], [u, hb - 6, c], 2.6);
+  }
+  for (const [k, y] of [[0, hb * 0.3], [1, hb * 0.58], [2, hb * 0.86]]) {
+    const r = (unitHash(id, 300 + k) - 0.5) * 4;
+    B.boite('corps', k === 1 ? 'caisse' : 'bois', [0, L], [y - 3, y + 3], [c - 2.5 + r * 0.2, c + 2.5 + r * 0.2], { rot: r });
+  }
+  B.barre('corps', 'bois', [L * 0.2, hb * 0.2, c + 3.5], [L * 0.75, hb * 0.95, c + 3.5], 3);
+  for (let q = 0; q < 2; q += 1) {
+    const v = q === 0 ? lerp(2, c - 12, unitHash(id, 320)) : lerp(c + 12, D - 6, unitHash(id, 321));
+    const u0 = lerp(0, L * 0.3, unitHash(id, 330 + q));
+    B.boite('corps', 'bois', [u0, u0 + L * 0.55], [0, 2], [v, v + 5], { rot: (unitHash(id, 340 + q) - 0.5) * 30 });
+  }
+}
+
+function chevaux(B, L, D, H, id) {
+  // Chevaux de frise : une poutre le long de l'escalier barré, des pieux croisés tous les 22 environ, trois rangs de barbelés en zigzag.
+  const c = D / 2;
+  const hc = Math.min(H, 40);
+  const a = Math.min(c - 2, hc * 0.55);
+  B.boite('corps', 'bois-sombre', [0, L], [hc / 2 - 2.5, hc / 2 + 2.5], [c - 2.5, c + 2.5]);
+  const n = Math.max(3, Math.round(L / 22));
+  for (let q = 0; q < n; q += 1) {
+    const u = ((q + 0.5) * L) / n;
+    B.barre('corps', 'bois', [u, 0, c - a], [u, hc, c + a], 2.4);
+    B.barre('corps', 'bois', [u, 0, c + a], [u, hc, c - a], 2.4);
+  }
+  for (const [k, y] of [[0, hc * 0.3], [1, hc * 0.6], [2, hc * 0.9]]) {
+    const pts = [];
+    for (let q = 0; q <= n; q += 1) pts.push([(q * L) / n, y + (q % 2 ? 2 : -2), c + (q % 2 ? 1 : -1) * a * (0.5 + 0.3 * k)]);
+    for (let q = 0; q < n; q += 1) B.barre('corps', 'tole', pts[q], pts[q + 1], 0.7);
+  }
+  if (unitHash(id, 400) > 0) B.boite('corps', 'colonne', [L * 0.6, L * 0.6 + 12], [0, 6], [c + a * 0.6, c + a * 0.6 + 9], { rot: 25, retrait: 0.2 });
+}
+
+// Dessin de 1942 d'un bloc d'escalier fermé : { rect, variante, id, hauteur } → { corps, hauteur, emprise, compte } (corps seulement : atlas des meubles).
+export function modeleEscalier(spec) {
+  const s = spec && typeof spec === 'object' ? spec : {};
+  const rect = s.rect && [s.rect.x, s.rect.y, s.rect.w, s.rect.h].every(isNum) && s.rect.w > 0 && s.rect.h > 0 ? s.rect : null;
+  if (!rect) return { corps: [], hauteur: 0, emprise: null, compte: { corps: 0 } };
+  const variante = VARIANTES_ESCALIER.includes(s.variante) ? s.variante : DEFAUT_ESCALIER;
+  const H = clamp(num(s.hauteur, 60), 10, HAUTEUR_MAX);
+  const id = String(s.id ?? '');
+  const c = cadre(rect, rect.w >= rect.h ? 's' : 'e');
+  const B = constructeur(c);
+  if (variante === 'B') barricade(B, c.L, c.D, H, id);
+  else if (variante === 'C') chevaux(B, c.L, c.D, H, id);
+  else eboulisFin(B, c.L, c.D, H, id);
+  const tris = trianguler(B.pieces, rect, H, id, true);
+  let hauteur = 0;
+  let x0 = Infinity;
+  let x1 = -Infinity;
+  let z0 = Infinity;
+  let z1 = -Infinity;
+  for (const t of tris.corps) for (const p of t.p) {
+    x0 = Math.min(x0, p[0]);
+    x1 = Math.max(x1, p[0]);
+    z0 = Math.min(z0, p[2]);
+    z1 = Math.max(z1, p[2]);
+    hauteur = Math.max(hauteur, p[1]);
+  }
+  return { variante, corps: tris.corps, hauteur: r3(hauteur), emprise: tris.corps.length ? { x: r3(x0), y: r3(z0), w: r3(x1 - x0), h: r3(z1 - z0) } : null, compte: { corps: tris.corps.length } };
 }

@@ -1,5 +1,5 @@
 {
-  "_provisoire": "Choix du propriétaire sur atelier-mobilier.html (lot 9j, mode d'emploi : Docs/ref/decor-epoque.md, « Mobilier »). variantes : aspect → variante retenue (A, B, C, ou « actuel » : le dessin du lot 3g) ; pieces : identifiant de pièce → aspect forcé (caisses, gravats, etagere, renversee, classeur, bureau, tabouret, comptoir, muret), la classe de tirs de la pièce restant la même. Entrée inconnue, absente ou fichier illisible : variante proposée par défaut, aspect proposé d'après le lot 3g. Le jeu ne lit ce fichier qu'après « GO 9j » (npm run carte).",
+  "_provisoire": "Choix du propriétaire sur atelier-mobilier.html (lot 9j, mode d'emploi : Docs/ref/decor-epoque.md, « Mobilier »). variantes : aspect → variante retenue (A, B, C, ou « actuel » : le dessin du lot 3g) ; pieces : identifiant de pièce → aspect forcé (caisses, gravats, etagere, renversee, classeur, bureau, tabouret, comptoir, muret), la classe de tirs de la pièce restant la même ; escaliers (retours du propriétaire) : éboulis des escaliers fermés, A (éboulis fin et bas), B (barricade de planches), C (chevaux de frise et barbelés) ou « actuel » (l'éboulis du lot 3g). Entrée inconnue, absente ou fichier illisible : variante proposée par défaut, aspect proposé d'après le lot 3g. Le jeu ne lit ce fichier qu'après « GO 9j » (npm run carte).",
   "variantes": {
     "caisses": "A",
     "gravats": "A",
@@ -11,5 +11,6 @@
     "comptoir": "A",
     "muret": "A"
   },
-  "pieces": {}
+  "pieces": {},
+  "escaliers": "C"
 }
