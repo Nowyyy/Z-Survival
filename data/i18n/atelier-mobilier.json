@@ -99,7 +99,7 @@
   "dev.mobilier.murs.legende": "{nom} ({pose}) — {tris} triangles · hauteur {h} · {n} sur la carte",
   "dev.mobilier.murs.pose.mur": "accroché",
   "dev.mobilier.murs.pose.sol": "au pied du mur",
-  "dev.mobilier.murs.type.affiche": "Affiche « AVIS »",
+  "dev.mobilier.murs.type.affiche": "Affiche « ACHTUNG »",
   "dev.mobilier.murs.type.briques": "Plâtre arraché",
   "dev.mobilier.murs.type.carte": "Carte murale",
   "dev.mobilier.murs.type.horloge": "Horloge arrêtée",

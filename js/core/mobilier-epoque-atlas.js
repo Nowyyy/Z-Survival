@@ -19,11 +19,11 @@ export function regionUv(id, taille = ATLAS_TAILLE) {
   return { u0: (r.x + 1) / taille, v0: (r.y + 1) / taille, u1: (r.x + r.w - 1) / taille, v1: (r.y + r.h - 1) / taille };
 }
 // Textes au pochoir (inventés : calibre générique, ration, numéros de lot).
-export const TEXTES = Object.freeze({ munitions: ['CAL .30', 'LOT 4417'], rations: ['RATIONS', 'NO 12'], affiche: ['AVIS'] });
+export const TEXTES = Object.freeze({ munitions: ['CAL .30', 'LOT 4417'], rations: ['RATIONS', 'NO 12'], affiche: ['ACHTUNG'] }); // retours du propriétaire : la carte est en Allemagne (avant : « AVIS »)
 // Police de pochoir 3 × 5 (rangées du haut vers le bas, bits de gauche à droite).
 export const GLYPHES = Object.freeze({
   A: [2, 5, 7, 5, 5], C: [7, 4, 4, 4, 7], I: [7, 2, 2, 2, 7], L: [4, 4, 4, 4, 7], N: [5, 7, 7, 7, 5], O: [7, 5, 5, 5, 7], R: [6, 5, 6, 5, 5],
-  S: [7, 4, 7, 1, 7], T: [7, 2, 2, 2, 2], V: [5, 5, 5, 5, 2], 0: [7, 5, 5, 5, 7], 1: [2, 6, 2, 2, 7], 2: [7, 1, 7, 4, 7], 3: [7, 1, 3, 1, 7], 4: [5, 5, 7, 1, 1], 7: [7, 1, 2, 2, 2],
+  S: [7, 4, 7, 1, 7], T: [7, 2, 2, 2, 2], V: [5, 5, 5, 5, 2], H: [5, 5, 7, 5, 5], U: [5, 5, 5, 5, 7], G: [7, 4, 5, 5, 7], 0: [7, 5, 5, 5, 7], 1: [2, 6, 2, 2, 7], 2: [7, 1, 7, 4, 7], 3: [7, 1, 3, 1, 7], 4: [5, 5, 7, 1, 1], 7: [7, 1, 2, 2, 2],
   '.': [0, 0, 0, 0, 2], ' ': [0, 0, 0, 0, 0],
 });
 
@@ -220,10 +220,10 @@ export function atlasMobilier({ taille = ATLAS_TAILLE, couleurs = {} } = {}) {
     const g = 225 + 20 * hash(x, y, 28);
     return [g, g, g];
   });
-  // Affiche « AVIS » (texte générique inventé) : papier jauni, bandeau sombre au titre clair, lignes de texte, bord usé.
+  // Affiche « ACHTUNG » (« Attention » : mot générique, la carte est en Allemagne ; aucun symbole, aucun insigne) : papier jauni, bandeau sombre au titre clair, lignes de texte, bord usé.
   region('affiche', (u, v, x, y) => {
     let col = fois(c('papier'), grain(x, y, 29, 0.1));
-    if (v > 0.68 && v < 0.94 && u > 0.08 && u < 0.92) col = surTexte(u, v, TEXTES.affiche[0], [0.2, 0.72, 0.8, 0.9]) ? c('papier') : c('encre');
+    if (v > 0.68 && v < 0.94 && u > 0.03 && u < 0.97) col = surTexte(u, v, TEXTES.affiche[0], [0.06, 0.72, 0.94, 0.9]) ? c('papier') : c('encre');
     else if (v > 0.12 && v < 0.6 && u > 0.14 && u < 0.86 && y % 3 === 0 && hash(x >> 1, y, 30) > 0.25) col = c('encre');
     if (u < 0.04 || u > 0.96 || v < 0.04 || v > 0.96) col = fois(col, 0.75);
     return col;

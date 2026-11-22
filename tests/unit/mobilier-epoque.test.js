@@ -278,7 +278,7 @@ describe('atlas et contenu', () => {
 
   it('textes au pochoir : inventés et génériques, police complète ; ni « MEDICAL » (caisse du lot 9i), ni sigle national, ni symbole', () => {
     const tous = Object.values(TEXTES).flat();
-    expect(tous).toEqual(['CAL .30', 'LOT 4417', 'RATIONS', 'NO 12', 'AVIS']); // retours du propriétaire : affiche « AVIS » (décor des murs)
+    expect(tous).toEqual(['CAL .30', 'LOT 4417', 'RATIONS', 'NO 12', 'ACHTUNG']); // retours du propriétaire : affiche « ACHTUNG » (décor des murs ; la carte est en Allemagne, avant : « AVIS »)
     for (const s of tous) for (const ch of s) expect(GLYPHES[ch], ch).toBeTruthy();
     for (const s of tous) expect(s).not.toMatch(/MEDICAL|U\.?S\.?|SS|REICH|ARMY|NAZI|CROIX/i);
     expect(surTexte(0.5, 0.65, 'CAL .30', [0.15, 0.5, 0.85, 0.8]) || surTexte(0.2, 0.75, 'CAL .30', [0.15, 0.5, 0.85, 0.8])).toBe(true);
