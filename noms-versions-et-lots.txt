@@ -292,5 +292,5 @@ afficher: oui
 [lot-9j]
 version: v0.9
 nom: Mobilier de 1942
-description: Caisses de munitions au pochoir, gravats et poutres cassées, étagères garnies, armoires à tiroirs, établi et sacs de sable : les meubles se reconnaissent de dessus, sans rien changer au jeu.
+description: Caisses de munitions au pochoir, gravats, étagères garnies, armoires à tiroirs, établi, escaliers barrés par un éboulis fin et murs un peu meublés, sans rien changer au jeu.
 afficher: oui
