@@ -14,23 +14,25 @@ const med = (a) => { const b = a.filter(Number.isFinite).sort((x, y) => x - y); 
 
 // --- Réglages proposés (provisoires) ------------------------------------------------------------------------------------------------------
 export const REGLAGES = {
-  // Zombies : vie linéaire plus douce jusqu'à la 20 (+5 % de la vie de base par vague au lieu de +50 %), puis ×1,10 par vague (au lieu de
-  // dès la 10), plafond ×30 inchangé (atteint vers la 51 au lieu de la 28) ; coups de base 10 → 1 (×1,05 par vague comme avant), plafond
-  // des coups ×3 → ×4,5 (atteint à la 32 ; rien ne change avant la 24). Nombres par manche, vitesses, apparitions, chemins et types inchangés.
-  waves: { hp: { hpLinearPerRound: 0.05, hpExpStartRound: 21, hpExpFactor: 1.1, hpCap: 30 }, damage: { factor: 1.05, cap: 4.5 } },
-  enemies: { contactDamage: 1 },
-  // Armes : valeurs fixées à la main (cadence, chargeur, réserve, rechargement balle par balle) ; dégâts calculés pour l'aisance visée à la
-  // vague d'achat. Kar98k : 0,82 hors d'atteinte (cadence) → 97 % du maximum.
+  // Retour du propriétaire sur la première proposition (« il faut que le jeu soit un minimum dur, que le joueur meure et qu'il améliore son
+  // personnage avec les objets ; on ne touche ni au chargeur, ni à la réserve, ni à la cadence, ni au rechargement : uniquement le prix et les
+  // dégâts ») : zombies inchangés (vie, nombre, coups), armes inchangées sauf dégâts et prix (rachat compris).
+  waves: null,
+  enemies: null,
+  // Dégâts fixés d'après les mesures du joueur automatique (scripts/equilibrage/joueur.mjs, depuis la vague d'achat, graines 1 à 3) : l'aisance
+  // 0,75–0,85 du prompt ne laisse survivre aucune manche (0,8 = 0,5 zombie tué par zombie arrivé ; le Colt meurt en 5 à 0,78). Colt : 25 → 40
+  // (puissance soutenue d'avant le chargeur du lot 9e, 25 ÷ 0,62) ; pompe : 130 (au-delà, rien de plus : sa cadence le limite) ; Kar98k : 800
+  // (tue d'une balle le marcheur et le petit à la 21 ; sa cadence l'empêche de suivre dès la 21, quels que soient ses dégâts) ; Thompson : 1 100.
   armes: {
-    m1911: { cadence: 0.35, chargeur: 8, rechargement: 1.2, dispersion: 4 },
-    winchester1897: { vague: 11, aisance: 0.84, cadence: 0.7, chargeur: 6, reserve: 54, dispersion: 7, parBalle: 0.3 },
-    kar98k: { vague: 21, aisance: 0.82, cadence: 0.3, chargeur: 10, reserve: 110, dispersion: 1.5, parBalle: 0.15 },
-    thompson: { vague: 31, aisance: 0.76, cadence: 0.09, chargeur: 30, reserve: 450, rechargement: 2.4, dispersion: 5 },
+    m1911: {},
+    winchester1897: { vague: 11, degats: 130 },
+    kar98k: { vague: 21, degats: 800 },
+    thompson: { vague: 31, degats: 1100 },
   },
-  colt: { degats: 35 },
-  // Précision du joueur automatique (mesurée sur les parties sans équipement des essais : Colt 0,84, plombs du pompe 0,67, Kar98k 0,80 ;
-  // Thompson 0,80 supposée puis vérifiée) ; --precision la remplace par une nouvelle mesure.
-  precision: { m1911: 0.84, winchester1897: 0.67, kar98k: 0.8, thompson: 0.8 },
+  colt: { degats: 40 },
+  // Précision du joueur automatique, mesurée sur l'état actuel et les essais (Colt 0,85, plombs du pompe 0,67, Kar98k 0,80, Thompson 0,80) ;
+  // --precision la remplace par une nouvelle mesure.
+  precision: { m1911: 0.85, winchester1897: 0.67, kar98k: 0.8, thompson: 0.8 },
   prix: { part: 0.5, rachat: 0.35 },
   // Achat sur la carte : touche (event.code ; F est le plein écran), portée du message (deux cases, comme les portes), son d'achat synthétisé
   // (recette au format de js/core/synth.js : bruit sourd du couvercle de la caisse, déclic du loquet, deux tintements métalliques).
@@ -54,11 +56,11 @@ export const VAGUES_CLES = Object.freeze([1, 10, 11, 20, 21, 30, 31, 40]);
 export function construire(reglages = REGLAGES, { precision = {}, zollars = null } = {}) {
   const waves = structuredClone(lire('data/game/waves.json'));
   waves._provisoire = `PROPOSITION du lot 9k (partie B), jamais lue par le jeu : vie des zombies (hp) seulement ; nombres, intervalles, présents, allures et types inchangés. ${waves._provisoire}`;
-  Object.assign(waves.hp, reglages.waves.hp);
-  if (reglages.waves.damage) Object.assign(waves.damage, reglages.waves.damage);
+  if (reglages.waves?.hp) Object.assign(waves.hp, reglages.waves.hp);
+  if (reglages.waves?.damage) Object.assign(waves.damage, reglages.waves.damage);
   const enemies = structuredClone(lire('data/game/enemies.json'));
   enemies._provisoire = `PROPOSITION du lot 9k (partie B), jamais lue par le jeu : coups des zombies (zombie.contactDamage) seulement ; vitesses, rayons, types inchangés. ${enemies._provisoire}`;
-  Object.assign(enemies.zombie, reglages.enemies);
+  if (reglages.enemies) Object.assign(enemies.zombie, reglages.enemies);
   const table = structuredClone(lire('data/game/armes-partie.json'));
   const A = table.armes;
   for (const [id, r] of Object.entries(reglages.armes)) {
@@ -69,6 +71,7 @@ export function construire(reglages = REGLAGES, { precision = {}, zollars = null
   // Dégâts : plus petite valeur entière (pas de 1) dont l'aisance à la vague d'achat atteint la cible (le Colt fixe la référence).
   for (const [id, r] of Object.entries(reglages.armes)) {
     if (!r.vague) continue;
+    if (Number.isFinite(r.degats)) { A[id].degats = r.degats; continue; } // dégâts fixés (mesurés)
     let lo = 1;
     let hi = 20000;
     const ais = (d) => {
@@ -102,7 +105,7 @@ export function construire(reglages = REGLAGES, { precision = {}, zollars = null
       }
     }
   }
-  table._provisoire = `PROPOSITION du lot 9k (partie B), jamais lue par le jeu : table complète proposée pour data/game/armes-partie.json (valeurs provisoires, choisies par le propriétaire au GO), générée par node scripts/equilibrage/proposer.mjs. Changements : dégâts, cadence, chargeur, réserve, rechargement (parBalle), dispersion des quatre armes de la carte 1, prix, rachat (nouveau : prix des munitions pleines à la même caisse), achat (touche, portée du message, son). ${table._provisoire}`;
+  table._provisoire = `PROPOSITION du lot 9k (partie B), jamais lue par le jeu : table complète proposée pour data/game/armes-partie.json (valeurs provisoires, choisies par le propriétaire au GO), générée par node scripts/equilibrage/proposer.mjs. Changements : dégâts et prix des quatre armes de la carte 1, rachat (nouveau : prix des munitions pleines à la même caisse), achat (touche, portée du message, son) ; chargeur, réserve, cadence, rechargement et dispersion inchangés (retour du propriétaire). ${table._provisoire}`;
   table.achat = structuredClone(reglages.achat);
   // Résumé (lu par l'atelier des armes, section « Caisses sur la carte ») : aisance aux vagues clés, référence, précision.
   const m = modele({ armesPartie: table, waves, enemies, precision });
@@ -134,8 +137,9 @@ if (isMain) {
   if (prixFixes) for (const [id, p] of Object.entries(prixFixes)) { r.table.armes[id].prix = p; r.table.armes[id].rachat = Math.round((p * reglages.prix.rachat) / 10) * 10; }
   const dossier = opt('dossier', 'data/game/');
   writeFileSync(`${dossier}armes-partie.proposition.json`, `${JSON.stringify(r.table, null, 1)}\n`);
-  writeFileSync(`${dossier}waves.proposition.json`, `${JSON.stringify(r.waves, null, 1)}\n`);
-  writeFileSync(`${dossier}enemies.proposition.json`, `${JSON.stringify(r.enemies, null, 1)}\n`);
+  // Zombies : fichiers de proposition écrits seulement s'ils changent (aucun dans la proposition actuelle).
+  if (reglages.waves) writeFileSync(`${dossier}waves.proposition.json`, `${JSON.stringify(r.waves, null, 1)}\n`);
+  if (reglages.enemies) writeFileSync(`${dossier}enemies.proposition.json`, `${JSON.stringify(r.enemies, null, 1)}\n`);
   const t = lireTable(r.table);
   const m = modele({ armesPartie: r.table, waves: r.waves, enemies: r.enemies, precision });
   for (const id of ['m1911', 'winchester1897', 'kar98k', 'thompson']) {
