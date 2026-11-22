@@ -45,24 +45,33 @@ export function cycle(e, table) {
   return { coups, duree, degats, dpsBrut: degats / duree, apres };
 }
 
-// Part utile des dégâts à la vague (aucune perforation) : moyenne sur la composition de vie ÷ (coups nécessaires × dégâts d'un coup) ; par plomb.
-export function partUtile(e, w) {
+// Coups nécessaires pour tuer un zombie de `vie` : balle unique, ⌈vie ÷ dégâts⌉ balles au but, donc ÷ précision balles tirées ; plusieurs plombs,
+// ⌈vie ÷ (plombs × précision × dégâts)⌉ tirs (au moins un). Aucune perforation : un tir ne tue qu'un zombie (le pompe peut en toucher plusieurs :
+// gain non compté).
+export function coups(e, vie, precision = 1) {
+  const p = Math.max(1e-6, precision);
+  if (e.plombs > 1) return Math.max(1, Math.ceil(vie / (e.plombs * p * e.degats) - 1e-9));
+  return Math.ceil(vie / e.degats - 1e-9) / p;
+}
+
+// Part utile des dégâts à la vague : vie ÷ dégâts tirés pour la tuer (balles ou plombs manqués compris), moyennée sur la composition.
+export function partUtile(e, w, precision = 1) {
   let utile = 0;
   let tire = 0;
   for (const t of TYPES) {
     const n = num(w.composition[t]);
     if (!n) continue;
-    const coups = Math.ceil(w.vies[t] / e.degats - 1e-9);
     utile += n * w.vies[t];
-    tire += n * coups * e.degats;
+    tire += n * coups(e, w.vies[t], precision) * e.degats * e.plombs;
   }
   return tire > 0 ? utile / tire : 1;
 }
 
-// Aisance brute d'une arme à la vague v ; precision : part des balles (plombs) au but, mesurée sur le joueur automatique.
+// Aisance brute d'une arme à la vague v = DPS utile ÷ (vie moyenne × arrivées par seconde) = zombies tués par seconde ÷ zombies arrivant par
+// seconde ; precision : part des balles (des plombs) au but, mesurée sur le joueur automatique.
 export function aisanceBrute(e, table, w, precision = 1) {
   const c = cycle(e, table);
-  return (c.dpsBrut * precision * partUtile(e, w)) / w.demande;
+  return (c.dpsBrut * partUtile(e, w, precision)) / w.demande;
 }
 
 // Table lue + données : { table, ref (aisance brute moyenne du Colt aux vagues 1 à 10), aisance(id, v) }.
@@ -127,7 +136,32 @@ export function survie(niveaux, playerStats, player, playerDown) {
 // Points de vie disponibles pendant une vague de n tués : vie + chutes × vie relevée + soins (au plus un soin par tué, jamais au-delà du
 // maximum : borne haute).
 export const pvVague = (s, tues) => s.vie * (1 + s.chutes * s.releve) + s.regen * tues;
-// Aisance de survie : aisance × √(PV disponibles équipé ÷ PV disponibles nu) à la même vague (nombre de tués = total de la vague). Raison de
-// la racine : quand l'arme ne suit pas, les zombies s'accumulent (au plus maxPresents) ; le retard qu'un joueur peut encaisser avant de tomber
-// croît comme la racine de ses points de vie (dégâts reçus ∝ retard² ÷ cadence de tuerie). Mesure résumée, vérifiée par le joueur automatique.
-export const facteurSurvie = (sEq, sNu, tues) => Math.sqrt(pvVague(sEq, tues) / pvVague(sNu, tues));
+// Aisance avec l'équipement de référence : aisance × FACTEUR_EQUIPEMENT, rapport mesuré des aisances critiques (scripts/equilibrage/critique.mjs :
+// aisance brute en dessous de laquelle le joueur automatique meurt dans la vague, sans équipement ÷ avec l'équipement de référence ; vagues 15 et
+// 35, graines 1 à 3, coups de 1 à 1,5 : environ 0,45 ÷ 0,32 = 1,4). L'équipement ne tue pas plus vite : il laisse survivre à une aisance 1,4 fois
+// plus basse. Mesure résumée, vérifiée par le joueur automatique (manches gagnées).
+export const FACTEUR_EQUIPEMENT = 1.4;
+
+// Précision mesurée par le joueur automatique (scripts/equilibrage/joueur.mjs) : pour chaque arme, la part p des balles (des plombs) au but telle
+// que les dégâts utiles prévus par le modèle (Σ dégâts tirés × partUtile(p), vague par vague) égalent les dégâts utiles mesurés (vie perdue
+// par les zombies). resultats : champ `resultats` de la sortie du joueur ; profil : celui des parties lues (« nu » par défaut).
+export function precisionMesuree(table, w, resultats, profil = 'nu') {
+  const acc = {};
+  for (const r of resultats.filter((x) => x.profil === profil)) for (const [v, x] of Object.entries(r.byWave)) for (const id of Object.keys(x.tire)) {
+    if (!table.armes[id] || !x.tire[id]) continue;
+    (acc[id] ??= { utile: 0, tirs: [] });
+    acc[id].utile += x.utile[id] ?? 0;
+    acc[id].tirs.push([w(Number(v)), x.tire[id]]);
+  }
+  const out = {};
+  for (const [id, a] of Object.entries(acc)) {
+    const e = table.armes[id];
+    const prevu = (p) => a.tirs.reduce((s, [wv, t]) => s + t * partUtile(e, wv, p), 0);
+    let lo = 0.01;
+    let hi = 1;
+    if (prevu(hi) <= a.utile) { out[id] = 1; continue; }
+    for (let k = 0; k < 40; k += 1) { const mid = (lo + hi) / 2; if (prevu(mid) < a.utile) lo = mid; else hi = mid; }
+    out[id] = Math.round(((lo + hi) / 2) * 1000) / 1000;
+  }
+  return out;
+}

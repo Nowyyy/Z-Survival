@@ -7,7 +7,7 @@
 // Profils : nu (aucun objet) ; equipe (niveaux de l'équipement de référence, scripts/equilibrage/modele.mjs, par ?lvl=).
 // Tables de remplacement (proposition, état d'avant) : servies à la place des fichiers du jeu par interception, rien n'est écrit dans le dépôt.
 //
-// Usage : node scripts/equilibrage/joueur.mjs [--profils nu,equipe] [--seeds 1,2,3,4,5,6] [--max-pas 60000] [--paralleles 4]
+// Usage : node scripts/equilibrage/joueur.mjs [--profils nu,equipe] [--seeds 1,2,3,4,5,6] [--max-pas 160000] [--paralleles 4]
 //         [--armes fichier.json (à la place de data/game/armes-partie.json)] [--waves fichier.json] [--enemies fichier.json]
 //         [--achats '[{"arme":"winchester1897","vague":11},…]' | --achats aucun] [--rachat 0.35 (part du prix)] [--base URL] [--out fichier.json]
 // Sortie : une ligne par partie, puis le fichier JSON (par partie et par vague : temps, tués, dégâts reçus, Zollars, tirs et dégâts par arme).
@@ -21,7 +21,7 @@ const opt = (n, d) => { const i = args.indexOf(`--${n}`); return i >= 0 && i + 1
 const lire = (f) => JSON.parse(readFileSync(f, 'utf8'));
 const PROFILS = opt('profils', 'nu,equipe').split(',');
 const SEEDS = opt('seeds', '1,2,3,4,5,6').split(',').map(Number);
-const MAX = Number(opt('max-pas', '60000'));
+const MAX = Number(opt('max-pas', '160000'));
 const PARALLELES = Number(opt('paralleles', '4'));
 const RACHAT = Number(opt('rachat', '0.35'));
 const ARMES = opt('armes', null);
@@ -31,6 +31,19 @@ const EXTRA = opt('extra', '');
 // Visée : « proche » (lot 9e : le zombie le plus proche de son étage) ou « menace » (d'abord les zombies entrés, puis ceux qui grimpent ou
 // arrachent une planche, puis les autres ; le plus proche dans chaque groupe).
 const VISEE = opt('visee', 'proche');
+// Poste : à l'ouverture de la porte 1, le joueur va juste à l'est de la porte (salle de départ) et n'en bouge plus. Resté au départ (joueur du
+// lot 9e) ou posté dans une autre pièce, il fait boucler des zombies : le plus court chemin vers lui ressort par une fenêtre ouverte et rentre
+// par une autre, le siège les renvoie à la première (défaut des chemins relevé au lot 9k, Docs/ref/armes-en-main.md) ; près de la porte, le chemin
+// intérieur reste le plus court. « aucun » : il ne bouge jamais (joueur du lot 9e). Les achats ne le déplacent pas (trajet jusqu'à la caisse non joué).
+const POSTE = opt('poste', '1600,2010') === 'aucun' ? null : opt('poste', '1600,2010').split(',').map(Number);
+// Manche bloquée : aucun dégât porté pendant BLOQUE secondes de jeu alors que des zombies restent : la partie s'arrête (« bloquée »).
+const BLOQUE = Number(opt('bloque', '150'));
+// Départ à une vague d'achat (mesure « avec chaque arme ») : --depart 21 --arme-depart kar98k --zollars-depart 3250 : partie lancée à la vague,
+// toutes les fenêtres ouvertes (?planks=0 : état d'une partie où le joueur ne répare jamais), l'arme donnée, un budget de départ (Zollars en poche
+// à l'ouverture de la pièce, mesurés sur les parties complètes) pour les rachats.
+const DEPART = Number(opt('depart', '1'));
+const ARME_DEPART = opt('arme-depart', null);
+const ZOLLARS_DEPART = Number(opt('zollars-depart', '0'));
 const tableArmes = lire(ARMES ?? 'data/game/armes-partie.json');
 const achatsTxt = opt('achats', null);
 const ACHATS = achatsTxt === 'aucun' ? [] : achatsTxt ? JSON.parse(achatsTxt) : [{ arme: 'winchester1897', vague: 11 }, { arme: 'kar98k', vague: 21 }, { arme: 'thompson', vague: 31 }];
@@ -45,9 +58,10 @@ const LVL = { nu: '', equipe: `&lvl=${lvlParam(niveauxEq)}` };
 let BASE = opt('base', null);
 let server = null;
 if (!BASE) {
-  server = spawn('node', ['scripts/serve.mjs'], { stdio: 'ignore', env: { ...process.env, PORT: '4195' } });
+  const port = String(4300 + (process.pid % 600)); // un port par exécution (plusieurs mesures peuvent tourner en même temps)
+  server = spawn('node', ['scripts/serve.mjs'], { stdio: 'ignore', env: { ...process.env, PORT: port } });
   await new Promise((r) => setTimeout(r, 800));
-  BASE = 'http://localhost:4195';
+  BASE = `http://localhost:${port}`;
 }
 const browser = await chromium.launch();
 
@@ -59,18 +73,20 @@ async function partie(profil, seed) {
   await servir('armes-partie.json', ARMES);
   await servir('waves.json', WAVES);
   await servir('enemies.json', ENEMIES);
-  await page.goto(`${BASE}/jeu.html?test=1&seed=${seed}&wave=1${LVL[profil]}${EXTRA}`);
+  await page.goto(`${BASE}/jeu.html?test=1&seed=${seed}&wave=${DEPART}${DEPART > 1 ? '&planks=0' : ''}${LVL[profil]}${EXTRA}`);
   await page.waitForFunction(() => window.__zs, null, { timeout: 180000 });
-  const r = await page.evaluate(({ max, achats, visee }) => {
+  const r = await page.evaluate(({ max, achats, visee, poste, bloque, armeDepart, zollarsDepart }) => {
     const zs = window.__zs;
     const byWave = {};
     const W = (w) => (byWave[w] ??= { debut: null, fin: null, tues: 0, degats: 0, zollarsDebut: null, tirs: {}, tire: {}, utile: {}, chutes: 0 });
     const hp = new Map(); // id → vie à la dernière lecture
     let wave = 0; let lastHp = null; let lastChutes = null; let lastKills = 0;
-    let depense = 0; const faits = []; const rachats = [];
+    let depense = -zollarsDepart; const faits = []; const rachats = [];
+    if (armeDepart) { zs.donnerArme(armeDepart); faits.push({ arme: armeDepart, vague: 0, t: 0, zollars: zollarsDepart, prix: 0 }); }
     let prev = null; // { id, chargeur, reserve } de l'arme active à la dernière lecture
     let aim = 0;
     let s;
+    let dernierDegat = 0; let bloquee = false;
     for (let i = 0; i < max; i += 1) {
       if (i % 4 === 0) {
         s = zs.getState();
@@ -84,6 +100,7 @@ async function partie(profil, seed) {
           W(wave).zollarsDebut = s.economy.earnedRun - depense;
         }
         const ww = W(wave);
+        if (poste && !poste.fait && s.zones?.doors?.find((d) => d.id === 'porte-1')?.open) { zs.setPlayer(poste[0], poste[1]); poste.fait = true; }
         const a = s.armes;
         const id = a?.actif ?? 'm1911';
         const em = a?.emplacements?.[a.emplacements.findIndex((x) => x.id === id)];
@@ -110,6 +127,8 @@ async function partie(profil, seed) {
         }
         for (const [k, v] of hp) if (!vus.has(k)) { utile += v; hp.delete(k); }
         if (utile > 0) ww.utile[id] = (ww.utile[id] ?? 0) + utile;
+        if (utile > 0 || s.enemies.length === 0) dernierDegat = t;
+        else if (t - dernierDegat > bloque) { bloquee = true; break; }
         ww.tues += s.kills - lastKills;
         lastKills = s.kills;
         if (lastHp !== null && p.health < lastHp) ww.degats += lastHp - p.health;
@@ -143,8 +162,8 @@ async function partie(profil, seed) {
     }
     s = zs.getState();
     if (byWave[wave]) byWave[wave].fin = s.time;
-    return { temps: s.time, mort: s.dead, monde: s.worldOver, vague: s.waves.wave, tues: s.kills, gagne: s.economy.earnedRun, parSorte: s.economy.byKind, depense, achats: faits, rachats, byWave };
-  }, { max: MAX, achats: ACHATS, visee: VISEE });
+    return { temps: s.time, mort: s.dead, monde: s.worldOver, bloquee, vague: s.waves.wave, tues: s.kills, gagne: s.economy.earnedRun, parSorte: s.economy.byKind, depense, achats: faits, rachats, byWave };
+  }, { max: MAX, achats: ACHATS, visee: VISEE, poste: POSTE, bloque: BLOQUE, armeDepart: ARME_DEPART, zollarsDepart: ZOLLARS_DEPART });
   await context.close();
   return { profil, seed, ...r };
 }
@@ -159,7 +178,7 @@ async function ouvrier() {
     const r = await partie(t.profil, t.seed);
     resultats.push(r);
     const ach = r.achats.map((x) => `${x.arme}@${x.vague}`).join(' ');
-    console.log(`${r.profil} graine ${r.seed} : manche ${r.vague}${r.mort ? ' (mort)' : r.monde ? ' (monde fini)' : ' (vivant)'}, ${r.tues} tués, ${Math.round(r.temps)} s, ${r.gagne} Z gagnés, ${r.depense} dépensés ; achats ${ach || 'aucun'} ; rachats ${r.rachats.length}`);
+    console.log(`${r.profil} graine ${r.seed} : manche ${r.vague}${r.mort ? ' (mort)' : r.monde ? ' (monde fini)' : r.bloquee ? ' (bloquée)' : ' (vivant)'}, ${r.tues} tués, ${Math.round(r.temps)} s, ${r.gagne} Z gagnés, ${r.depense} dépensés ; achats ${ach || 'aucun'} ; rachats ${r.rachats.length}`);
   }
 }
 await Promise.all(Array.from({ length: Math.min(PARALLELES, taches.length) }, ouvrier));

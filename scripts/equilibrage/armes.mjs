@@ -5,7 +5,7 @@
 // Usage : node scripts/equilibrage/armes.mjs [--armes f.json] [--waves f.json] [--enemies f.json] [--joueur resultats.json (précision, Zollars)]
 //         [--vagues 1,10,11,20,21,30,31,40] [--armes-vues m1911,winchester1897,kar98k,thompson | toutes]
 import { readFileSync } from 'node:fs';
-import { EQUIPEMENT_REFERENCE, cycle, facteurSurvie, modele, niveauxReference, partUtile, survie } from './modele.mjs';
+import { EQUIPEMENT_REFERENCE, FACTEUR_EQUIPEMENT, cycle, modele, niveauxReference, precisionMesuree, survie } from './modele.mjs';
 
 const args = process.argv.slice(2);
 const opt = (n, d) => { const i = args.indexOf(`--${n}`); return i >= 0 && i + 1 < args.length ? args[i + 1] : d; };
@@ -20,22 +20,13 @@ const VAGUES = opt('vagues', '1,5,10,11,15,20,21,25,30,31,35,40').split(',').map
 const f = (x, d = 2) => (Number.isFinite(x) ? x.toFixed(d).replace('.', ',') : '—');
 const med = (a) => { const b = a.filter(Number.isFinite).sort((x, y) => x - y); return b.length ? (b.length % 2 ? b[(b.length - 1) / 2] : (b[b.length / 2 - 1] + b[b.length / 2]) / 2) : NaN; };
 
-// Précision du joueur automatique, par arme : dégâts utiles ÷ dégâts tirés (toutes parties sans équipement), divisés par la part utile du modèle
-// à la vague de chaque mesure (il reste la part des balles au but) ; sans mesure : 0,8.
-const precision = { defaut: 0.8 };
+// Précision du joueur automatique, par arme (modele.mjs, precisionMesuree : parties sans équipement) ; sans mesure : celle de la proposition, sinon 0,8.
+const precision = { defaut: 0.8, ...(armesPartie._equilibrage?.precision ?? {}) }; // proposition : précision écrite par proposer.mjs
 const mesures = {};
 if (joueur) {
   const m0 = modele({ armesPartie, waves, enemies });
-  for (const r of joueur.resultats) for (const [w, v] of Object.entries(r.byWave)) for (const id of Object.keys(v.tire)) {
-    const e = m0.table.armes[id];
-    if (!e || !v.tire[id]) continue;
-    const pu = partUtile(e, m0.vague(Number(w)));
-    (mesures[id] ??= { tire: 0, utile: 0, tirePu: 0 });
-    mesures[id].tire += v.tire[id];
-    mesures[id].utile += v.utile[id] ?? 0;
-    mesures[id].tirePu += v.tire[id] * pu;
-  }
-  for (const [id, m] of Object.entries(mesures)) precision[id] = Math.min(1, m.utile / m.tirePu);
+  Object.assign(mesures, precisionMesuree(m0.table, m0.vague, joueur.resultats));
+  Object.assign(precision, mesures);
 }
 const M = modele({ armesPartie, waves, enemies, precision });
 const vues = opt('armes-vues', 'm1911,winchester1897,kar98k,thompson');
@@ -69,9 +60,9 @@ const sNu = survie({}, playerStats, lire('data/game/player.json'), lire('data/ga
 const sEq = survie(niveaux, playerStats, lire('data/game/player.json'), lire('data/game/player-down.json'));
 console.log(`\n# Équipement de référence : six objets ${EQUIPEMENT_REFERENCE.rarete}s au niveau ${EQUIPEMENT_REFERENCE.niveau}, ${EQUIPEMENT_REFERENCE.personnage} → niveaux ${JSON.stringify(niveaux)}`);
 console.log(`Nu : vie ${sNu.vie}, soin ${sNu.regen} par tué, ${sNu.chutes} chute ; équipé : vie ${sEq.vie}, soin ${sEq.regen} par tué, ${sEq.chutes} chute, vitesse ×${f(sEq.vitesse)}, planche ${f(sEq.reparation)} s`);
-console.log(`| Arme (aisance de survie équipée) | ${VAGUES.join(' | ')} |`);
+console.log(`| Arme (aisance avec l'équipement : × ${f(FACTEUR_EQUIPEMENT, 1)}, mesuré) | ${VAGUES.join(' | ')} |`);
 console.log(`|---|${VAGUES.map(() => '---').join('|')}|`);
-for (const id of ids) console.log(`| ${id} | ${VAGUES.map((v) => f(M.aisance(id, v) * facteurSurvie(sEq, sNu, M.vague(v).total))).join(' | ')} |`);
+for (const id of ids) console.log(`| ${id} | ${VAGUES.map((v) => f(M.aisance(id, v) * FACTEUR_EQUIPEMENT)).join(' | ')} |`);
 
 if (joueur) {
   console.log('\n# Joueur automatique (médianes des graines)');
@@ -83,5 +74,5 @@ if (joueur) {
     for (let v = 1; v <= 40; v += 1) { const x = med(rs.map((r) => (r.byWave[v + 1]?.zollarsDebut ?? NaN) - (r.byWave[v]?.zollarsDebut ?? NaN))); if (Number.isFinite(x)) parManche.push(`${v}:${f(x, 0)}`); }
     console.log(`  Zollars nets par manche (médiane) : ${parManche.join(' ')}`);
   }
-  for (const [id, m] of Object.entries(mesures)) console.log(`- précision mesurée ${id} : ${f(precision[id], 3)} (dégâts utiles ÷ tirés ${f(m.utile / m.tire, 3)})`);
+  for (const id of Object.keys(mesures)) console.log(`- précision mesurée ${id} : ${f(precision[id], 3)}`);
 }
