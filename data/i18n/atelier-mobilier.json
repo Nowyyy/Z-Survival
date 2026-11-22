@@ -68,7 +68,7 @@
   "dev.mobilier.etage.rdc": "rez-de-chaussée",
   "dev.mobilier.etage.etage": "étage",
   "dev.mobilier.budget.titre": "Budget de rendu",
-  "dev.mobilier.budget.intro": "Corps (volumes) dans le maillage des meubles d'aujourd'hui, avec leur ombre portée ; détails dans un maillage par étage, sans ombre. Le rez-de-chaussée reste dessiné à l'étage : le pire cas compte les deux étages. Plafond du lot : +2 appels, +1 500 triangles.",
+  "dev.mobilier.budget.intro": "Corps (volumes) dans le maillage des meubles d'aujourd'hui, avec leur ombre portée ; détails dans un maillage par étage, sans ombre. Le rez-de-chaussée reste dessiné à l'étage : le pire cas compte les deux étages. Plafond du lot : +2 appels ; triangles : +450 au plus, car le pire cas de la partie (sang à pleine charge, 10 zombies, à l'étage) en compte déjà 44 451 pour un plafond de 45 000. Faces nord des détails retirées (jamais vues par la caméra du jeu), sauf dans le gros plan.",
   "dev.mobilier.budget.resume": "Sélection : rez-de-chaussée {rdc} triangles (aujourd'hui {rdc0}), étage {etage} (aujourd'hui {etage0}) ; écart au pire cas (les deux étages) : {delta} ; appels : +1 au rez-de-chaussée, +2 à l'étage ; atlas du mobilier : {taille} px ({ko} Ko avec mipmaps), aucune ombre portée de plus.",
   "dev.mobilier.budget.table": "Triangles de chaque variante sur les pièces de son aspect (les deux étages)",
   "dev.mobilier.col.total": "Triangles",

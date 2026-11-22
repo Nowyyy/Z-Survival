@@ -182,7 +182,7 @@ describe('dessins de 1942 : rectangle, remplissage, tirs, hauteur, feux', () => 
 });
 
 describe('budget de rendu', () => {
-  it('pire choix par aspect : au plus +1 500 triangles sur les deux étages réunis (le rez-de-chaussée reste dessiné à l\'étage)', () => {
+  it('pire choix par aspect : au plus +450 triangles sur les deux étages réunis (le rez-de-chaussée reste dessiné à l\'étage) ; variantes A : au plus +300', () => {
     let avant = 0;
     let pire = 0;
     for (const a of ASPECTS) {
@@ -191,7 +191,12 @@ describe('budget de rendu', () => {
       pire += Math.max(...VARIANTES[a].map((v) => liste.reduce((n, s) => n + effectif(modeleMeuble({ ...s, variante: v })), 0)));
     }
     expect(avant).toBe(3052);
-    expect(pire - avant).toBeLessThanOrEqual(1500);
+    // Plafond absolu de 45 000 triangles : le pire cas de la partie (persos-integres.spec, U4, sang à pleine charge et 10 zombies) en compte 44 451
+    // sur origin/dev ; le premier envoi du lot (+1 108) le portait à 45 559 (CI de dev). Le plafond de +1 500 du prompt ne tenait pas compte de ce cas.
+    expect(pire - avant).toBeLessThanOrEqual(450);
+    let a = 0;
+    for (const s of specs) a += effectif(modeleMeuble({ ...s, variante: 'A' }));
+    expect(a - avant).toBeLessThanOrEqual(300);
   });
 
   it('chaque pièce : 450 triangles au plus', () => {

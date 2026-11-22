@@ -375,13 +375,16 @@ function preparerGrosPlan() {
   const p = pieces.find((q) => q.id === etat.montree[etat.gp.aspect]) ?? parAspect(etat.gp.aspect)[0];
   if (!p) return;
   const dessin = etat.gp.variante === 'actuel' ? dessinActuel(p) : dessinVariante(p, etat.gp.variante);
-  gp = { p, dessin };
+  // Gros plan qui tourne : dessin complet (la partie retire les faces nord des détails, jamais vues par sa caméra).
+  const complet = etat.gp.variante === 'actuel' ? dessin : modeleMeuble({ ...p, variante: etat.gp.variante, id: p.id, complet: true });
+  gp = { p, dessin: complet };
   const ec = etat.gp.variante === 'actuel' ? null : ecarts(dessin.emprise, p.rect);
   $('gp-fiche').textContent = ec
     ? t('dev.mobilier.legende', { nom: `${p.id} · ${nomAspect(etat.gp.aspect)} · ${nomVariante(etat.gp.variante)}`, corps: dessin.corps.length, details: dessin.details.length, effectif: effectif(dessin), h: n1(dessin.hauteur), tirs: tirsDe(p), o: n1(ec.o), e: n1(ec.e), n: n1(ec.n), s: n1(ec.s) })
     : t('dev.mobilier.legende.actuel', { nom: `${p.id} · ${nomVariante('actuel')}`, tris: dessin.corps.length, effectif: effectif(dessin), h: n1(p.hauteur), tirs: tirsDe(p) });
   const centre = poserScene(p, dessin);
   mesures.grand = vueJeu($('cv-grand'), centre);
+  poserScene(p, complet);
   vueProche($('cv-gros-plan'), p, Math.max(20, dessin.hauteur ?? p.hauteur), etat.yaw);
 }
 function remplirGp() {

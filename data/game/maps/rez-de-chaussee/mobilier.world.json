@@ -1006,8 +1006,8 @@
       "carte-eau": { "jeton": "--game-paint-2", "vers": "--game-plank", "part": 0.35 }
     },
     "triangles": {
-      "rdc": { "corps": 1484, "details": 2048 },
-      "etage": { "corps": 264, "details": 364 }
+      "rdc": { "corps": 1388, "details": 1286 },
+      "etage": { "corps": 264, "details": 298 }
     }
   }
 }
