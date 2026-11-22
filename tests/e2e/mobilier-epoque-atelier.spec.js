@@ -49,6 +49,12 @@ test('atelier du mobilier : chaque aspect (actuel et variantes) en vue du jeu, d
   await expect(page.locator('#vues-escaliers figure')).toHaveCount(4);
   const esc = (await page.evaluate(() => window.__zsMobilier.mesures())).escaliers;
   for (const v of ['A', 'B', 'C']) expect(esc[v].corps, v).toBeLessThan(esc.actuel.corps);
+  // Retours du propriétaire : décor des murs (12 objets, plan des deux étages).
+  await expect(page.locator('#vues-murs figure')).toHaveCount(12);
+  const mt = (await page.evaluate(() => window.__zsMobilier.mesures())).mursTotal;
+  expect(mt.objets).toBeGreaterThanOrEqual(10);
+  expect(mt.triangles).toBeLessThanOrEqual(600);
+  await expect(page.locator('#murs-plan-rdc svg .m9-piece').first()).toBeVisible();
   // M22 (étagère renversée) et le tas P6 (gravats) sont les pièces montrées par défaut.
   expect(await page.locator('#ctl-piece-renversee').inputValue()).toBe('M22');
   expect(await page.locator('#ctl-piece-gravats').inputValue()).toBe('P6');
@@ -61,7 +67,7 @@ test('atelier du mobilier : chaque aspect (actuel et variantes) en vue du jeu, d
   await expect(page.locator('#plan-rdc svg .m9-feu')).toHaveCount(1);
   await expect(page.locator('#plan-etage svg .m9-feu')).toHaveCount(1);
   await expect(page.locator('#table-pieces tbody tr')).toHaveCount(39);
-  // Budget de la sélection : au plus +450 triangles sur les deux étages (plafond absolu de 45 000 : pire cas du sang à 44 451 sur origin/dev).
+  // Budget de la sélection : au plus +450 triangles sur les deux étages (plafond absolu de 45 000 au moment du lot, 60 000 depuis ses retours : pire cas du sang à 44 451 sur origin/dev).
   const b = await page.evaluate(() => window.__zsMobilier.budget());
   expect(b.rdc0 + b.etage0).toBe(3052);
   expect(b.delta).toBeLessThanOrEqual(450);

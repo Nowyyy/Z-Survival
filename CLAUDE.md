@@ -45,7 +45,7 @@ Avant de modifier une page, lis `Docs/ref/conventions.md` (arborescence, pages, 
 - Tests : ?test=1 expose window.__zs (getState, step, skipWave…) ; 667×375, step() et le journal, jamais une durée réelle ; Math.random interdit ; helpers e2e : map=salle.
 - Monde : decor.json (extérieur, apparitions hors de la vue) ; collision.js, nav.js ; meubles et portes fermées bloquent tout (tirs : voir Tir) ; hauteurs : murs 60, meubles ≤ 70, voitures 55.
 - Textures : texgen.js (pur) d'après textures.json, aucune image ; contraste ≥ 3:1 personnages / sol, laser et balle ≥ 4,5:1.
-- Personnages : v2 ; ≤ 4 appels, ≤ 1 600 triangles (riche 2 600) ; vue ≤ 45 000 triangles et 400 appels ; 1942 : Docs/ref/personnages-epoque.md.
+- Personnages : v2 ; ≤ 4 appels, ≤ 1 600 triangles (riche 2 600) ; vue ≤ 60 000 triangles et 400 appels ; 1942 : Docs/ref/personnages-epoque.md.
 - Sang : blood.js ; ?sang=0|reduit|1 ; ≤ 3 appels, ≤ 1 200 triangles, 2 cadavres, sans effet de jeu ; jamais de démembrement.
 - Armes (lot 9e) : armes-partie.json, js/core/armes/ ; Docs/ref/armes-en-main.md.
 - Tir et réparation : jamais en même temps (viser un zombie interrompt la réparation, la planche garde sa progression) ; pas de laser pendant la réparation.

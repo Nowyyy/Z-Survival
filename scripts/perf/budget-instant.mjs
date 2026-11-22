@@ -44,7 +44,7 @@ for (const preset of PRESETS) {
       return { calls: s.render.calls, triangles: s.render.triangles, pixels: c.width * c.height, ratio: s.graphics?.pixelRatio ?? null, shadows: s.graphics?.shadows ?? null };
     }, sc);
     rows.push({ preset, id: sc.id, ...r });
-    console.log(`${preset} ${sc.id} : ${r.calls} appels, ${r.triangles} triangles (marge ${45000 - r.triangles} sous 45 000, ${400 - r.calls} sous 400), ${r.pixels} pixels (rapport ${r.ratio}), ombres ${r.shadows}`);
+    console.log(`${preset} ${sc.id} : ${r.calls} appels, ${r.triangles} triangles (marge ${60000 - r.triangles} sous 60 000, ${400 - r.calls} sous 400), ${r.pixels} pixels (rapport ${r.ratio}), ombres ${r.shadows}`);
   }
 }
 const ref = (id) => rows.find((x) => x.preset === 'eleve' && x.id === id);

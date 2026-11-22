@@ -158,8 +158,8 @@ test.describe('budget et sons au niveau maximal', () => {
     expect(r.count).toBe(10);
     expect(r.cone).not.toBeNull();
     expect(r.render.calls).toBeLessThanOrEqual(400); // lot 3m : limites de refonte relevées par le propriétaire (avant : 300)
-    expect(r.render.triangles).toBeLessThanOrEqual(45000); // lot 3m : limites de refonte relevées par le propriétaire (avant : 30000)
-    expect(r.render.triangles).toBeLessThanOrEqual(45000); // lot 3m : limites de refonte relevées par le propriétaire (avant : 30000) ; lot 3 : +24 triangles de planches (14 858 + 10 au lot 2b, 14 862 + 120 = 14 982 mesurés)
+    expect(r.render.triangles).toBeLessThanOrEqual(60_000); // retours du lot 9j : plafond relevé à 60 000 par le propriétaire (avant : 45 000) ; lot 3m : limites de refonte relevées par le propriétaire (avant : 30000)
+    expect(r.render.triangles).toBeLessThanOrEqual(60_000); // retours du lot 9j : plafond relevé à 60 000 par le propriétaire (avant : 45 000) ; lot 3m : limites de refonte relevées par le propriétaire (avant : 30000) ; lot 3 : +24 triangles de planches (14 858 + 10 au lot 2b, 14 862 + 120 = 14 982 mesurés)
   });
 
 });

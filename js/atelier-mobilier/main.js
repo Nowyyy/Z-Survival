@@ -12,7 +12,7 @@ import { segmentRects } from '../core/shape.js';
 import { couleursEpoque } from '../core/decor-epoque.js';
 import { createV2Kit } from '../game/character-v2.js';
 import { slotsWithEpoch } from '../core/persos-variants.js';
-import { ASPECTS, CORPS, VARIANTES, VARIANTES_ESCALIER, ecarts, lireChoix, modeleEscalier, modeleMeuble, specsMobilier, unitHash } from '../core/mobilier-epoque.js';
+import { ASPECTS, CORPS, TYPES_MUR, TYPES_SOL, VARIANTES, VARIANTES_ESCALIER, ecarts, lireChoix, modeleEscalier, modeleMeuble, modeleMur, specsMobilier, unitHash } from '../core/mobilier-epoque.js';
 import { rubbleBoxes } from '../core/portes-aspect.js';
 import { parseZones, zonesToWorld } from '../core/zones.js';
 import { TEXTES } from '../core/mobilier-epoque-atlas.js';
@@ -44,7 +44,7 @@ const palette = readPalette();
 const lookup = createTokenLookup();
 const couleurs = couleursEpoque(donnees.couleurs, lookup);
 const choix0 = lireChoix(choixJson);
-const etat = { escaliers: choix0.escaliers, escalierMontre: null, variantes: { ...choix0.variantes }, pieces: { ...choix0.pieces }, lumiere: 'lampe', cadre: true, montree: {}, gp: { aspect: 'caisses', variante: 'A' }, yaw: 0.7 };
+const etat = { murs: choix0.murs, escaliers: choix0.escaliers, escalierMontre: null, variantes: { ...choix0.variantes }, pieces: { ...choix0.pieces }, lumiere: 'lampe', cadre: true, montree: {}, gp: { aspect: 'caisses', variante: 'A' }, yaw: 0.7 };
 
 // --- Pièces (mêmes calculs que npm run carte) ------------------------------------------------------------------------------------------------------
 const remplaces = new Set((decorCfg.interieur?.objets ?? []).filter((o) => o?.remplace).map((o) => `${o.floor}:${o.remplace}`));
@@ -448,6 +448,106 @@ function dessinerEscaliers() {
   }
 }
 
+// --- Décor des murs (retours du propriétaire) : chaque objet contre un pan de mur d'essai (vue du jeu et gros plan), plan des emplacements ---------------
+const mursSpecs = Array.isArray(mobilier.epoque?.murs) ? mobilier.epoque.murs : [];
+const panMur = new THREE.Mesh(new THREE.BoxGeometry(160, 60, 40).translate(0, 30, -20), new THREE.MeshLambertMaterial({ color: palette.wall }));
+panMur.visible = false;
+scene.add(panMur);
+function creerSectionMurs() {
+  const sec = document.createElement('section');
+  sec.className = 'atelier-section';
+  sec.id = 'murs';
+  sec.setAttribute('aria-labelledby', 'murs-titre');
+  const h2 = document.createElement('h2');
+  h2.className = 'atelier-heading';
+  h2.id = 'murs-titre';
+  h2.textContent = t('dev.mobilier.murs.titre');
+  const desc = document.createElement('p');
+  desc.className = 'atelier-note m9-aspect-desc';
+  desc.textContent = t('dev.mobilier.murs.desc');
+  const resume = document.createElement('p');
+  resume.className = 'atelier-note armes-mesures';
+  resume.id = 'murs-resume';
+  const vues = document.createElement('div');
+  vues.className = 'm9-vues';
+  vues.id = 'vues-murs';
+  const h3 = document.createElement('h3');
+  h3.className = 'armes-sous-titre';
+  h3.id = 'murs-plan-titre';
+  h3.textContent = t('dev.mobilier.murs.plan');
+  const planR = document.createElement('figure');
+  planR.className = 'i9-plan';
+  planR.id = 'murs-plan-rdc';
+  planR.tabIndex = 0;
+  planR.setAttribute('aria-label', t('dev.mobilier.plan.svg.rdc'));
+  const planE = document.createElement('figure');
+  planE.className = 'i9-plan';
+  planE.id = 'murs-plan-etage';
+  planE.tabIndex = 0;
+  planE.setAttribute('aria-label', t('dev.mobilier.plan.svg.etage'));
+  sec.append(h2, desc, resume, vues, h3, planR, planE);
+  hoteAspects.append(sec);
+  const li = document.createElement('li');
+  const lien = document.createElement('a');
+  lien.className = 'atelier-link';
+  lien.href = '#murs';
+  lien.textContent = t('dev.mobilier.murs.titre');
+  li.append(lien);
+  nav.insertBefore(li, nav.children[1]);
+}
+function dessinerMurs() {
+  const hote = $('vues-murs');
+  if (!hote) return;
+  hote.replaceChildren();
+  mesures.murs = {};
+  vider(groupe);
+  for (const type of [...TYPES_MUR, ...TYPES_SOL]) {
+    const m = modeleMur({ id: `essai-${type}`, type, x: 0, y: 0, face: 's', floor: 'rdc' });
+    const fig = document.createElement('figure');
+    fig.className = 'decor-vignette';
+    fig.dataset.type = type;
+    const cv = document.createElement('canvas');
+    cv.width = 667;
+    cv.height = 375;
+    cv.setAttribute('aria-hidden', 'true');
+    const proche = document.createElement('canvas');
+    proche.width = 480;
+    proche.height = 300;
+    proche.setAttribute('aria-hidden', 'true');
+    const cap = document.createElement('figcaption');
+    cap.textContent = t('dev.mobilier.murs.legende', { nom: t(`dev.mobilier.murs.type.${type}`), pose: t(`dev.mobilier.murs.pose.${TYPES_MUR.includes(type) ? 'mur' : 'sol'}`), tris: m.compte.details, h: n1(m.hauteur), n: mursSpecs.filter((q) => q.type === type).length });
+    fig.append(cv, proche, cap);
+    hote.append(fig);
+    const p = { id: `essai-${type}`, floor: 'rdc', obstacle: null, rect: m.rect };
+    const centre = poserScene(p, { corps: [], details: m.details });
+    panMur.visible = true;
+    panMur.position.set(0, 0, 0);
+    cadreLigne.visible = false;
+    const r = vueJeu(cv, centre);
+    vueProche(proche, { rect: { x: -40, y: -10, w: 80, h: 40 } }, 55, 1.2);
+    panMur.visible = false;
+    mesures.murs[type] = { calls: r.calls, triangles: m.compte.details, hauteur: m.hauteur };
+  }
+  vider(groupe);
+  const total = mursSpecs.reduce((n, q) => n + modeleMur(q).compte.details, 0);
+  $('murs-resume').textContent = t('dev.mobilier.murs.resume', { n: mursSpecs.length, mur: mursSpecs.filter((q) => q.pose === 'mur').length, sol: mursSpecs.filter((q) => q.pose === 'sol').length, tris: total, etat: t(`dev.mobilier.murs.etat.${etat.murs ? 'oui' : 'non'}`) });
+  mesures.mursTotal = { objets: mursSpecs.length, triangles: total };
+  for (const [floor, monde] of [['rdc', world], ['etage', etageWorld]]) {
+    const xs = monde.contour.map((q) => q[0] ?? q.x);
+    const ys = monde.contour.map((q) => q[1] ?? q.y);
+    const box = [Math.min(...xs) - 40, Math.min(...ys) - 40, Math.max(...xs) - Math.min(...xs) + 80, Math.max(...ys) - Math.min(...ys) + 80];
+    const svg = sv('svg', { viewBox: box.join(' '), role: 'img', 'aria-label': t(`dev.mobilier.plan.svg.${floor}`) });
+    svg.append(sv('polygon', { class: 'i9-contour', points: monde.contour.map((q) => `${q[0] ?? q.x},${q[1] ?? q.y}`).join(' ') }));
+    for (const q of monde.obstacles) svg.append(sv('rect', { class: 'i9-meuble', x: q.x, y: q.y, width: q.w, height: q.h }));
+    for (const q of mursSpecs.filter((o) => o.floor === floor)) {
+      const r = modeleMur(q).rect;
+      svg.append(sv('rect', { class: `m9-piece ${q.pose === 'mur' ? 'm9-a-classeur' : 'm9-a-caisses'}`, x: r.x, y: r.y, width: Math.max(6, r.w), height: Math.max(6, r.h), 'data-id': q.id }));
+      svg.append(sv('text', { class: 'i9-etiquette', x: r.x, y: r.y - 6 }, t(`dev.mobilier.murs.type.${q.type}`)));
+    }
+    $(`murs-plan-${floor}`).replaceChildren(svg);
+  }
+}
+
 // --- Gros plan (tourne) et grande vue ----------------------------------------------------------------------------------------------------------------
 let gp = null;
 function preparerGrosPlan() {
@@ -616,7 +716,7 @@ function remplirContenu() {
     ul.append(li);
   }
 }
-const proposition = () => ({ variantes: { ...etat.variantes }, pieces: { ...etat.pieces }, escaliers: etat.escaliers });
+const proposition = () => ({ variantes: { ...etat.variantes }, pieces: { ...etat.pieces }, escaliers: etat.escaliers, murs: etat.murs });
 function remplirChoix() {
   const hote = $('choix-champs');
   hote.replaceChildren();
@@ -655,6 +755,22 @@ function remplirChoix() {
   });
   champ.append(lab, sel);
   hote.append(champ);
+  const champM = document.createElement('div');
+  champM.className = 'armes-champ';
+  const labM = document.createElement('label');
+  labM.htmlFor = 'ctl-choix-murs';
+  labM.textContent = t('dev.mobilier.murs.titre');
+  const selM = document.createElement('select');
+  selM.id = 'ctl-choix-murs';
+  selM.className = 'armes-select';
+  for (const v of ['oui', 'non']) selM.append(new Option(t(`dev.mobilier.murs.etat.${v}`), v));
+  selM.value = etat.murs ? 'oui' : 'non';
+  selM.addEventListener('change', () => {
+    etat.murs = selM.value === 'oui';
+    $('choix-fichier').textContent = JSON.stringify(proposition(), null, 2);
+  });
+  champM.append(labM, selM);
+  hote.append(champM);
   $('choix-fichier').textContent = JSON.stringify(proposition(), null, 2);
 }
 
@@ -663,6 +779,7 @@ function toutMettreAJour(aspectsChanges) {
   if (aspectsChanges) for (const a of ASPECTS) remplirSelectPieces(a);
   for (const a of ASPECTS) dessinerAspect(a);
   dessinerEscaliers();
+  dessinerMurs();
   dessinerPlan();
   remplirTablePieces();
   const b = remplirBudget();
@@ -693,6 +810,7 @@ try {
   });
   creerSections();
   creerSectionEscaliers();
+  creerSectionMurs();
   for (const a of ASPECTS) remplirSelectPieces(a);
   remplirGp();
   $('ctl-gp-aspect').addEventListener('change', () => {

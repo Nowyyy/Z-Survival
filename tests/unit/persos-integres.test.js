@@ -339,12 +339,12 @@ describe('projection du budget avec la table des choix', () => {
     expect(choicesOf({ persos: { grand: { variante: 'riche' } } })('grand')).toBe('riche');
     expect(choicesOf({ persos: { grand: { variante: 'X' } } })('grand')).toBe('A');
   });
-  it.each(['R1', 'R2', 'U1', 'U4'])('%s projeté (défaut, sang de la table) : sous 45 000 triangles et 400 appels', (id) => {
+  it.each(['R1', 'R2', 'U1', 'U4'])('%s projeté (défaut, sang de la table) : sous 60 000 triangles et 400 appels', (id) => {
     const p = project(choiceOf, choix.sang)[id];
     expect(p.triangles).toBeLessThanOrEqual(LIMITS.refonte.triangles);
     expect(p.calls).toBeLessThanOrEqual(LIMITS.refonte.calls);
   });
-  it('limites de refonte : 45 000 triangles et 400 appels (décision du propriétaire)', () => expect(LIMITS.refonte).toEqual({ calls: 400, triangles: 45000 }));
+  it('limites de refonte : 60 000 triangles et 400 appels (décision du propriétaire ; retours du lot 9j, avant : 45 000)', () => expect(LIMITS.refonte).toEqual({ calls: 400, triangles: 60000 }));
   it.each(SLOTS)('%s : coût par personnage dans son budget (1 600 triangles, riche 2 600 ; 4 appels + ombre)', (s) => {
     const v = choiceOf(s);
     const c = characterCost(s, v);

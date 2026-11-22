@@ -247,7 +247,7 @@ describe('fichier de choix (data/game/persos-epoque-choix.json)', () => {
     }
     expect(melangeEpoque([])).toBe(null);
   });
-  it('projection de la scène (R1, R2, U1, U4) : personnages actuels « riche » + 10 % au plus, sous 45 000 triangles et 400 appels', () => {
+  it('projection de la scène (R1, R2, U1, U4) : personnages actuels « riche » + 10 % au plus, sous 60 000 triangles et 400 appels', () => {
     for (const [id, p] of Object.entries(project(() => 'riche', '1'))) {
       const extra = 0.1 * crowdCost(() => 'riche').triangles + 2 * 0.1 * characterCost('marcheur', 'riche').triangles;
       expect(p.triangles + extra, id).toBeLessThanOrEqual(LIMITS.refonte.triangles);

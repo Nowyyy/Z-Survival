@@ -5,7 +5,7 @@ import { waitReady } from './helpers.js';
 // Lot 9h-C : décor extérieur d'époque dans la partie (decor.json → epoque, npm run carte). L'avion remplace l'hélicoptère (sans rotor), un véhicule
 // d'époque la voiture en flammes (même feu à deux foyers), des objets s'ajoutent ; ?test=1&decor=avant rend le décor d'avant (référence). Budget : au plus
 // +4 appels et +3 000 triangles par rapport au décor d'avant (lot 9i : ?decor=avant retire aussi l'intérieur d'époque, deux maillages, et la lampe coudée du
-// joueur, un appel : +7 appels et +5 000 triangles en tout, 9h et 9i réunis), plafonds 400 appels et 45 000 triangles (R1, R2, U1, U4 × Élevé, Moyen, Faible).
+// joueur, un appel : +7 appels et +5 000 triangles en tout, 9h et 9i réunis), plafonds 400 appels et 60 000 triangles (45 000 avant les retours du lot 9j) (R1, R2, U1, U4 × Élevé, Moyen, Faible).
 // Lot 9j : ?decor=avant rend aussi le mobilier du lot 3g (le mobilier de 1942 ajoute au plus +2 appels et +1 108 triangles) ; assertions inchangées :
 // mesuré 9h, 9i et 9j réunis, au plus +5 appels et +3 618 triangles (Faible U4).
 const decor = JSON.parse(readFileSync('data/game/maps/rez-de-chaussee/decor.json', 'utf8'));
@@ -84,7 +84,7 @@ test.describe('décor d\'époque en partie', () => {
     expect(l2.stoppedBy).not.toBe('avion-aile');
   });
 
-  test('budget : au plus +7 appels et +5 000 triangles par rapport au décor d\'avant (9h : +4 et +3 000 ; 9i : +3 et +2 000) ; 400 appels et 45 000 triangles au plus (R1, R2, U1, U4 × 3 préréglages)', async ({ page }, testInfo) => {
+  test('budget : au plus +7 appels et +5 000 triangles par rapport au décor d\'avant (9h : +4 et +3 000 ; 9i : +3 et +2 000) ; 400 appels et 60 000 triangles au plus (R1, R2, U1, U4 × 3 préréglages)', async ({ page }, testInfo) => {
     test.setTimeout(300_000);
     const notes = [];
     for (const gfx of ['eleve', 'moyen', 'faible']) {
@@ -97,7 +97,7 @@ test.describe('décor d\'époque en partie', () => {
         expect(apres.calls - avant.calls, `${gfx} ${sc.id}`).toBeLessThanOrEqual(7);
         expect(apres.triangles - avant.triangles, `${gfx} ${sc.id}`).toBeLessThanOrEqual(5000);
         expect(apres.calls).toBeLessThanOrEqual(400);
-        expect(apres.triangles).toBeLessThanOrEqual(45000);
+        expect(apres.triangles).toBeLessThanOrEqual(60_000); // retours du lot 9j : plafond relevé à 60 000 par le propriétaire (avant : 45 000)
       }
     }
     testInfo.annotations.push({ type: 'rendu', description: notes.join(' ; ') });

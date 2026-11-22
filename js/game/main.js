@@ -221,6 +221,7 @@ export async function demarrerPartie() {
   render.mobilierEpoque = !decorAvant;
   render.mobilierCouleurs = mobilier?.epoque?.couleurs ?? null;
   render.escaliersVariante = mobilier?.epoque?.escaliers ?? null; // retours du propriétaire : éboulis des escaliers fermés
+  render.mobilierMurs = mobilier?.epoque?.mursActifs === true && Array.isArray(mobilier.epoque.murs) ? mobilier.epoque.murs : null; // retours du propriétaire : décor des murs
   if (decorAvant) {
     delete decor.interieur;
     for (const w of [world, upperWorld]) if (w && Array.isArray(w.obstacles)) w.obstacles = w.obstacles.filter((o) => o.kind !== 'epoque');

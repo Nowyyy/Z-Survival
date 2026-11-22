@@ -3,7 +3,7 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import {
   ASPECTS, CORPS, DEFAUTS, ECART_MAX, HAUTEUR_ARME, HAUTEUR_MAX, MATIERES, VARIANTES, aspectDuLook, cadre, ciblesMobilier, ecarts, entreesMobilier, lireChoix,
-  modeleMeuble, ouvertureDe, piecesEpoque, specsMobilier, VARIANTES_ESCALIER, DEFAUT_ESCALIER, modeleEscalier,
+  modeleMeuble, ouvertureDe, piecesEpoque, specsMobilier, VARIANTES_ESCALIER, DEFAUT_ESCALIER, modeleEscalier, TYPES_MUR, TYPES_SOL, modeleMur, emplacementsMurs, rectMur,
 } from '../../js/core/mobilier-epoque.js';
 import { rubbleBoxes } from '../../js/core/portes-aspect.js';
 import { parseZones, zonesToWorld } from '../../js/core/zones.js';
@@ -193,7 +193,7 @@ describe('budget de rendu', () => {
       pire += Math.max(...VARIANTES[a].map((v) => liste.reduce((n, s) => n + effectif(modeleMeuble({ ...s, variante: v })), 0)));
     }
     expect(avant).toBe(3052);
-    // Plafond absolu de 45 000 triangles : le pire cas de la partie (persos-integres.spec, U4, sang à pleine charge et 10 zombies) en compte 44 451
+    // Plafond absolu de 45 000 triangles au moment du lot (60 000 depuis les retours du propriétaire ; la borne du lot est gardée) : le pire cas de la partie (persos-integres.spec, U4, sang à pleine charge et 10 zombies) en compte 44 451
     // sur origin/dev ; le premier envoi du lot (+1 108) le portait à 45 559 (CI de dev). Le plafond de +1 500 du prompt ne tenait pas compte de ce cas.
     expect(pire - avant).toBeLessThanOrEqual(450);
     let a = 0;
@@ -209,8 +209,10 @@ describe('budget de rendu', () => {
 describe('fichier de choix', () => {
   it('invalide ou absent : variantes par défaut, aucun aspect forcé ; « actuel » accepté ; aspect inconnu ignoré', () => {
     // Retours du propriétaire : escaliers (éboulis des escaliers fermés), A par défaut (éboulis fin, choisi par le propriétaire ; avant : C).
-    expect(lireChoix(null)).toEqual({ variantes: { ...DEFAUTS }, pieces: {}, escaliers: DEFAUT_ESCALIER });
-    expect(lireChoix('texte')).toEqual({ variantes: { ...DEFAUTS }, pieces: {}, escaliers: 'A' });
+    expect(lireChoix(null)).toEqual({ variantes: { ...DEFAUTS }, pieces: {}, escaliers: DEFAUT_ESCALIER, murs: false });
+    expect(lireChoix('texte')).toEqual({ variantes: { ...DEFAUTS }, pieces: {}, escaliers: 'A', murs: false });
+    expect(lireChoix({ murs: true }).murs).toBe(true);
+    expect(lireChoix({ murs: 'oui' }).murs).toBe(false);
     expect(lireChoix({ escaliers: 'B' }).escaliers).toBe('B');
     expect(lireChoix({ escaliers: 'actuel' }).escaliers).toBe('actuel');
     expect(lireChoix({ escaliers: 'Z' }).escaliers).toBe('A');
@@ -228,6 +230,7 @@ describe('fichier de choix', () => {
     for (const a of ASPECTS) expect(j.variantes[a], a).toBe(c.variantes[a]);
     expect(Object.keys(j.pieces ?? {}).filter((k) => !k.startsWith('_'))).toEqual(Object.keys(c.pieces));
     expect(j.escaliers).toBe(c.escaliers);
+    expect(j.murs).toBe(c.murs);
   });
 
   it('un aspect forcé change l\'aspect de la pièce, pas son rectangle ni sa classe de tirs', () => {
@@ -248,7 +251,7 @@ describe('fichier de choix', () => {
 });
 
 describe('atlas et contenu', () => {
-  it('atlas de 256 px, 16 régions de 64 px sans chevauchement, déterministe', () => {
+  it('atlas de 256 px, 19 régions sans chevauchement (15 de 64 px ; la case du blanc partagée en quatre de 32 px pour le décor des murs), déterministe', () => {
     const couleurs = { olive: [60, 70, 50] };
     const a = atlasMobilier({ couleurs });
     expect(a.width).toBe(ATLAS_TAILLE);
@@ -256,9 +259,9 @@ describe('atlas et contenu', () => {
     expect(a.data.length).toBe(256 * 256 * 4);
     expect(Buffer.from(a.data).equals(Buffer.from(atlasMobilier({ couleurs }).data))).toBe(true);
     const r = Object.values(REGIONS);
-    expect(r).toHaveLength(16);
+    expect(r).toHaveLength(19); // retours du propriétaire : + affiche, horloge, tableau d'ordres (avant : 16)
     for (const q of r) expect(q.x + q.w <= 256 && q.y + q.h <= 256).toBe(true);
-    for (let i = 0; i < r.length; i += 1) for (let j = i + 1; j < r.length; j += 1) expect(r[i].x === r[j].x && r[i].y === r[j].y).toBe(false);
+    for (let i = 0; i < r.length; i += 1) for (let j = i + 1; j < r.length; j += 1) expect(r[i].x < r[j].x + r[j].w && r[j].x < r[i].x + r[i].w && r[i].y < r[j].y + r[j].h && r[j].y < r[i].y + r[i].h).toBe(false);
   });
 
   it('couleurs : chaque teinte et chaque couleur de l\'atlas est définie dans data/game/mobilier-epoque.json, depuis des jetons --game-* existants', () => {
@@ -275,7 +278,7 @@ describe('atlas et contenu', () => {
 
   it('textes au pochoir : inventés et génériques, police complète ; ni « MEDICAL » (caisse du lot 9i), ni sigle national, ni symbole', () => {
     const tous = Object.values(TEXTES).flat();
-    expect(tous).toEqual(['CAL .30', 'LOT 4417', 'RATIONS', 'NO 12']);
+    expect(tous).toEqual(['CAL .30', 'LOT 4417', 'RATIONS', 'NO 12', 'AVIS']); // retours du propriétaire : affiche « AVIS » (décor des murs)
     for (const s of tous) for (const ch of s) expect(GLYPHES[ch], ch).toBeTruthy();
     for (const s of tous) expect(s).not.toMatch(/MEDICAL|U\.?S\.?|SS|REICH|ARMY|NAZI|CROIX/i);
     expect(surTexte(0.5, 0.65, 'CAL .30', [0.15, 0.5, 0.85, 0.8]) || surTexte(0.2, 0.75, 'CAL .30', [0.15, 0.5, 0.85, 0.8])).toBe(true);
@@ -353,5 +356,56 @@ describe('éboulis des escaliers fermés (retours du propriétaire : « quelque 
     const w = readFileSync('js/game/world.js', 'utf8');
     expect(w).toMatch(/!plain && !bl\.wall && render\.mobilierEpoque !== false && render\.escaliersVariante && render\.escaliersVariante !== 'actuel' \? modeleEscalier\(/);
     expect(readFileSync('js/game/main.js', 'utf8')).toMatch(/render\.escaliersVariante = mobilier\?\.epoque\?\.escaliers \?\? null;/);
+  });
+});
+
+describe('décor des murs (retours du propriétaire : « meubler un peu, pas partout »)', () => {
+  const murs = mobilier.epoque.murs;
+  const contours = { rdc: world.contour, etage: etage.contour };
+  const mondes = { rdc: world, etage };
+
+  it('chaque objet : dans son rectangle (contre la face), au plus 60 de haut accroché et 70 au sol, 40 triangles au plus ; entrée invalide : rien', () => {
+    for (const type of [...TYPES_MUR, ...TYPES_SOL]) for (const face of ['s', 'n', 'e', 'w']) {
+      const m = modeleMur({ id: 'x', type, x: 500, y: 500, face, floor: 'rdc' });
+      expect(m.details.length, `${type} ${face}`).toBeGreaterThan(0);
+      expect(m.details.length, type).toBeLessThanOrEqual(40);
+      expect(m.hauteur, type).toBeLessThanOrEqual(TYPES_MUR.includes(type) ? 60 : 70);
+      expect(dansRect({ corps: [], details: m.details }, m.rect), `${type} ${face}`).toBe(true);
+    }
+    expect(modeleMur(null).details).toEqual([]);
+    expect(modeleMur({ type: 'licorne', x: 0, y: 0, face: 's' }).details).toEqual([]);
+  });
+
+  it('emplacements de la carte (npm run carte) : 10 à 60 objets, 600 triangles au plus ; dans le bâtiment, loin des fenêtres (160), jamais devant un meuble ni accrochés à une face nord, 110 entre deux', () => {
+    expect(murs.length).toBeGreaterThanOrEqual(10);
+    expect(murs.length).toBeLessThanOrEqual(60);
+    expect(murs.reduce((n, m) => n + modeleMur(m).compte.details, 0)).toBeLessThanOrEqual(600);
+    for (const m of murs) {
+      const w = mondes[m.floor];
+      const r = rectMur(m);
+      const cx = r.x + r.w / 2;
+      const cy = r.y + r.h / 2;
+      expect(w.windows.every((f) => Math.hypot(f.x - m.x, f.y - m.y) >= 160), m.id).toBe(true);
+      expect(m.pose === 'mur' && m.face === 'n', m.id).toBe(false);
+      expect(w.obstacles.some((o) => r.x < o.x + o.w && o.x < r.x + r.w && r.y < o.y + o.h && o.y < r.y + r.h), m.id).toBe(false);
+      expect(contours[m.floor].length).toBeGreaterThan(2);
+      expect(Number.isFinite(cx) && Number.isFinite(cy)).toBe(true);
+      for (const q of murs) if (q !== m && q.floor === m.floor) expect(Math.hypot(q.x - m.x, q.y - m.y), `${m.id} / ${q.id}`).toBeGreaterThanOrEqual(110);
+    }
+    expect(murs.some((m) => m.pose === 'mur')).toBe(true);
+    expect(murs.some((m) => m.pose === 'sol')).toBe(true);
+  });
+
+  it('génération déterministe ; entrées vides : aucun emplacement', () => {
+    const entree = { floor: 'rdc', murs: [{ x: 0, y: 0, w: 900, h: 40 }], contour: [[0, 0], [900, 0], [900, 600], [0, 600]] };
+    expect(emplacementsMurs(entree)).toEqual(emplacementsMurs(entree));
+    expect(emplacementsMurs(entree).length).toBeGreaterThan(0);
+    expect(emplacementsMurs()).toEqual([]);
+  });
+
+  it('dessiné dans la partie seulement si murs est vrai dans le fichier de choix (mobilier.world.json → epoque.mursActifs) ; decor=avant : rien', () => {
+    expect(mobilier.epoque.mursActifs).toBe(lireChoix(lire('data/game/mobilier-epoque-choix.json')).murs);
+    expect(readFileSync('js/game/main.js', 'utf8')).toMatch(/render\.mobilierMurs = mobilier\?\.epoque\?\.mursActifs === true/);
+    expect(readFileSync('js/game/world.js', 'utf8')).toMatch(/if \(render\.mobilierEpoque !== false && Array\.isArray\(render\.mobilierMurs\)\)/);
   });
 });

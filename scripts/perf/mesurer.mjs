@@ -268,10 +268,10 @@ for (const sc of SCEN) {
     const base = REF ? results[`ref/${sc}/${SAME ? preset : 'defaut'}`] : results[`tete/${sc}/eleve`];
     const r = results[`tete/${sc}/${preset}`];
     if (!r || !base) continue;
-    rows.push(`| ${sc} | ${preset} | ${pct(r.triangles, base.triangles)} | ${pct(r.calls, base.calls)} | ${pct(r.pixels, base.pixels)} | ${pct(r.taskMs, base.taskMs)} | ${pct(r.frameMean, base.frameMean)} | ${pct(r.allocKB, base.allocKB)} | ${r.triangles} (marge ${45000 - r.triangles}) | ${r.calls} (marge ${400 - r.calls}) |`);
+    rows.push(`| ${sc} | ${preset} | ${pct(r.triangles, base.triangles)} | ${pct(r.calls, base.calls)} | ${pct(r.pixels, base.pixels)} | ${pct(r.taskMs, base.taskMs)} | ${pct(r.frameMean, base.frameMean)} | ${pct(r.allocKB, base.allocKB)} | ${r.triangles} (marge ${60000 - r.triangles}) | ${r.calls} (marge ${400 - r.calls}) |`);
   }
 }
-const table = ['| Scénario | Préréglage | Triangles | Appels | Pixels | Tâche | Image | Allocations | Triangles (marge sous 45 000) | Appels (marge sous 400) |', '|---|---|---|---|---|---|---|---|---|---|', ...rows].join('\n');
+const table = ['| Scénario | Préréglage | Triangles | Appels | Pixels | Tâche | Image | Allocations | Triangles (marge sous 60 000) | Appels (marge sous 400) |', '|---|---|---|---|---|---|---|---|---|---|', ...rows].join('\n');
 console.log(`\nRendu logiciel : valeurs relatives seulement (${REF ? 'référence = --ref' : 'référence = eleve'}).\n${table}`);
 mkdirSync(OUT, { recursive: true });
 const file = join(OUT, `mesures-${Date.now()}.json`);

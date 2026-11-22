@@ -77,7 +77,7 @@ test.describe('essai en jeu des personnages v2 et du sang', () => {
   }
 
   for (const [id, query, player, floor, wave, aim] of [['R1', '', [2575, 2250], 'rdc', 10, 0], ['R2', '&map=salle', [1800, 900], 'rdc', 10, Math.PI], ['U1', '&wave=21&floor=1', [1195, 1700], 'etage', 21, 0], ['U4', '&wave=31&floor=1', [1990, 2245], 'etage', 31, 0]]) {
-    test(`budget ${id} par défaut (« riche », sang complet), ombres et cône : au plus 45 000 triangles et 400 appels`, async ({ page }, testInfo) => {
+    test(`budget ${id} par défaut (« riche », sang complet), ombres et cône : au plus 60 000 triangles et 400 appels`, async ({ page }, testInfo) => {
       await open(page, `&nospawn=1&shadows=1${query}`);
       await page.evaluate(([x, y]) => window.__zs.setPlayer(x, y), player);
       await spawnTen(page, wave, floor, aim);
@@ -85,7 +85,7 @@ test.describe('essai en jeu des personnages v2 et du sang', () => {
       testInfo.annotations.push({ type: 'rendu', description: `${id} : ${r.calls} appels, ${r.triangles} triangles` });
       console.log(`BUDGET 3j ${id} défaut (riche, sang complet) : ${r.calls} appels, ${r.triangles} triangles`);
       expect(r.calls).toBeLessThanOrEqual(400);
-      expect(r.triangles).toBeLessThanOrEqual(45_000);
+      expect(r.triangles).toBeLessThanOrEqual(60_000); // retours du lot 9j : plafond relevé à 60 000 par le propriétaire (avant : 45 000)
     });
   }
 

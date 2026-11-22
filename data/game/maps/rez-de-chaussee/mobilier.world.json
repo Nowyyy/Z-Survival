@@ -1009,6 +1009,32 @@
       "rdc": { "corps": 1388, "details": 1286 },
       "etage": { "corps": 264, "details": 298 }
     },
-    "escaliers": "A"
+    "escaliers": "A",
+    "mursActifs": false,
+    "trianglesMurs": 388,
+    "murs": [
+      { "id": "rdc-m1w2", "floor": "rdc", "pose": "sol", "type": "bidons", "x": 1470, "y": 1240, "face": "w" },
+      { "id": "rdc-m1w5", "floor": "rdc", "pose": "sol", "type": "papiers", "x": 1470, "y": 1630, "face": "w" },
+      { "id": "rdc-m1w6", "floor": "rdc", "pose": "sol", "type": "sacs", "x": 1470, "y": 1760, "face": "w" },
+      { "id": "rdc-m2s0", "floor": "rdc", "pose": "sol", "type": "planches", "x": 1560, "y": 1860, "face": "s" },
+      { "id": "rdc-m2s1", "floor": "rdc", "pose": "sol", "type": "sacs", "x": 1690, "y": 1860, "face": "s" },
+      { "id": "rdc-m2s3", "floor": "rdc", "pose": "mur", "type": "ordres", "x": 1950, "y": 1860, "face": "s" },
+      { "id": "rdc-m6n9", "floor": "rdc", "pose": "sol", "type": "bidons", "x": 2765, "y": 2540, "face": "n" },
+      { "id": "rdc-m8n2", "floor": "rdc", "pose": "sol", "type": "planches", "x": 1260, "y": 2460, "face": "n" },
+      { "id": "rdc-m9e4", "floor": "rdc", "pose": "sol", "type": "bidons", "x": 920, "y": 2420, "face": "e" },
+      { "id": "rdc-m12e0", "floor": "rdc", "pose": "mur", "type": "horloge", "x": 1510, "y": 2145, "face": "e" },
+      { "id": "rdc-m12e1", "floor": "rdc", "pose": "sol", "type": "planches", "x": 1510, "y": 2275, "face": "e" },
+      { "id": "rdc-m12e2", "floor": "rdc", "pose": "mur", "type": "portemanteau", "x": 1510, "y": 2405, "face": "e" },
+      { "id": "etage-m1w2", "floor": "etage", "pose": "mur", "type": "ordres", "x": 1470, "y": 1227.5, "face": "w" },
+      { "id": "etage-m1w3", "floor": "etage", "pose": "sol", "type": "bidons", "x": 1470, "y": 1357.5, "face": "w" },
+      { "id": "etage-m1w6", "floor": "etage", "pose": "sol", "type": "papiers", "x": 1470, "y": 1747.5, "face": "w" },
+      { "id": "etage-m2s1", "floor": "etage", "pose": "mur", "type": "carte", "x": 1682.5, "y": 1950, "face": "s" },
+      { "id": "etage-m4n1", "floor": "etage", "pose": "sol", "type": "sacs", "x": 1682.5, "y": 2530, "face": "n" },
+      { "id": "etage-m4n2", "floor": "etage", "pose": "sol", "type": "papiers", "x": 1812.5, "y": 2530, "face": "n" },
+      { "id": "etage-m6n1", "floor": "etage", "pose": "sol", "type": "sacs", "x": 1130, "y": 2460, "face": "n" },
+      { "id": "etage-m7e4", "floor": "etage", "pose": "sol", "type": "bidons", "x": 920, "y": 2420, "face": "e" },
+      { "id": "etage-m10e0", "floor": "etage", "pose": "sol", "type": "fusil", "x": 1510, "y": 2402.5, "face": "e" },
+      { "id": "etage-m11w0", "floor": "etage", "pose": "mur", "type": "portemanteau", "x": 1470, "y": 2010, "face": "w" }
+    ]
   }
 }

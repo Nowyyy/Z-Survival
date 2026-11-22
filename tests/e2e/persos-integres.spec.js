@@ -296,7 +296,7 @@ test.describe('personnages intégrés (choix par défaut)', () => {
   });
 
   for (const [id, query, player, floor, wave, aim] of [['R1', '', [2575, 2250], 'rdc', 10, 0], ['R2', '&map=salle', [1800, 900], 'rdc', 10, Math.PI], ['U1', '&wave=21&floor=1', [1195, 1700], 'etage', 21, 0], ['U4', '&wave=31&floor=1', [1990, 2245], 'etage', 31, 0]]) {
-    test(`budget ${id} (défaut ; ?perso=riche&sang=1) : au plus 45 000 triangles et 400 appels`, async ({ page }, testInfo) => {
+    test(`budget ${id} (défaut ; ?perso=riche&sang=1) : au plus 60 000 triangles et 400 appels`, async ({ page }, testInfo) => {
       const out = [];
       for (const extra of ['', '&perso=riche&sang=1']) {
         await open(page, `&nospawn=1&shadows=1${query}${extra}`);
@@ -305,7 +305,7 @@ test.describe('personnages intégrés (choix par défaut)', () => {
         const r = await measure(page);
         out.push(`${extra || 'défaut'} ${r.calls} / ${r.triangles}`);
         expect(r.calls).toBeLessThanOrEqual(400);
-        expect(r.triangles).toBeLessThanOrEqual(45_000);
+        expect(r.triangles).toBeLessThanOrEqual(60_000); // retours du lot 9j : plafond relevé à 60 000 par le propriétaire (avant : 45 000)
       }
       testInfo.annotations.push({ type: 'rendu', description: `${id} : ${out.join(' ; ')}` });
       console.log(`BUDGET 3m ${id} : ${out.join(' ; ')}`);
@@ -314,7 +314,7 @@ test.describe('personnages intégrés (choix par défaut)', () => {
 
   // Pire cas du sang : cadavres du niveau (complet : 2, lot 3m ; un cadavre « riche » coûte environ 2 100 triangles) et 48 taches, puis 10 zombies vivants.
   for (const [id, query, player, floor, wave] of [['U1', '&wave=21&floor=1', [1195, 1700], 'etage', 21], ['U4', '&wave=31&floor=1', [1990, 2245], 'etage', 31]]) {
-    test(`budget ${id}, pire cas du sang (cadavres et taches à pleine charge, 10 zombies vivants) : au plus 45 000 triangles et 400 appels`, async ({ page }, testInfo) => {
+    test(`budget ${id}, pire cas du sang (cadavres et taches à pleine charge, 10 zombies vivants) : au plus 60 000 triangles et 400 appels`, async ({ page }, testInfo) => {
       await open(page, `&nospawn=1&shadows=1${query}`);
       const r = await page.evaluate(([pl, f, w, types]) => {
         const zs = window.__zs;
@@ -343,7 +343,7 @@ test.describe('personnages intégrés (choix par défaut)', () => {
       expect(r.alive).toBe(10);
       expect(r.blood.cadavres).toBe(2);
       expect(r.calls).toBeLessThanOrEqual(400);
-      expect(r.triangles).toBeLessThanOrEqual(45_000);
+      expect(r.triangles).toBeLessThanOrEqual(60_000); // retours du lot 9j : plafond relevé à 60 000 par le propriétaire (avant : 45 000)
     });
   }
 
