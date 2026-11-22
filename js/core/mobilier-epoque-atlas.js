@@ -206,12 +206,12 @@ export function atlasMobilier({ taille = ATLAS_TAILLE, couleurs = {} } = {}) {
     if (y % 10 < 1.2 || bx < 1.2) return fois(c('mortier'), grain(x, y, 24));
     return fois(c('pierre'), (0.8 + 0.35 * hash(cx, cy, 25)) * grain(x, y, 26, 0.12));
   });
-  // Plateau d'établi : planches claires dans la longueur, taches, traces de scie, têtes de clous.
+  // Plateau d'établi : planches de bois sombre dans la longueur, deux taches, têtes de clous (rien de clair : sous la lampe, le plateau ressortait).
   region('etabli', (u, v, x, y) => {
-    let col = fois(c('bois-clair'), (0.9 + 0.2 * Math.sin(u * 30 + Math.sin(v * 9) * 2) * 0.5) * grain(x, y >> 2, 27, 0.1));
-    if (Math.abs((v * 4) % 1) < 0.03) col = fois(c('bois-clair'), 0.55);
-    for (const [tu, tv, r] of [[0.3, 0.4, 0.12], [0.72, 0.68, 0.08], [0.55, 0.2, 0.06]]) if (Math.hypot(u - tu, (v - tv) * 1.3) < r) col = fois(col, 0.78);
-    if (Math.abs((v * 4) % 1 - 0.5) < 0.04 && Math.abs(((u * 6) % 1) - 0.5) < 0.04) col = c('noir');
+    let col = fois(c('bois-tiroir'), (0.92 + 0.16 * Math.sin(u * 30 + Math.sin(v * 9) * 2) * 0.5) * grain(x, y >> 2, 27, 0.1));
+    if (Math.abs((v * 5) % 1) < 0.05) col = fois(c('bois-tiroir'), 0.5);
+    for (const [tu, tv, r] of [[0.3, 0.42, 0.07], [0.72, 0.66, 0.05]]) if (Math.hypot(u - tu, (v - tv) * 1.3) < r) col = fois(col, 0.8);
+    if (Math.abs((v * 5) % 1 - 0.5) < 0.04 && Math.abs(((u * 6) % 1) - 0.5) < 0.04) col = c('noir');
     return col;
   });
   region('uni', (u, v, x, y) => {

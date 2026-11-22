@@ -20,8 +20,8 @@ const params = lire('data/game/maps/params.json');
 const remplaces = new Set((decor.interieur?.objets ?? []).filter((o) => o.remplace).map((o) => `${o.floor}:${o.remplace}`));
 const base = { pieces: mobilier.pieces, obstacles: { rdc: world.obstacles, etage: etage.obstacles }, murs: { rdc: segmentRects(world.walls, params.wallThickness), etage: segmentRects(etage.walls, params.wallThickness) }, tirs: { rdc: tirs.rdc.ids, etage: tirs.etage.ids }, feux, remplaces };
 const specs = specsMobilier(base);
-const effectif = (m) => m.compte.corps * 2 + m.compte.details;
-const ancien = (id) => mobilier.pieces[id].boxes.reduce((s, b) => s + (b.faces === 'cotes' ? 8 : 10), 0) * 2;
+const effectif = (m) => m.compte.corps + m.compte.details; // triangles comptés par renderer.info (mesure du lot : l'ombre ne les double pas)
+const ancien = (id) => mobilier.pieces[id].boxes.reduce((s, b) => s + (b.faces === 'cotes' ? 8 : 10), 0);
 const dansRect = (m, r) => [...m.corps, ...m.details].every((t) => t.p.every((p) => p[0] >= r.x - 1e-6 && p[0] <= r.x + r.w + 1e-6 && p[2] >= r.y - 1e-6 && p[2] <= r.y + r.h + 1e-6 && p[1] >= -1e-6));
 
 describe('pièces concernées et rectangles cibles', () => {
@@ -182,7 +182,7 @@ describe('dessins de 1942 : rectangle, remplissage, tirs, hauteur, feux', () => 
 });
 
 describe('budget de rendu', () => {
-  it('pire choix par aspect : au plus +1 500 triangles effectifs (corps comptés deux fois : ombre) sur les deux étages réunis (le rez-de-chaussée reste dessiné à l\'étage)', () => {
+  it('pire choix par aspect : au plus +1 500 triangles sur les deux étages réunis (le rez-de-chaussée reste dessiné à l\'étage)', () => {
     let avant = 0;
     let pire = 0;
     for (const a of ASPECTS) {
@@ -190,12 +190,12 @@ describe('budget de rendu', () => {
       avant += liste.reduce((n, s) => n + ancien(s.id), 0);
       pire += Math.max(...VARIANTES[a].map((v) => liste.reduce((n, s) => n + effectif(modeleMeuble({ ...s, variante: v })), 0)));
     }
-    expect(avant).toBe(6104);
+    expect(avant).toBe(3052);
     expect(pire - avant).toBeLessThanOrEqual(1500);
   });
 
-  it('chaque pièce : 700 triangles effectifs au plus', () => {
-    for (const s of specs) for (const v of VARIANTES[s.aspect]) expect(effectif(modeleMeuble({ ...s, variante: v })), `${s.id} ${v}`).toBeLessThanOrEqual(700);
+  it('chaque pièce : 450 triangles au plus', () => {
+    for (const s of specs) for (const v of VARIANTES[s.aspect]) expect(effectif(modeleMeuble({ ...s, variante: v })), `${s.id} ${v}`).toBeLessThanOrEqual(450);
   });
 });
 
@@ -276,5 +276,32 @@ describe('atlas et contenu', () => {
       expect(s, f).not.toMatch(/#[0-9a-fA-F]{3,8}\b|\b(?:rgb|rgba|hsl|hsla)\(/);
       expect(s, f).not.toMatch(/https?:\/\/(?!www\.w3\.org\/2000\/svg)/);
     }
+  });
+});
+
+describe('dans la partie (après « GO 9j »)', () => {
+  it('mobilier.world.json : chaque pièce concernée porte son dessin de 1942 (spécification de specsMobilier avec le fichier de choix), boîtes du lot 3g gardées', () => {
+    const choix = lireChoix(lire('data/game/mobilier-epoque-choix.json'));
+    const attendu = specsMobilier({ ...base, choix });
+    expect(mobilier.triangles).toBe(3352); // boîtes du lot 3g : référence des collisions, des tirs et des feux (inchangées)
+    for (const s of attendu) {
+      const e = mobilier.pieces[s.id].epoque;
+      expect(e, s.id).toEqual({ aspect: s.aspect, variante: s.variante, rect: s.rect, hauteur: s.hauteur, passe: s.passe, ouverture: s.ouverture, ...(s.feu ? { feu: s.feu } : {}) });
+    }
+    expect(mobilier.pieces.P12.epoque).toBeUndefined();
+    expect(mobilier.pieces.Q4.epoque).toBeUndefined();
+    expect(mobilier.epoque.couleurs).toEqual(lire('data/game/mobilier-epoque.json').couleurs);
+    const pe = piecesEpoque(mobilier.pieces);
+    const somme = (f, k) => pe.filter((p) => p.floor === f).reduce((n, p) => n + p.compte[k], 0);
+    expect(mobilier.epoque.triangles).toEqual({ rdc: { corps: somme('rdc', 'corps'), details: somme('rdc', 'details') }, etage: { corps: somme('etage', 'corps'), details: somme('etage', 'details') } });
+  });
+
+  it('la partie dessine la clé epoque (corps dans le maillage des meubles, détails par étage, sans ombre) ; ?test=1&decor=avant : boîtes du lot 3g', () => {
+    const w = readFileSync('js/game/world.js', 'utf8');
+    expect(w).toMatch(/render\.mobilierEpoque !== false && m\.epoque && m\.epoque\.variante !== 'actuel'/);
+    expect(w).toMatch(/mesh\.name = 'mobilier-epoque';\n\s+mesh\.castShadow = false;/);
+    const m = readFileSync('js/game/main.js', 'utf8');
+    expect(m).toMatch(/render\.mobilierEpoque = !decorAvant;/);
+    expect(m).toMatch(/const decorAvant = testMode && query\.get\('decor'\) === 'avant';/);
   });
 });

@@ -272,7 +272,7 @@ function vueProche(canvas, p, hauteur, yaw) {
 // Dessin d'une pièce : actuel (boîtes du lot 3g) ou variante de 1942.
 const dessinActuel = (p) => ({ corps: corpsDesBoites(mobilier.pieces[p.id].boxes, p.id), details: [], hauteur: p.hauteur });
 const dessinVariante = (p, v) => modeleMeuble({ ...p, aspect: p.aspect, variante: v, id: p.id });
-const effectif = (d) => d.corps.length * 2 + d.details.length;
+const effectif = (d) => d.corps.length + d.details.length; // comme renderer.info dans la partie (mesure du lot : l'ombre ne double pas le compte)
 const tirsDe = (p) => t(`dev.mobilier.tirs.${p.passe ? 'P' : 'B'}`);
 const nomAspect = (a) => t(`dev.mobilier.aspect.${a}`);
 const nomVariante = (v) => (v === 'actuel' ? t('dev.mobilier.choix.actuel') : t('dev.mobilier.variante', { v }));
@@ -486,7 +486,7 @@ function remplirTablePieces() {
     corps.append(tr);
   }
 }
-// Triangles effectifs (corps × 2 + détails) de la sélection et d'aujourd'hui, par étage.
+// Triangles (corps + détails) de la sélection et d'aujourd'hui, par étage.
 function budget() {
   const out = { rdc: 0, etage: 0, rdc0: 0, etage0: 0 };
   for (const p of pieces) {

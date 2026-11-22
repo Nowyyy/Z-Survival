@@ -379,8 +379,8 @@ function jerrycan(B, [u0, u1], [v0, v1], h) {
 // Pile de caisses (aspect « caisses ») : A munitions, B ravitaillement (sacs, jerrycan), C dépôt bâché. feu : { u, v } local, la caisse sous le feu
 // a son dessus à H.
 function pileCaisses(B, L, D, H, id, variante, feu) {
-  const nu = Math.max(1, Math.round(L / 38));
-  const nv = Math.max(1, Math.round(D / 32));
+  const nu = Math.max(1, Math.round(L / 42));
+  const nv = Math.max(1, Math.round(D / 36));
   const cu = L / nu;
   const cv = D / nv;
   const deux = H >= 30; // deux rangs de haut
@@ -482,7 +482,7 @@ function tasGravats(B, L, D, H, id, variante) {
       return [pu, h + dy[q] + 0.15, pv];
     }));
     // Éclat posé sur le bloc (un sur deux).
-    if (unitHash(id, k + 8) > 0.5) {
+    if (unitHash(id, k + 8) > 0.65) {
       const su = (u1 - u0) * 0.3;
       const sv = (v1 - v0) * 0.3;
       const pu = lerp(u0 + su, u1 - su * 2, unitHash(id, k + 10));
@@ -619,7 +619,7 @@ function etagereDebout(B, L, D, H, id, variante) {
   const niveaux = [2, H * 0.42, H - 15];
   const genre = variante === 'C' ? 'munitions' : variante === 'B' ? 'cartons' : 'intendance';
   niveaux.forEach((y, i) => {
-    B.boite('corps', bois ? 'etagere' : 'tole', [0.5, L - 0.5], [y, y + 2], [0.5, D - 0.5]);
+    if (i > 0) B.boite('corps', bois ? 'etagere' : 'tole', [0.5, L - 0.5], [y, y + 2], [0.5, D - 0.5]);
     if (i === niveaux.length - 1) rangee(B, t + 1, L - t - 1, 0.5, D - 0.5, y + 2, 12, id, 100, genre);
     else {
       const h = Math.min(niveaux[i + 1] - y - 4, 14);
@@ -649,13 +649,13 @@ function etagereRenversee(B, L, D, H, id, variante) {
     B.boite('corps', 'etagere', [3, L - 3], [0, 1.5], [v0 + 3, v1 - 3]);
     const n = Math.max(2, Math.round(L / 32));
     for (let q = 1; q < n; q += 1) B.boite('corps', 'etagere', [(q * L) / n - 1, (q * L) / n + 1], [0, hs - 2], [v0 + 3, v1 - 3]);
-    for (let q = 0; q < n; q += 1) if (unitHash(id, 200 + q) > 0.35) rangee(B, (q * L) / n + 2, ((q + 1) * L) / n - 2, v0 + 4, v1 - 4, 1.5, hs - 5, id, 220 + q * 10, 'intendance');
+    for (let q = 0; q < n; q += 1) if (unitHash(id, 200 + q) > 0.5) rangee(B, (q * L) / n + 2, ((q + 1) * L) / n - 2, v0 + 4, v1 - 4, 1.5, hs - 5, id, 220 + q * 10, 'intendance');
   }
   // Contenu répandu autour (jusqu'aux bords du rectangle).
   const bandes = large ? [[0, v0 - 0.5], [v1 + (variante === 'B' ? 10 : 0.5), D]] : [[0, v0 - 0.5], [v1 + 0.5, D]];
   bandes.forEach(([b0, b1], bi) => {
     if (b1 - b0 < 4) return;
-    const n = Math.max(2, Math.round(((L / 16) * (b1 - b0)) / 30));
+    const n = Math.max(2, Math.round(((L / 16) * (b1 - b0)) / 64));
     for (let q = 0; q < n; q += 1) {
       const r = unitHash(id, 400 + bi * 50 + q);
       const u = lerp(0, L - 14, (q + unitHash(id, 420 + bi * 50 + q) * 0.8) / n);
@@ -765,10 +765,8 @@ function tabouret(B, L, D, H, id, variante) {
 
 // Lampe tempête éteinte (verre sombre : rien de vif) posée à (u, v, y).
 function lampeTempete(B, u, v, y) {
-  B.cylindre('details', 'olive', u, v, y, y + 2, 3.2, 6);
-  B.cylindre('details', 'verre', u, v, y + 2, y + 8, 2.4, 6);
-  B.cylindre('details', 'olive', u, v, y + 8, y + 10, 2.6, 6);
-  B.barre('details', 'acier', [u - 2.6, y + 10, v], [u + 2.6, y + 10, v], 0.6);
+  B.cylindre('details', 'olive', u, v, y, y + 2.5, 3.2, 6);
+  B.cylindre('details', 'verre', u, v, y + 2.5, y + 10, 2.4, 6);
 }
 
 // Comptoir (côté ouvert vers v = D) : A établi (plateau épais, pieds, tablette basse, marteau, scie, clé, étau, lampe tempête) ; B comptoir de
@@ -799,7 +797,6 @@ function comptoir(B, L, D, H, id, variante) {
   const [s0u, s0v] = A(0.5, 0.62);
   const [s1u, s1v] = A(0.78, 0.7);
   B.plaque('details', 'acier', [[s0u, H + 0.3, s0v], [s0u, H + 0.3, s0v + 5], [s1u, H + 0.3, s1v + 3], [s1u, H + 0.3, s1v]]);
-  B.boite('details', 'manche', [s0u - 4, s0u], [H, H + 2.5], [s0v - 0.5, s0v + 5.5]);
   const [k0u, k0v] = A(0.25, 0.75);
   const [k1u, k1v] = A(0.4, 0.68);
   B.barre('details', 'acier', [k0u, H + 0.6, k0v], [k1u, H + 0.6, k1v], 1.2);

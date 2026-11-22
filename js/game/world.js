@@ -17,6 +17,8 @@ import { parseColor } from '../core/color.js';
 import { angleRotor, burntCarParts, carFireSpots, craterTriangles, helicopterRotor, placeHelicopter, reglagesRotor, ROTOR_PIECES, teinteAcier, toleHelicoptere, trailTriangles, uvTole } from '../core/epaves.js';
 import { MATIERES, atlasEpoque, couleursEpoque, filsTelegraphe, objetsDeSection, specCratere, trianglesFils } from '../core/decor-epoque.js';
 import { MATIERES as MATIERES_INTERIEUR, atlasInterieur, objetsDeSection as objetsInterieur } from '../core/interieur-epoque.js';
+import { modeleMeuble } from '../core/mobilier-epoque.js';
+import { geometrieDetails, teintes as teintesMobilier, textureMobilier, trianglesCorps } from './mobilier-epoque-mesh.js';
 import { plankSettings } from '../core/plank-layout.js';
 import { plankSheet } from '../core/texgen.js';
 import { createDebrisMeshes, createWindowMeshes } from './windows-mesh.js';
@@ -641,6 +643,9 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
   const grillesOf = (f) => (Array.isArray(render.decorInterieur) ? render.decorInterieur : []).filter((it) => it?.kind === 'grille' && it.floor === f && it.a && it.b && it.n);
   // Mur percé (lot 3g, retours) : boîtes qui peuvent cacher le joueur (murs, piliers, meubles), par étage, pour le test de la caméra à chaque image.
   const occluders = [];
+  // Lot 9j : détails du mobilier de 1942, par étage (un maillage par étage, sans ombre portée ; atlas généré créé seulement s'il sert).
+  const detailsMobilier = Object.fromEntries(floors.map((f) => [f, []]));
+  const mobilierEpoque = { pieces: 0, corps: {}, details: {}, atlas: 0 };
   const etageWalls = []; // murs pleins de l'étage (emprises { x0, x1, z0, z1 }) : le garde-corps n'est pas dessiné contre eux
   const wallRepeat = textures.repeat('mur');
   const juteRepeat = textures.repeat('toile-jute'); // lot 9a-I
@@ -731,10 +736,22 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
       const ids = Array.isArray(fu.parts) ? fu.parts : [fu.id];
       const looks = render.mobilier && fu.kind !== 'pilier' ? ids.map((id) => render.mobilier[id]).filter(Boolean) : [];
       if (looks.length > 0 && looks.length === ids.length) {
-        looks.forEach((m, k) => m.boxes.forEach((b, j) => {
-          const r = region(b.region);
-          (up0 ? fb.propsUp : fb.props).box({ x0: b.x0, x1: b.x1, y0: b.y0, y1: b.y1, z0: b.z0, z1: b.z1 }, { rect: r, scale: r.scale, seed: i * 31 + k * 7 + j + 1 }, b.faces);
-        }));
+        looks.forEach((m, k) => {
+          // Lot 9j : dessin de 1942 (clé epoque, npm run carte ; js/core/mobilier-epoque.js) : corps dans ce maillage (ombre portée comme avant),
+          // détails dans le maillage du mobilier de 1942 de l'étage. ?test=1&decor=avant ou variante « actuel » : boîtes du lot 3g.
+          if (render.mobilierEpoque !== false && m.epoque && m.epoque.variante !== 'actuel') {
+            const dessin = modeleMeuble({ ...m.epoque, id: ids[k] });
+            (up0 ? fb.propsUp : fb.props).triangles(trianglesCorps(dessin.corps, region));
+            detailsMobilier[f].push(...dessin.details);
+            mobilierEpoque.pieces += 1;
+            mobilierEpoque.corps[f] = (mobilierEpoque.corps[f] ?? 0) + dessin.corps.length;
+            return;
+          }
+          m.boxes.forEach((b, j) => {
+            const r = region(b.region);
+            (up0 ? fb.propsUp : fb.props).box({ x0: b.x0, x1: b.x1, y0: b.y0, y1: b.y1, z0: b.z0, z1: b.z1 }, { rect: r, scale: r.scale, seed: i * 31 + k * 7 + j + 1 }, b.faces);
+          });
+        });
         return;
       }
       const parts = furnitureParts(tall && fu.kind === 'pilier' ? { ...fu, hauteur: lift - 1 } : fu, FURNITURE_REGION, l.walls);
@@ -746,6 +763,28 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
       parts.body.forEach((p, k) => draw(up ? fb.propsUp : fb.props, p, k));
       parts.detail.forEach((p, k) => draw(up ? fb.detailUp : fb.detail, p, k + 4));
     });
+  }
+
+  // Lot 9j : maillages des détails du mobilier de 1942 (groupe de l'étage ; le rez-de-chaussée reste dessiné à l'étage), matière Lambert à l'atlas
+  // du mobilier (256 px, aucune image) et couleurs de sommet ; sans ombre portée, réception des ombres, mur percé comme les meubles.
+  if (floors.some((f) => detailsMobilier[f].length)) {
+    const lookupM = typeof document !== 'undefined' ? createTokenLookup() : () => null;
+    const couleursM = couleursEpoque(render.mobilierCouleurs ?? {}, lookupM);
+    const mobTex = textureMobilier(couleursM);
+    const matMob = seeThrough.apply(new THREE.MeshLambertMaterial({ map: mobTex.texture, vertexColors: true }));
+    const teinteM = teintesMobilier(couleursM);
+    mobilierEpoque.atlas = mobTex.taille;
+    for (const f of floors) {
+      const geo = geometrieDetails(detailsMobilier[f], teinteM);
+      if (!geo || !groups[f]) continue;
+      const mesh = new THREE.Mesh(geo, matMob);
+      mesh.name = 'mobilier-epoque';
+      mesh.castShadow = false;
+      mesh.receiveShadow = true;
+      mesh.userData.floor = f;
+      groups[f].add(mesh);
+      mobilierEpoque.details[f] = detailsMobilier[f].length;
+    }
   }
 
   // Lot 3g : décor léger intérieur, non solide (render.decorInterieur : decor-interieur.world.json, absent avec ?detail=0 et ?map=salle). Un maillage
@@ -795,7 +834,7 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
   if (layout.decor) addDecor(ex, region, layout.decor, outdoorSoil, tintOf);
   // Lot 5a : hélicoptère écrasé (maillage du décor de l'atlas) et feu groupé de la voiture en flammes (deux foyers, capot et habitacle ; flammes et fumée, sans
   // lueur au sol : deux appels de dessin, aucune lumière ; absent avec ?detail=0, comme les autres feux). Créés une fois, dans le groupe extérieur.
-  const wrecks = { helicopter: null, burningCar: null, epoque: null, interieur: null };
+  const wrecks = { helicopter: null, burningCar: null, epoque: null, interieur: null, mobilier: mobilierEpoque }; // lot 9j : mobilier de 1942
   // Lot 9a : rotor de queue de l'hélicoptère ({ pivot, axe, triangles, mesh }) et son temps de jeu cumulé (world.frame : dt = 0 en pause).
   let rotor = null;
   let rotorT = 0;
