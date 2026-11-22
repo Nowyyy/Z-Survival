@@ -1010,7 +1010,7 @@
       "etage": { "corps": 264, "details": 298 }
     },
     "escaliers": "A",
-    "mursActifs": false,
+    "mursActifs": true,
     "trianglesMurs": 388,
     "murs": [
       { "id": "rdc-m1w2", "floor": "rdc", "pose": "sol", "type": "bidons", "x": 1470, "y": 1240, "face": "w" },
