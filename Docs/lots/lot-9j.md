@@ -85,13 +85,12 @@
 - M26 et M29 se recouvrent en collision (tirs arrêtés au-dessus des caisses basses de M29 : déjà le cas avant).
 - Le pire cas de la partie (45 023) dépasse l'ancien plafond de 45 000 : il ne tient que par le plafond relevé à 60 000.
 - Pages de `dev` peu fiable ce jour (incident GitHub) : relancer le déploiement s'il échoue à l'envoi.
-- Le journal (`data/changelog.json`) et le bloc `[lot-9j]` décrivent le mobilier, pas encore les escaliers ni le décor des murs.
 
 ## Idées
 - Aspect « caisses » pour M22 si l'étagère renversée ne se lit pas ; une variante C pour classeurs et bureau ; casiers à courrier ; d'autres textes au pochoir en allemand si le propriétaire le souhaite (les caisses gardent des pochoirs américains : soldats américains en Allemagne) ; plus d'emplacements de décor des murs, ou sur les piliers.
 
 ## Entrée du journal
-- `lot-9j` (v0.9, 2026-11-22) « Mobilier de 1942 » (4 points) ; bloc `[lot-9j]` (`afficher: oui`).
+- `lot-9j` (v0.9, 2026-11-22) « Mobilier de 1942 » (5 points : le quatrième, ajouté après les retours, décrit l'éboulis fin des escaliers et le décor des murs) ; bloc `[lot-9j]` (`afficher: oui`), description complétée de même.
 
 ## Lignes à ajouter à `CLAUDE.md` et `conventions.md`
 - `CLAUDE.md` : « Mobilier de 1942 (lot 9j) : mobilier.world.json → epoque (npm run carte, mobilier-epoque-choix.json : variantes, pieces, escaliers, murs) ; js/core/mobilier-epoque.js ; boîtes du lot 3g = collisions, tirs, feux ; ?test=1&decor=avant ; atelier-mobilier.html. » (le plafond de 60 000 y est déjà).
