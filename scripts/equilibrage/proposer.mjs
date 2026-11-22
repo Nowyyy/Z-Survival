@@ -14,22 +14,23 @@ const med = (a) => { const b = a.filter(Number.isFinite).sort((x, y) => x - y); 
 
 // --- Réglages proposés (provisoires) ------------------------------------------------------------------------------------------------------
 export const REGLAGES = {
-  // Retour du propriétaire sur la première proposition (« il faut que le jeu soit un minimum dur, que le joueur meure et qu'il améliore son
-  // personnage avec les objets ; on ne touche ni au chargeur, ni à la réserve, ni à la cadence, ni au rechargement : uniquement le prix et les
-  // dégâts ») : zombies inchangés (vie, nombre, coups), armes inchangées sauf dégâts et prix (rachat compris).
-  waves: null,
+  // Retours du propriétaire après la partie B : « un minimum dur, le joueur meurt et améliore son personnage avec les objets », « progression à
+  // la Archero : des dizaines d'essais pour réussir » ; armes : dégâts et prix seulement (chargeur, réserve, cadence, rechargement gardés) ;
+  // leviers choisis : courbe de vie des zombies plus régulière (coups inchangés), joueur automatique qui répare (--repare), pompe et Kar98k
+  // faibles assumés (leur cadence ne suit pas le rythme d'apparition : un zombie toutes les 1,3 s dès la 14, toutes les 0,9 s dès la 21).
+  // Zombies : vie +10 % de la vie de base par manche jusqu'à la 20 (au lieu de +50 % jusqu'à la 9), puis ×1,04 par manche (au lieu de ×1,10 dès
+  // la 10), plafond ×30 inchangé (jamais atteint avant la 40) ; nombres, coups, vitesses, apparitions inchangés.
+  waves: { hp: { hpLinearPerRound: 0.1, hpExpStartRound: 21, hpExpFactor: 1.04, hpCap: 30 } },
   enemies: null,
-  // Dégâts fixés d'après les mesures du joueur automatique (scripts/equilibrage/joueur.mjs, depuis la vague d'achat, graines 1 à 3) : l'aisance
-  // 0,75–0,85 du prompt ne laisse survivre aucune manche (0,8 = 0,5 zombie tué par zombie arrivé ; le Colt meurt en 5 à 0,78). Colt : 25 → 40
-  // (puissance soutenue d'avant le chargeur du lot 9e, 25 ÷ 0,62) ; pompe : 130 (au-delà, rien de plus : sa cadence le limite) ; Kar98k : 800
-  // (tue d'une balle le marcheur et le petit à la 21 ; sa cadence l'empêche de suivre dès la 21, quels que soient ses dégâts) ; Thompson : 1 100.
+  // Dégâts fixés d'après les mesures du joueur automatique qui répare (graines 1 à 6) : Colt 25 → 50 ; pompe et Kar98k gardés (plus de dégâts
+  // n'y changent rien : la cadence les limite) ; Thompson 90 → 150.
   armes: {
     m1911: {},
-    winchester1897: { vague: 11, degats: 130 },
-    kar98k: { vague: 21, degats: 800 },
-    thompson: { vague: 31, degats: 1100 },
+    winchester1897: { vague: 11, degats: 55 },
+    kar98k: { vague: 21, degats: 320 },
+    thompson: { vague: 31, degats: 150 },
   },
-  colt: { degats: 40 },
+  colt: { degats: 50 },
   // Précision du joueur automatique, mesurée sur l'état actuel et les essais (Colt 0,85, plombs du pompe 0,67, Kar98k 0,80, Thompson 0,80) ;
   // --precision la remplace par une nouvelle mesure.
   precision: { m1911: 0.85, winchester1897: 0.67, kar98k: 0.8, thompson: 0.8 },

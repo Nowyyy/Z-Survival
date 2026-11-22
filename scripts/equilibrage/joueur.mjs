@@ -38,6 +38,12 @@ const VISEE = opt('visee', 'proche');
 const POSTE = opt('poste', '1600,2010') === 'aucun' ? null : opt('poste', '1600,2010').split(',').map(Number);
 // Manche bloquée : aucun dégât porté pendant BLOQUE secondes de jeu alors que des zombies restent : la partie s'arrête (« bloquée »).
 const BLOQUE = Number(opt('bloque', '150'));
+// Réparation (--repare, choix du propriétaire après la partie B : « joueur qui répare ») : sans zombie entré à son étage, le joueur va vers la
+// fenêtre la plus abîmée de la salle de départ (son point de réparation, en marchant droit, glissement contre les obstacles) et s'y arrête : la
+// partie répare seule (joueur proche, sans viser). Zombie entré : il s'arrête et tire. Rien à réparer : il retourne à son poste. Coincé plus
+// d'une seconde : il est posé au but (compté). Sans --repare : joueur du lot 9e (immobile).
+const REPARE = args.includes('--repare');
+const ZONES_REPARE = opt('zones-repare', 'depart').split(',');
 // Départ à une vague d'achat (mesure « avec chaque arme ») : --depart 21 --arme-depart kar98k --zollars-depart 3250 : partie lancée à la vague,
 // toutes les fenêtres ouvertes (?planks=0 : état d'une partie où le joueur ne répare jamais), l'arme donnée, un budget de départ (Zollars en poche
 // à l'ouverture de la pièce, mesurés sur les parties complètes) pour les rachats.
@@ -75,7 +81,7 @@ async function partie(profil, seed) {
   await servir('enemies.json', ENEMIES);
   await page.goto(`${BASE}/jeu.html?test=1&seed=${seed}&wave=${DEPART}${DEPART > 1 ? '&planks=0' : ''}${LVL[profil]}${EXTRA}`);
   await page.waitForFunction(() => window.__zs, null, { timeout: 180000 });
-  const r = await page.evaluate(({ max, achats, visee, poste, bloque, armeDepart, zollarsDepart }) => {
+  const r = await page.evaluate(({ max, achats, visee, poste, bloque, armeDepart, zollarsDepart, repare, zonesRepare }) => {
     const zs = window.__zs;
     const byWave = {};
     const W = (w) => (byWave[w] ??= { debut: null, fin: null, tues: 0, degats: 0, zollarsDebut: null, tirs: {}, tire: {}, utile: {}, chutes: 0 });
@@ -87,6 +93,7 @@ async function partie(profil, seed) {
     let aim = 0;
     let s;
     let dernierDegat = 0; let bloquee = false;
+    let move = { x: 0, y: 0 }; let maison = null; let suivi = null; let poses = 0; let reparees = 0; let lastPlanks = null;
     for (let i = 0; i < max; i += 1) {
       if (i % 4 === 0) {
         s = zs.getState();
@@ -136,6 +143,28 @@ async function partie(profil, seed) {
         if (lastChutes !== null && p.down.chutes < lastChutes) ww.chutes += lastChutes - p.down.chutes;
         lastChutes = p.down.chutes;
         if (best) aim = Math.atan2(best.y - p.y, best.x - p.x);
+        if (repare) {
+          maison ??= { x: p.x, y: p.y };
+          if (poste?.fait && !maison.poste) maison = { x: poste[0], y: poste[1], poste: true };
+          const etage = s.floor?.current ?? 'rdc';
+          const menace = s.enemies.some((e) => (e.floor ?? 'rdc') === etage && (e.mode === 'dedans' || e.mode === 'libre') && Math.hypot(e.x - p.x, e.y - p.y) < 700);
+          const planks = (s.windows ?? []).filter((w) => zonesRepare.includes(w.zone)).reduce((n, w) => n + (w.planks ?? 0), 0);
+          if (lastPlanks !== null && planks > lastPlanks) reparees += planks - lastPlanks;
+          lastPlanks = planks;
+          let but = null;
+          if (!menace && p.down.state === 'debout') {
+            const abimees = (s.windows ?? []).filter((w) => w.active && w.floor === etage && zonesRepare.includes(w.zone) && w.planks < w.maxPlanks);
+            abimees.sort((u, v) => u.planks - v.planks || Math.hypot(u.repairSpot.x - p.x, u.repairSpot.y - p.y) - Math.hypot(v.repairSpot.x - p.x, v.repairSpot.y - p.y));
+            but = abimees[0]?.repairSpot ?? maison;
+          }
+          const d = but ? Math.hypot(but.x - p.x, but.y - p.y) : 0;
+          move = but && d > 45 ? { x: (but.x - p.x) / d, y: (but.y - p.y) / d } : { x: 0, y: 0 };
+          // Coincé (moins de 2 parcourus en 1 s en marchant) : posé au but.
+          if (move.x || move.y) {
+            if (!suivi || Math.hypot(p.x - suivi.x, p.y - suivi.y) > 2) suivi = { x: p.x, y: p.y, t };
+            else if (t - suivi.t > 1) { zs.setPlayer(but.x, but.y); poses += 1; suivi = null; }
+          } else suivi = null;
+        }
         // Achats : la prochaine arme du plan dès sa vague et dès que les Zollars suffisent.
         const zollars = s.economy.earnedRun - depense;
         const suivant = achats.find((x) => !faits.some((f) => f.arme === x.arme));
@@ -157,13 +186,13 @@ async function partie(profil, seed) {
           } else if (sec && a.actif === achetee.id) zs.changerArme(0);
         }
       }
-      zs.setInput({ aim: { angle: aim } });
+      zs.setInput(repare ? { move, aim: { angle: aim } } : { aim: { angle: aim } });
       zs.step(0.05);
     }
     s = zs.getState();
     if (byWave[wave]) byWave[wave].fin = s.time;
-    return { temps: s.time, mort: s.dead, monde: s.worldOver, bloquee, vague: s.waves.wave, tues: s.kills, gagne: s.economy.earnedRun, parSorte: s.economy.byKind, depense, achats: faits, rachats, byWave };
-  }, { max: MAX, achats: ACHATS, visee: VISEE, poste: POSTE, bloque: BLOQUE, armeDepart: ARME_DEPART, zollarsDepart: ZOLLARS_DEPART });
+    return { temps: s.time, mort: s.dead, monde: s.worldOver, bloquee, poses, reparees, vague: s.waves.wave, tues: s.kills, gagne: s.economy.earnedRun, parSorte: s.economy.byKind, depense, achats: faits, rachats, byWave };
+  }, { max: MAX, achats: ACHATS, visee: VISEE, poste: POSTE, bloque: BLOQUE, armeDepart: ARME_DEPART, zollarsDepart: ZOLLARS_DEPART, repare: REPARE, zonesRepare: ZONES_REPARE });
   await context.close();
   return { profil, seed, ...r };
 }
@@ -178,7 +207,7 @@ async function ouvrier() {
     const r = await partie(t.profil, t.seed);
     resultats.push(r);
     const ach = r.achats.map((x) => `${x.arme}@${x.vague}`).join(' ');
-    console.log(`${r.profil} graine ${r.seed} : manche ${r.vague}${r.mort ? ' (mort)' : r.monde ? ' (monde fini)' : r.bloquee ? ' (bloquée)' : ' (vivant)'}, ${r.tues} tués, ${Math.round(r.temps)} s, ${r.gagne} Z gagnés, ${r.depense} dépensés ; achats ${ach || 'aucun'} ; rachats ${r.rachats.length}`);
+    console.log(`${r.profil} graine ${r.seed} : manche ${r.vague}${r.mort ? ' (mort)' : r.monde ? ' (monde fini)' : r.bloquee ? ' (bloquée)' : ' (vivant)'}, ${r.tues} tués, ${Math.round(r.temps)} s, ${r.gagne} Z gagnés, ${r.depense} dépensés ; achats ${ach || 'aucun'} ; rachats ${r.rachats.length}${r.reparees ? ` ; planches ${r.reparees}, posé ${r.poses} fois` : ""}`);
   }
 }
 await Promise.all(Array.from({ length: Math.min(PARALLELES, taches.length) }, ouvrier));

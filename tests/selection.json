@@ -1012,6 +1012,7 @@
         "js/armes/atelier.js",
         "js/armes/atelier-caisses.js",
         "data/game/armes-partie.proposition.json",
+        "data/game/waves.proposition.json",
         "js/armes/rendu.js",
         "js/armes/tenue.js",
         "js/armes/poses-calcul.js",

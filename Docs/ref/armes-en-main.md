@@ -172,31 +172,31 @@ Rayon du grand aligné sur son dessin (×1,11) ; recharge cartouche par cartouch
 - **Partie U** : aura plus fine (anneau de 92 % à 100 % du rayon) et seulement quand il se relève (plus à la chute, ni à l'arrivée à un étage) ; sur téléphone, icône de la balle à côté du nombre de balles, comme sur ordinateur (0,9 em, dans la ligne d'un em sous les emplacements).
 - **Partie V** : au relevage, les zombies du rayon de l'aura sont repoussés jusqu'à son bord (220 du joueur, murs et meubles compris ; `player-down.json` → `standUpToEdge`, `knockbackZombies` avec `bord`), et dessinés glissant jusque-là au rythme de l'anneau ; la chute et l'arrivée à un étage gardent l'ancien repoussement. Coup des zombies sans croiser les bras : `poses-v2.json` → `styles.*.attack.rentre` (0,15, 0,2, 0,2 au lieu de 0,35, 0,45, 0,55 ; au corps long, les mains passaient l'une devant l'autre).
 
-## Achat et équilibrage — proposition révisée (lot 9k, partie B ; rien n'est intégré avant « GO 9k »)
-**Retour du propriétaire sur la première proposition** : « il faut que le jeu soit un minimum dur, que le joueur meure et qu'il améliore son personnage avec les objets ; on ne touche ni à la taille du chargeur et de la réserve, ni à la cadence, ni à la vitesse de rechargement : uniquement le prix et les dégâts ». La première proposition (vie et coups des zombies très adoucis, Kar98k à 0,3 s, pompe à 0,7 s) est retirée : le joueur équipé finissait le monde. **Zombies inchangés** (vie, nombre, coups). Fichiers : `data/game/armes-partie.proposition.json` (jamais lu par le jeu ; `node scripts/equilibrage/proposer.mjs`), `data/game/maps/rez-de-chaussee/caisses-armes.proposition.json` ; atelier des armes, section « Caisses sur la carte ».
-### Ce que mesurent les essais (joueur automatique du lot 9e, posté près de la porte 1 dès son ouverture ; depuis la vague d'achat : arme donnée, fenêtres ouvertes ; graines 1 à 3 ; sans / avec l'équipement de référence)
-| Arme et dégâts | Manche atteinte sans équipement | Avec l'équipement |
+## Achat et équilibrage — proposition révisée (lot 9k, partie B, seconde révision ; rien n'est intégré avant « GO 9k »)
+**Retours du propriétaire** : « un minimum dur, le joueur meurt et améliore son personnage avec les objets » ; « progression à la Archero : des dizaines d'essais pour réussir, sinon c'est trop facile » ; armes : **dégâts et prix seulement** (chargeur, réserve, cadence, rechargement gardés). Choix demandés et faits : **courbe de vie des zombies plus régulière, coups inchangés** ; **joueur automatique qui répare** ; **pompe et Kar98k faibles assumés**. Les deux propositions précédentes sont retirées (zombies très adoucis ; puis zombies inchangés). Fichiers : `data/game/armes-partie.proposition.json`, `data/game/waves.proposition.json` (jamais lus par le jeu ; `node scripts/equilibrage/proposer.mjs`).
+### Valeurs proposées
+| Donnée | Actuel | Proposé |
 |---|---|---|
-| Colt 25 (actuel) / 40 / 50 / 75 / 100 / 150 / 250 (partie depuis la manche 1) | 5 / 5 / 6–7 / 7–9 / 8–9 / 10 / 10–12 | 5 / 6–7 / 6–8 / 9 / 9 / 10 / 13–14 |
-| Winchester 40 / 80 / 130 / 200 (depuis la 11) | 11 / 11–12 / 11–12 / 11–12 | 11 / 11–13 / 13–14 / 13–14 |
-| Kar98k 785 / 2 200 (depuis la 21) | 21 / 21 | 21 / 21 |
-| Thompson 250 / 400 / 700 / 1 100 (depuis la 31) | 31 / 31 / 31–33 / 31–33 | 31 / 31 / 31–35 / 34–40 |
-- **Une aisance de 0,75–0,85 ne laisse survivre aucune manche** : avec les zombies actuels, 0,8 vaut 0,5 zombie tué par zombie arrivé ; le joueur automatique ne survit qu'au-dessus d'environ 0,85 tué par arrivé (aisance ≈ 1,4) ; le Colt actuel meurt en manche 5 à 0,78.
-- **Cadences gardées : pompe et Kar98k plafonnent.** Au-delà de 130 de dégâts, le pompe ne gagne rien (0,9 s par tir, 6 cartouches, 3,3 s). Le Kar98k (1,05 s, 5 balles, 3,9 s) tire au plus 0,6 fois par seconde quand un zombie arrive toutes les 0,9 s dès la 21 : sans perforation, il ne peut pas suivre (0,34 au mieux), **moins bon que le pompe à la même manche (0,40)** ; acheté, il fait mourir dans la manche.
-- **Objets** : +0 à +2 manches (Colt, pompe), jusqu'à +7 avec la Thompson ; ils laissent survivre à une aisance environ 1,3 fois plus basse, mais un zombie en trop frappe de 15 à 30 par seconde contre 100 à 220 de vie.
-- Le joueur automatique est immobile et ne répare jamais : un joueur qui bouge et répare va plus loin ; ces chiffres sont une borne basse.
-### Armes proposées (dégâts et prix seulement)
-| Arme | Dégâts | Prix · rachat | Aisance V1 / V10 / V11 / V20 / V21 / V30 / V31 / V40 |
-|---|---|---|---|
-| Colt M1911 | 25 → **40** (puissance soutenue d'avant le chargeur du lot 9e : 25 ÷ 0,62) | — | 2,18 / 0,32 / 0,27 / 0,07 / 0,06 / 0,03 / 0,03 / 0,03 |
-| Winchester M1897 | 55 → **130** × 8 (le plus fort utile) | **750 · 260** | 2,23 / 1,27 / **1,19** / 0,46 / 0,40 / 0,23 / 0,23 / 0,23 |
-| Kar98k | 320 → **800** (tue d'une balle le marcheur et le petit à la 21) | **2 400 · 840** | 1,43 / 0,90 / 0,77 / 0,36 / **0,34** / 0,18 / 0,18 / 0,19 |
-| Thompson M1928 | 90 → **1 100** | **5 000 · 1 750** | 13,6 / 8,57 / 8,14 / 3,81 / 3,62 / 2,23 / **2,21** / 2,23 |
-- Prix : environ la moitié des Zollars en poche à l'ouverture si tout est tué (1 460 à la 11 ; 4 880 à la 21 et 10 430 à la 31 après les achats précédents, sans rachat) : 51 %, 49 %, 48 % ; rachat 35 % du prix. Le joueur automatique n'atteint ni la 21 ni la 31 : prix non vérifiés en partie.
-- Cibles du prompt non tenues avec ces seules valeurs : Colt qui passe la 10 (il faudrait 150 de dégâts : un tir par zombie jusqu'à la 5), aisance 0,75–0,85 et « 1,5 fois le Colt » du Kar98k, usure de la Thompson (demande plate après la 28), objets à +4–8 manches, courbe 18–22 / 26–30 / 33–37.
-### Pour aller plus loin (décisions du propriétaire)
-1. Vie, nombre et coups des zombies (le prompt l'autorise si nécessaire) : sans eux, les objets restent presque sans effet et la difficulté ne monte plus après la 28.
-2. Kar98k : à la carte 1 dans la pièce 2 (manche 11 : un zombie toutes les 1,5 s), ou perforation (lot futur), ou cadence (refusée).
+| Vie des zombies | +50 % de la vie de base par manche jusqu'à la 9, puis ×1,10, plafond ×30 (manche 28) | **+10 %** par manche jusqu'à la 20, puis **×1,04**, plafond ×30 (jamais atteint avant la 40) |
+| Vie du marcheur aux manches 1 / 10 / 11 / 20 / 21 / 31 / 40 | 50 / 275 / 303 / 713 / 785 / 1 500 / 1 500 | 50 / 95 / 100 / 145 / 151 / 223 / 318 |
+| Coups, nombres, vitesses, apparitions | — | inchangés |
+| Colt M1911 | 25 | **50** |
+| Winchester M1897 | 55 × 8 · prix 900 | 55 × 8 · **750 Z, rachat 260 Z** |
+| Kar98k | 320 · prix 900 | 320 · **2 400 Z, rachat 840 Z** |
+| Thompson M1928 | 90 · prix 2 500 | **150** · **5 000 Z, rachat 1 750 Z** |
+- Pompe et Kar98k : plus de dégâts n'apporte rien, leur cadence les limite (0,74 et 0,6 tir par seconde ; un zombie arrive toutes les 1,3 s dès la 14 et toutes les 0,9 s dès la 21).
+- Prix : environ la moitié des Zollars en poche à l'ouverture si tout est tué (1 460 à la 11 ; 4 880 à la 21 ; 10 430 à la 31, achats précédents compris) ; rachat 35 %.
+### Joueur automatique (graines 1 à 6 ; répare les fenêtres de la salle de départ, posté près de la porte 1 dès son ouverture)
+| Partie | Sans équipement | Avec l'équipement de référence (vie et régénération au plafond) |
+|---|---|---|
+| Colt seul | 7–10 (médiane 10) | 10–12 (10) |
+| En achetant (avec ou sans le Kar98k) | 7–10 : il meurt presque toujours avant la 11 | 10–14 : deux graines achètent le pompe à la 11, tiennent jusqu'à la 14 |
+| Thompson depuis la 31 (arme donnée, 2 000 Z) | 31 (mort dans la manche) | 33–40 (36,5) |
+| Kar98k depuis la 21 (essai précédent, même courbe) | 21 | 21 |
+- **Dur et mortel, l'équipement se sent (+0 à +4 manches, jusqu'à +9 à la 31), mais la progression plafonne** : six objets rares au niveau 8 atteignent déjà le plafond de la vie et de la régénération (niveau 10) ; au-delà, rien ne s'améliore pour la survie. Le joueur automatique ne dépasse pas la 14 en partie complète, quels que soient ses objets. Pour une vraie progression « à la Archero », il faudra des objets plus forts ou des plafonds plus hauts (`data/menu/objets.json`, `player-stats.json`, hors de ce lot).
+- Le joueur automatique est une borne basse (il marche droit, ne se déplace pas pour viser) : un vrai joueur ira plus loin.
+- **Kar98k** : un piège à la carte 1 (acheté à la 21, il fait mourir dans la manche) ; perforation ou autre carte plus tard.
+- Cibles du prompt non tenues : aisance 0,75–0,85 (sans signification ici : 0,8 laisse mourir dans la manche), courbe 18–22 / 26–30 / 33–37, objets à +4–8 manches à chaque étape, Kar98k au-dessus du Colt.
 ### Caisses, achat (inchangé depuis la première proposition)
 - **Places** (deux par pièce, A recommandée) : aile A mur est (1455, 1240), B mur sud (1240, 2445) — toutes deux remplacent un objet du décor des murs (tous les murs libres de l'aile en portent) ; étage de gauche A mur est (1455, 1526), B mur ouest (1085, 1541) ; étage de droite A mur nord face sud (1665, 1965, remplace la carte murale), B mur est (2230, 2335).
 - **Touche B** (F = plein écran) ; message à deux cases « Acheter Winchester M1897 — 750 Z », « Munitions — 260 Z », grisé « … · Il manque 300 Z » ; bouton tactile « Acheter / 750 Z » ; son `arme-achat`.
