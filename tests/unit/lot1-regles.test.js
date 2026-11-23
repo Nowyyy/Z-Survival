@@ -84,6 +84,7 @@ describe('mêmes règles qu\'au lot 1', () => {
     allowed.push('js/core/gabarit.js', 'js/core/armes/partie.js', 'js/core/armes/inventaire.js', 'js/core/armes/tenue-jeu.js', 'js/core/armes/geste.js'); // lot 9e : corps long et capsule des rampants, table des armes, armes portées, tenue en partie ; partie I : geste du rechargement (nouveaux fichiers purs)
     allowed.push('js/core/decor-epoque.js'); // lot 9h : décor extérieur d'époque (modèles, atlas généré, placement, contrôles ; nouveau fichier, pur)
     allowed.push('js/core/collisions-dessin.js'); // lot 9h (retours) : collisions de l'intérieur recalées sur le dessin (escaliers, meubles), utilisé par npm run carte (nouveau fichier, pur)
+    allowed.push('js/core/armes/achat.js'); // lot 9k : achat d'armes sur la carte (caisses, achat, rachat, refus ; nouveau fichier pur)
     allowed.push('js/core/mobilier-epoque.js', 'js/core/mobilier-epoque-atlas.js'); // lot 9j : mobilier de 1942 (modèles, rectangles cibles, choix ; atlas généré ; nouveaux fichiers purs, aucun module existant modifié)
     allowed.push('js/core/interieur-epoque.js', 'js/core/lampe-coudee.js'); // lot 9i : décor intérieur d'époque (modèles, atlas, placement, chemins) et lampe coudée du joueur (nouveaux fichiers, purs)
     expect(changed.filter((f) => !allowed.includes(f))).toEqual([]);

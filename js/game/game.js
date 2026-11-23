@@ -1798,8 +1798,9 @@ export function createGame(ctx) {
     },
     // Lot 9k : achat ou rachat à la caisse proche (touche B, bouton tactile, tests). Refusé en pause, à terre, pendant le relevage, un rechargement ou
     // un changement d'arme, sans Zollars suffisants (raison affichée 1,5 s). Les Zollars ne sont jamais écrits. → { ok, etat }.
-    acheter() {
-      if (!sim.inv || ctx.ui.isPaused() || sim.dead || sim.worldOver) return { ok: false, etat: null };
+    // horsPause : crochet de test seulement (__zs.acheter, comme step() qui avance aussi en pause, page cachée comprise).
+    acheter({ horsPause = false } = {}) {
+      if (!sim.inv || (ctx.ui.isPaused() && !horsPause) || sim.dead || sim.worldOver) return { ok: false, etat: null };
       const c = caisseProche(caissesListe, sim.player, pf(), zonesOuvertes(), distanceCaisses, sim.caissesToutes);
       if (!c) return { ok: false, etat: null };
       const r = acheter({ caisse: c, inv: sim.inv, table: tableArmes, zollars: bank.balance(), debout: canMove(sim.down) && !sim.trView.locked });

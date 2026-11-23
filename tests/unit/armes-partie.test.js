@@ -23,7 +23,14 @@ const waves = load('data/game/waves.json');
 const enemies = load('data/game/enemies.json');
 const weapons = load('data/game/weapons.json');
 const statsCfg = load('data/game/player-stats.json');
-const vie = (w) => enemies.zombie.health * waveSpec(w, waves).hpMul;
+// Lot 9k : le calibrage du lot 9e est vérifié sur les valeurs d'avant le lot 9k (data/game/equilibrage-avant-9k.json : dégâts et prix des armes,
+// vie des zombies) ; les valeurs choisies par le propriétaire au lot 9k sont gardées par tests/unit/equilibrage-armes.test.js.
+const avant9k = load('data/game/equilibrage-avant-9k.json');
+const jsonAvant = structuredClone(json);
+for (const [id, v] of Object.entries(avant9k.armes)) Object.assign(jsonAvant.armes[id], v);
+const tableAvant = lireTable(jsonAvant);
+const wavesAvant = { ...waves, hp: avant9k.waves.hp };
+const vieAvant = (w) => enemies.zombie.health * waveSpec(w, wavesAvant).hpMul;
 const UTILES = ['m1911', 'kar98k', 'winchester1897', 'thompson', 'garand', 'stg44', 'bar', 'mg42'];
 
 describe('table des armes', () => {
@@ -51,8 +58,10 @@ describe('table des armes', () => {
     const fr = load('data/i18n/fr.json');
     for (const id of table.ids) expect(fr[`game.armes.${id}`], id).toMatch(/\S/);
   });
-  it('Colt : chargeur 7, réserve illimitée, dégâts et cadence de l\'arme d\'avant (weapons.json → pistol), cône d\'avant (4 / +8)', () => {
-    const c = table.armes.m1911;
+  it('Colt : chargeur 7, réserve illimitée, dégâts et cadence de l\'arme d\'avant (weapons.json → pistol), cône d\'avant (4 / +8) ; lot 9k : dégâts 50', () => {
+    expect(table.armes.m1911.degats).toBe(50); // lot 9k (choix du propriétaire) ; avant : ceux de l'arme d'avant (ci-dessous)
+    expect(table.armes.m1911.cadence).toBe(weapons.pistol.fireDelay);
+    const c = tableAvant.armes.m1911;
     expect([c.chargeur, c.reserve, c.degats, c.cadence, c.portee]).toEqual([7, Infinity, weapons.pistol.damage, weapons.pistol.fireDelay, weapons.pistol.fireRange]);
     expect([c.dispersion, c.dispersionMouvement]).toEqual([statsCfg.stats.precision.baseAngle, statsCfg.stats.precision.moveAngle]);
     const w = armeJeu(c, weapons.pistol, weapons.pistol.muzzleOffset);
@@ -84,42 +93,42 @@ describe('table des armes', () => {
   });
 });
 
-describe('calibrage (calculé depuis waves.json et enemies.json)', () => {
-  const REF = tempsPourTuer(table.armes.m1911, vie(1)); // Colt en manche 1 : 2 tirs × 0,4 s
+describe('calibrage du lot 9e (calculé depuis waves.json et enemies.json ; valeurs d\'avant le lot 9k)', () => {
+  const REF = tempsPourTuer(tableAvant.armes.m1911, vieAvant(1)); // Colt en manche 1 : 2 tirs × 0,4 s
   it('référence : Colt en manche 1 = 0,8 s par marcheur', () => expect(REF).toBeCloseTo(0.8, 9));
   it.each([['winchester1897', 11], ['thompson', 21], ['garand', 21], ['stg44', 31], ['bar', 31]])('%s : à la manche %i (ouverture du palier), un marcheur tombe en 0,8 s ± 15 %', (id, w) => {
-    expect(tempsPourTuer(table.armes[id], vie(w)) / REF).toBeGreaterThan(0.85);
-    expect(tempsPourTuer(table.armes[id], vie(w)) / REF).toBeLessThan(1.15);
+    expect(tempsPourTuer(tableAvant.armes[id], vieAvant(w)) / REF).toBeGreaterThan(0.85);
+    expect(tempsPourTuer(tableAvant.armes[id], vieAvant(w)) / REF).toBeLessThan(1.15);
   });
   it('kar98k : un tir tue un marcheur à la manche 11 ; décision du propriétaire (partie K) : une pause après le verrou, cadence 1,05 s (temps pour tuer 1,05 s, au-dessus de la règle de 0,8 ± 15 %)', () => {
-    expect(Math.ceil(vie(11) / table.armes.kar98k.degats - 1e-9)).toBe(1);
-    expect(table.armes.kar98k.cadence).toBeGreaterThan(table.armes.kar98k.manoeuvre.debut + table.armes.kar98k.manoeuvre.duree + 0.15);
-    expect(tempsPourTuer(table.armes.kar98k, vie(11))).toBeCloseTo(1.05, 9);
+    expect(Math.ceil(vieAvant(11) / tableAvant.armes.kar98k.degats - 1e-9)).toBe(1);
+    expect(tableAvant.armes.kar98k.cadence).toBeGreaterThan(tableAvant.armes.kar98k.manoeuvre.debut + tableAvant.armes.kar98k.manoeuvre.duree + 0.15);
+    expect(tempsPourTuer(tableAvant.armes.kar98k, vieAvant(11))).toBeCloseTo(1.05, 9);
   });
   it('MG42 (palier 4, fin de monde) : vie plafonnée de la manche 31 à 40, calibrée sur le nombre de zombies (150 / 98) ± 15 %', () => {
-    expect(vie(40)).toBe(vie(31));
-    const k = waveSpec(40, waves).total / waveSpec(31, waves).total;
-    const t = tempsPourTuer(table.armes.mg42, vie(40));
+    expect(vieAvant(40)).toBe(vieAvant(31));
+    const k = waveSpec(40, wavesAvant).total / waveSpec(31, wavesAvant).total;
+    const t = tempsPourTuer(tableAvant.armes.mg42, vieAvant(40));
     expect(t * k / REF).toBeGreaterThan(0.85);
     expect(t * k / REF).toBeLessThan(1.15);
   });
   it('chaque arme s\'essouffle : à la manche d\'ouverture du palier suivant, au moins 1,8 fois plus lente qu\'à la sienne', () => {
     for (const [id, a, b] of [['m1911', 1, 11], ['kar98k', 11, 21], ['winchester1897', 11, 21], ['thompson', 21, 31], ['garand', 21, 31]]) { // kar98k : même rapport avec la cadence de la partie K
-      expect(tempsPourTuer(table.armes[id], vie(b)), id).toBeGreaterThanOrEqual(1.8 * tempsPourTuer(table.armes[id], vie(a)) - 1e-9);
+      expect(tempsPourTuer(tableAvant.armes[id], vieAvant(b)), id).toBeGreaterThanOrEqual(1.8 * tempsPourTuer(tableAvant.armes[id], vieAvant(a)) - 1e-9);
     }
   });
   it('munitions : chargeur + réserve tuent les zombies d\'une manche d\'ouverture à 75 % de tirs au but (arrondi au chargeur)', () => {
     for (const [id, w] of [['kar98k', 11], ['winchester1897', 11], ['thompson', 21], ['garand', 21], ['stg44', 31], ['bar', 31], ['mg42', 40]]) {
-      const e = table.armes[id];
+      const e = tableAvant.armes[id];
       const touche = e.plombs > 1 ? 0.75 : 1;
-      const besoin = Math.ceil((waveSpec(w, waves).total * Math.ceil(vie(w) / (e.degats * e.plombs * touche) - 1e-9)) / 0.75);
+      const besoin = Math.ceil((waveSpec(w, wavesAvant).total * Math.ceil(vieAvant(w) / (e.degats * e.plombs * touche) - 1e-9)) / 0.75);
       expect(e.chargeur + e.reserve, id).toBe(Math.ceil(besoin / e.chargeur) * e.chargeur);
     }
   });
   it('prix : 60 % des Zollars gagnés (10 par zombie) depuis l\'ouverture du palier précédent, arrondis à 100', () => {
-    const z = (a, b) => Array.from({ length: b - a + 1 }, (_, i) => waveSpec(a + i, waves).total * 10).reduce((s, x) => s + x, 0);
+    const z = (a, b) => Array.from({ length: b - a + 1 }, (_, i) => waveSpec(a + i, wavesAvant).total * 10).reduce((s, x) => s + x, 0);
     const blocs = { 1: z(1, 10), 2: z(11, 20), 3: z(21, 30), 4: z(31, 39) };
-    for (const id of UTILES.slice(1)) expect(table.armes[id].prix, id).toBe(Math.round((0.6 * blocs[table.armes[id].palier]) / 100) * 100);
+    for (const id of UTILES.slice(1)) expect(tableAvant.armes[id].prix, id).toBe(Math.round((0.6 * blocs[tableAvant.armes[id].palier]) / 100) * 100);
   });
 });
 

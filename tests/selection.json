@@ -215,6 +215,7 @@
     { "fichier": "tests/unit/zones-directeur.test.js", "categorie": "P", "raison": "Directeur des zones." },
     { "fichier": "tests/unit/zones-hygiene.test.js", "categorie": "G", "raison": "Hygiène des zones." },
     { "fichier": "tests/unit/lot9e-gel.test.js", "categorie": "G", "raison": "Lot 9e : règles changées seulement par ajout (équivalent des hygiènes)." },
+    { "fichier": "tests/unit/lot9k-gel.test.js", "categorie": "G", "raison": "Lot 9k : seule la vie des zombies change dans waves.json, l'ancienne est gardée (équivalent des hygiènes)." },
     { "fichier": "tests/e2e/armes-jeu.spec.js", "categorie": "P", "motif": "téléphone", "raison": "Lot 9e : boutons des armes sur téléphone (44 px, visuel 2D, au doigt, axe) : joué aussi par le projet mobile." },
     { "fichier": "tests/unit/zones-mobilier.test.js", "categorie": "P", "raison": "Mobilier de complément." },
     { "fichier": "tests/unit/zones-porte-chemin.test.js", "categorie": "G", "raison": "Chemins par la porte (connexité)." },
@@ -249,7 +250,8 @@
     "tests/unit/tests-selection.test.js",
     "tests/unit/workflow.test.js",
     "tests/unit/zones-hygiene.test.js",
-    "tests/unit/lot9e-gel.test.js"
+    "tests/unit/lot9e-gel.test.js",
+    "tests/unit/lot9k-gel.test.js"
   ],
   "rejeu-total": [
     "package.json",
@@ -959,7 +961,7 @@
       "description": "Lot 9k : mesures de l'équilibrage des armes (modèle pur, joueur automatique avec achats, emplacements possibles des caisses), scripts hors du jeu.",
       "sources": ["scripts/equilibrage/**"],
       "dependances": ["armes", "carte", "menu", "noyau", "vagues"],
-      "vitest": [],
+      "vitest": ["tests/unit/equilibrage-armes.test.js"],
       "e2e": [],
       "complet": []
     },

@@ -3,7 +3,8 @@ import { execSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { plan, params } from './helpers/carte.js';
 import { imageStudio } from './helpers/images-studio.js'; // lot 8g : logo du studio, exception nominative
-import { hors9e } from './helpers/lot9e.js'; // lot 9e : fichiers de règles que ce lot change (équivalent : lot9e-gel.test.js)
+import { hors9e } from './helpers/lot9e.js';
+import { hors9k } from './helpers/lot9k.js'; // lot 9k : vie des zombies (équivalent : lot9k-gel.test.js) // lot 9e : fichiers de règles que ce lot change (équivalent : lot9e-gel.test.js)
 
 const git = (args) => {
   try {
@@ -46,7 +47,7 @@ describe('hygiène du lot 3b', () => {
     // comparées à main, objet par objet, dans sons-integres.test.js.
     const changed = git('diff --name-only main -- js/core/waves.js js/core/vhs.js js/core/spread.js js/core/player-stats.js js/core/camera.js js/core/synth.js data/game/gaits.json data/game/weapons.json data/game/player-stats.json data/game/player-down.json data/game/windows.json ');
     if (changed === null) return;
-    expect(hors9e(changed)).toEqual([]);
+    expect(hors9k(hors9e(changed))).toEqual([]);
   });
 
   it('plan.json ne contient que des pixels : aucune clé d\'unité de jeu, tout tient dans la boîte englobante', () => {

@@ -79,7 +79,7 @@ async function partie(profil, seed) {
   await servir('armes-partie.json', ARMES);
   await servir('waves.json', WAVES);
   await servir('enemies.json', ENEMIES);
-  await page.goto(`${BASE}/jeu.html?test=1&seed=${seed}&wave=${DEPART}${DEPART > 1 ? '&planks=0' : ''}${LVL[profil]}${EXTRA}`);
+  await page.goto(`${BASE}/jeu.html?test=1&seed=${seed}&wave=${DEPART}${DEPART > 1 ? '&planks=0' : ''}${ZOLLARS_DEPART > 0 ? `&zollars=${ZOLLARS_DEPART}` : ''}${LVL[profil]}${EXTRA}`);
   await page.waitForFunction(() => window.__zs, null, { timeout: 180000 });
   const r = await page.evaluate(({ max, achats, visee, poste, bloque, armeDepart, zollarsDepart, repare, zonesRepare }) => {
     const zs = window.__zs;
@@ -104,7 +104,7 @@ async function partie(profil, seed) {
           if (byWave[wave]) byWave[wave].fin = t;
           wave = s.waves.wave;
           W(wave).debut = t;
-          W(wave).zollarsDebut = s.economy.earnedRun - depense;
+          W(wave).zollarsDebut = s.caisses?.liste?.length ? s.caisses.zollars : s.economy.earnedRun - depense;
         }
         const ww = W(wave);
         if (poste && !poste.fait && s.zones?.doors?.find((d) => d.id === 'porte-1')?.open) { zs.setPlayer(poste[0], poste[1]); poste.fait = true; }
@@ -165,24 +165,47 @@ async function partie(profil, seed) {
             else if (t - suivi.t > 1) { zs.setPlayer(but.x, but.y); poses += 1; suivi = null; }
           } else suivi = null;
         }
-        // Achats : la prochaine arme du plan dès sa vague et dès que les Zollars suffisent.
-        const zollars = s.economy.earnedRun - depense;
+        // Achats : la prochaine arme du plan dès sa vague et dès que les Zollars suffisent. Depuis le lot 9k-C, l'achat se fait dans le jeu : le joueur
+        // est posé à la caisse (à son étage), achète (__zs.acheter : Zollars retirés par la partie), puis revient où il était (trajet non joué).
+        // Sans caisses (tables d'essai, partie A) : arme donnée par le débogage et dépense tenue par le script.
+        const enJeu = Boolean(s.caisses?.liste?.length);
+        const zollars = enJeu ? s.caisses.zollars : s.economy.earnedRun - depense;
+        const aLaCaisse = (arme) => {
+          const c = s.caisses.liste.find((x) => x.arme === arme);
+          if (!c) return { ok: false };
+          const etage = s.floor?.current ?? 'rdc';
+          if (c.floor !== etage) zs.setFloor(c.floor === 'etage' ? 1 : 0);
+          const essais = c.w < c.h ? [[c.x - 45, c.y + c.h / 2], [c.x + c.w + 45, c.y + c.h / 2]] : [[c.x + c.w / 2, c.y + c.h + 45], [c.x + c.w / 2, c.y - 45]];
+          let r = { ok: false };
+          for (const [x, y] of essais) {
+            zs.setPlayer(x, y);
+            r = zs.acheter();
+            if (r.ok || r.etat) break;
+          }
+          if (c.floor !== etage) zs.setFloor(etage === 'etage' ? 1 : 0);
+          zs.setPlayer(p.x, p.y);
+          return r;
+        };
         const suivant = achats.find((x) => !faits.some((f) => f.arme === x.arme));
         const debout = p.down.state === 'debout';
-        if (debout && suivant && wave >= suivant.vague && zollars >= suivant.prix && a && !a.sortie) {
-          zs.donnerArme(suivant.arme);
-          depense += suivant.prix;
-          faits.push({ arme: suivant.arme, vague: wave, t, zollars, prix: suivant.prix });
+        if (debout && suivant && wave >= suivant.vague && zollars >= suivant.prix && a && !a.sortie && !a.enRecharge) {
+          const ok = enJeu ? aLaCaisse(suivant.arme).ok : (zs.donnerArme(suivant.arme), true);
+          if (ok) {
+            if (!enJeu) depense += suivant.prix;
+            faits.push({ arme: suivant.arme, vague: wave, t, zollars, prix: suivant.prix });
+          }
         } else if (debout && a && a.emplacements.length > 1 && !a.sortie) {
           // Arme achetée à sec : rachat si possible (puis on la reprend), sinon le Colt.
           const achetee = a.emplacements[1];
           const plan = achats.find((x) => x.arme === achetee.id);
           const sec = achetee.chargeur <= 0 && (achetee.reserve ?? Infinity) <= 0 && achetee.recharge === null;
           if (sec && plan && zollars >= plan.rachat) {
-            zs.remplirMunitions();
-            depense += plan.rachat;
-            rachats.push({ arme: achetee.id, vague: wave, t, prix: plan.rachat });
-            if (a.actif !== achetee.id) zs.changerArme(1);
+            const ok = enJeu ? aLaCaisse(achetee.id).ok : (zs.remplirMunitions(), true);
+            if (ok) {
+              if (!enJeu) depense += plan.rachat;
+              rachats.push({ arme: achetee.id, vague: wave, t, prix: plan.rachat });
+              if (!enJeu && a.actif !== achetee.id) zs.changerArme(1);
+            } else if (a.actif === achetee.id) zs.changerArme(0);
           } else if (sec && a.actif === achetee.id) zs.changerArme(0);
         }
       }
@@ -191,7 +214,7 @@ async function partie(profil, seed) {
     }
     s = zs.getState();
     if (byWave[wave]) byWave[wave].fin = s.time;
-    return { temps: s.time, mort: s.dead, monde: s.worldOver, bloquee, poses, reparees, vague: s.waves.wave, tues: s.kills, gagne: s.economy.earnedRun, parSorte: s.economy.byKind, depense, achats: faits, rachats, byWave };
+    return { temps: s.time, mort: s.dead, monde: s.worldOver, bloquee, poses, reparees, vague: s.waves.wave, tues: s.kills, gagne: s.economy.earnedRun, parSorte: s.economy.byKind, depense: s.caisses?.liste?.length ? s.caisses.depense : depense, achats: faits, rachats, byWave };
   }, { max: MAX, achats: ACHATS, visee: VISEE, poste: POSTE, bloque: BLOQUE, armeDepart: ARME_DEPART, zollarsDepart: ZOLLARS_DEPART, repare: REPARE, zonesRepare: ZONES_REPARE });
   await context.close();
   return { profil, seed, ...r };
