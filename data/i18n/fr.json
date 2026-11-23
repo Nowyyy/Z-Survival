@@ -949,5 +949,20 @@
   "game.menu.resultat.perso.n.doublon.un": "1 déjà obtenu (un niveau de plus)",
   "game.menu.resultat.perso.n.doublon": "{n} déjà obtenus (un niveau de plus chacun)",
   "game.menu.resultat.tenue.nouvelle": "Tenue · nouvelle",
-  "game.menu.resultat.tenue.doublon": "Tenue · déjà obtenue"
+  "game.menu.resultat.tenue.doublon": "Tenue · déjà obtenue",
+  "game.achat.acheter": "Acheter {arme} — {prix} Z",
+  "game.achat.munitions": "Munitions — {prix} Z",
+  "game.achat.manque": "Il manque {n} Z",
+  "game.achat.refus.recharge": "impossible pendant un rechargement",
+  "game.achat.refus.changement": "impossible pendant un changement d'arme",
+  "game.achat.refus.terre": "impossible à terre",
+  "game.achat.refus.plein": "munitions déjà pleines",
+  "game.achat.refus.zollars": "pas assez de Zollars",
+  "game.achat.touche": " (B)",
+  "game.achat.bouton": "Acheter",
+  "game.achat.boutonMunitions": "Munitions",
+  "game.achat.prixCourt": "{prix} Z",
+  "game.achat.annonceArme": "{arme} achetée",
+  "game.achat.annonceMunitions": "Munitions de {arme} pleines",
+  "game.debug.armes.ouvertes": "Armes ouvertes (toutes les caisses)"
 }

@@ -1,0 +1,44 @@
+{
+ "_provisoire": "Lot 9k : caisses d'armes de la carte 1 (choix du propriétaire au GO : places A de la proposition, caisses-armes.proposition.json ; étage de droite : place B, la place A laissait 25 entre la caisse et le muret E2, interstice interdit par la règle des couloirs). Une caisse par pièce qui s'ouvre, contre un mur : rectangle solide (x, y, w, h, unités du jeu, la caisse du lot 9c : 70 × 30, 22 de haut ; tirs par-dessus : tirs-traversables.json), face : côté où s'ouvre la caisse (vers la pièce : w, e, n, s), arme vendue (identifiant de data/game/armes-partie.json, prix et rachat dans ce fichier), piece : zone de zones.json dont l'ouverture rend la caisse utilisable. npm run carte en fait des obstacles (kind « caisse-arme ») ; aucun objet du décor des murs n'est posé devant. Modifiable par le propriétaire, puis npm run carte.",
+ "caisses": [
+  {
+   "id": "caisse-winchester1897",
+   "piece": "aile",
+   "floor": "rdc",
+   "arme": "winchester1897",
+   "x": 1440,
+   "y": 1205,
+   "w": 30,
+   "h": 70,
+   "face": "w",
+   "hauteur": 22,
+   "place": "aile-A"
+  },
+  {
+   "id": "caisse-kar98k",
+   "piece": "etage-gauche",
+   "floor": "etage",
+   "arme": "kar98k",
+   "x": 1440,
+   "y": 1491,
+   "w": 30,
+   "h": 70,
+   "face": "w",
+   "hauteur": 22,
+   "place": "etage-gauche-A"
+  },
+  {
+   "id": "caisse-thompson",
+   "piece": "etage-droite",
+   "floor": "etage",
+   "arme": "thompson",
+   "x": 2215,
+   "y": 2300,
+   "w": 30,
+   "h": 70,
+   "face": "w",
+   "hauteur": 22,
+   "place": "etage-droite-B"
+  }
+ ]
+}

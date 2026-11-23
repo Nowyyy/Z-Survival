@@ -1,0 +1,33 @@
+{
+ "_provisoire": "Lot 9k : valeurs d'avant le lot (table des armes et vie des zombies de origin/dev 5d3d766), lues seulement sous ?test=1&equilibrage=avant (réglage de test, jamais mémorisé) avec la carte sans caisses d'armes : la trace logique y retrouve la référence du lot 9j (scripts/perf/trace-reference.json d'avant le lot 9k). Ne pas modifier.",
+ "armes": {
+  "m1911": {
+   "degats": 25,
+   "prix": 0,
+   "rachat": null
+  },
+  "winchester1897": {
+   "degats": 55,
+   "prix": 900,
+   "rachat": null
+  },
+  "kar98k": {
+   "degats": 320,
+   "prix": 900,
+   "rachat": null
+  },
+  "thompson": {
+   "degats": 90,
+   "prix": 2500,
+   "rachat": null
+  }
+ },
+ "waves": {
+  "hp": {
+   "hpLinearPerRound": 0.5,
+   "hpExpStartRound": 10,
+   "hpExpFactor": 1.1,
+   "hpCap": 30
+  }
+ }
+}

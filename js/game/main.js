@@ -131,7 +131,15 @@ export async function demarrerPartie() {
   // Lot 8j : objets traversables par les tirs (tirs.world.json de la carte, npm run carte) ; ?test=1&tirtraverse=0 : liste vide (jamais mémorisé).
   const tirsJson = mapId === 'salle' || (testMode && query.get('tirtraverse') === '0') ? null : await loadJson(`${mapDir}/tirs.world.json`).catch(() => null);
   const reglagesPartie = await loadJson('data/game/reglages-partie.json').catch(() => ({})); // lot 8j : message des portes, sons des zombies
-  const armes = await chargerArmes(reg); // lot 9e : armes de la partie (table, modèles, poses, couleurs), chargées avec la partie seulement
+  // Lot 9k : ?test=1&equilibrage=avant : table des armes, vie des zombies et carte d'avant le lot (sans caisses d'armes ; valeurs de
+  // data/game/equilibrage-avant-9k.json) ; réglage de test, jamais mémorisé : référence de la trace logique du lot 9j.
+  const equilibrageAvant = testMode && query.get('equilibrage') === 'avant';
+  const avant9k = equilibrageAvant ? await loadJson('data/game/equilibrage-avant-9k.json') : null;
+  const armes = await chargerArmes(reg, { avant: avant9k }); // lot 9e : armes de la partie (table, modèles, poses, couleurs), chargées avec la partie seulement
+  // Lot 9k : caisses d'armes de la carte (caisses-armes.json ; obstacles de npm run carte) ; aucune dans l'ancienne salle ni sous equilibrage=avant.
+  const caissesJson = mapId === 'salle' || equilibrageAvant ? null : await loadJson(`${mapDir}/caisses-armes.json`).catch(() => null);
+  // Lot 9k : ?test=1&zollars=N : Zollars de départ de la partie (tests ; la sauvegarde de ?test=1 est en mémoire, rien n'est écrit).
+  const zollarsParam = testMode && /^\d{1,7}$/.test(query.get('zollars') ?? '') ? Number(query.get('zollars')) : null;
   const decorInterieur = detail && gfxLoad.decor !== 'reduit' && mapId !== 'salle' ? await loadJson(`${mapDir}/decor-interieur.world.json`).catch(() => null) : null;
   // Retours du propriétaire : mobilier dessiné d'après le modèle (mobilier.world.json, avec le détail).
   const mobilier = detail && mapId !== 'salle' ? await loadJson(`${mapDir}/mobilier.world.json`).catch(() => null) : null;
@@ -222,6 +230,10 @@ export async function demarrerPartie() {
   render.mobilierCouleurs = mobilier?.epoque?.couleurs ?? null;
   render.escaliersVariante = mobilier?.epoque?.escaliers ?? null; // retours du propriétaire : éboulis des escaliers fermés
   render.mobilierMurs = mobilier?.epoque?.mursActifs === true && Array.isArray(mobilier.epoque.murs) ? mobilier.epoque.murs : null; // retours du propriétaire : décor des murs
+  if (equilibrageAvant) {
+    for (const w of [world, upperWorld]) if (w && Array.isArray(w.obstacles)) w.obstacles = w.obstacles.filter((o) => o.kind !== 'caisse-arme');
+    if (avant9k?.waves?.hp) wavesCfg.hp = { ...wavesCfg.hp, ...avant9k.waves.hp };
+  }
   if (decorAvant) {
     delete decor.interieur;
     for (const w of [world, upperWorld]) if (w && Array.isArray(w.obstacles)) w.obstacles = w.obstacles.filter((o) => o.kind !== 'epoque');
@@ -276,11 +288,14 @@ export async function demarrerPartie() {
     variants,
     persos, // lot 9d : chargeur des personnages de cette partie (game.js)
     armes, // lot 9e : données des armes (js/game/armes-chargement.js) ou null
+    caisses: caissesJson, // lot 9k : caisses d'armes de la carte (caisses-armes.json) ou null
     perf: fpsMode ? { flowSum: 0, flowCount: 0, flowMax: 0, windowsMs: 0, floorsMs: 0 } : null,
     params: {
       test: testMode,
       corpsAvant, // lot 9e : ?test=1&corps=avant (gabarits, corps et pistolet d'avant : référence de la trace)
       munitionsIllimitees: testMode && query.get('munitions') === 'illimitees', // lot 9e : ?test=1&munitions=illimitees (sans rechargement : référence de la trace)
+      equilibrageAvant, // lot 9k : ?test=1&equilibrage=avant (armes, zombies et carte d'avant le lot : référence de la trace)
+      decorAvant, // lot 9k : sous ?test=1&decor=avant, les caisses d'armes ne sont pas dessinées (références de rendu d'avant le décor d'époque)
       nospawn: query.get('nospawn') === '1',
       wave: waveParam(query.get('wave')),
       // ?endless=1 (lot 3c) : les manches continuent après la manche 40, sans fin de monde ; fonctionne sans ?test=1, n'expose rien et n'est jamais mémorisé.
@@ -299,7 +314,7 @@ export async function demarrerPartie() {
     seedRun: 0,
     levels: niveauxPartie(readLevels(search, statsCfg, loadedSave.status === 'ok' ? { stats: loadedSave.save.niveaux } : null)),
     repository,
-    mode: saveMode,
+    mode: zollarsParam === null ? saveMode : { ...saveMode, money: zollarsParam }, // lot 9k : ?test=1&zollars=N
     economy: makeEconomy(economyCfg, enemies),
     saveCfg,
     override: {},
@@ -375,6 +390,7 @@ export async function demarrerPartie() {
       else if (name === 'changer') game?.changerArme(); // lot 9e : touche E, molette
       else if (name === 'arme1') game?.changerArme(0); // lot 9e : touche 1 (Colt)
       else if (name === 'arme2') game?.changerArme(1); // lot 9e : touche 2 (arme achetée)
+      else if (name === 'acheter') game?.acheter(); // lot 9k : touche B (achat ou rachat à la caisse proche)
     },
   });
   reg.ajouter(() => ctx.input.destroy());
@@ -386,6 +402,7 @@ export async function demarrerPartie() {
     donner: (id) => game?.donnerArme(id),
     remplir: () => game?.remplirMunitions(),
     illimitees: (on) => game?.munitionsIllimitees(on),
+    ouvertes: (on) => game?.armesOuvertes(on), // lot 9k : toutes les caisses d'armes actives
     etat: () => game?.snapshotArmes?.() ?? null,
   } : null;
   ctx.ui.bindDebug({ allowed: CANAUX_DEBUG.includes(canal), search: location.search, planksMax: windowsCfg.planks, armes: armesDebug });

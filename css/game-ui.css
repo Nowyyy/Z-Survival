@@ -1159,3 +1159,92 @@
   }
 }
 
+
+/* ---------- Lot 9k : achat d'armes sur la carte (js/game/achat-ui.js) ---------- */
+/* Message à deux cases d'une caisse active, sous le joueur et au-dessus du message des portes (66 %) et des emplacements d'armes, aspect des blocs du HUD (suit --ui-k), sans transition (blocs fixes) ;
+   grisé quand l'achat est impossible (manque de Zollars, rechargement, à terre…). Touche « (B) » masquée sur écran tactile : le bouton la remplace. */
+.achat-message {
+  position: absolute;
+  top: 62%;
+  left: 50%;
+  z-index: 2;
+  box-sizing: border-box;
+  width: max-content;
+  max-width: calc(100% - 2 * var(--game-margin));
+  margin: 0;
+  padding: 0.3em 0.7em;
+  border: 1px solid var(--hud-border);
+  border-radius: var(--hud-radius);
+  background: color-mix(in srgb, var(--hud-bg) calc(var(--hud-bg-alpha) * 100%), transparent);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  font-size: var(--hud-fs);
+  font-weight: var(--font-weight-bold);
+  line-height: 1.2;
+  text-align: center;
+  pointer-events: none;
+  transform: translateX(-50%);
+}
+
+.achat-message[data-visible="false"] {
+  display: none;
+}
+
+.achat-message[data-possible="false"] {
+  color: var(--color-text-muted);
+}
+
+.achat-touche {
+  color: var(--color-money);
+}
+
+/* Bouton tactile contextuel : au-dessus des emplacements d'armes, centré, cible d'au moins 44 px (--hud-target). */
+.achat-bouton {
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--game-margin) + var(--safe-bottom) + var(--hud-target) + var(--hud-gap) * 2);
+  z-index: 3;
+  display: none;
+  box-sizing: border-box;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: calc(var(--hud-target) * 2);
+  min-height: var(--hud-target);
+  padding: 0 var(--hud-gap);
+  border: 2px solid var(--color-text);
+  border-radius: var(--hud-radius);
+  background: var(--color-action);
+  color: var(--color-on-action);
+  font-family: var(--font-sans);
+  font-size: var(--hud-fs);
+  font-weight: var(--font-weight-bold);
+  line-height: 1.1;
+  transform: translateX(-50%);
+  touch-action: manipulation;
+}
+
+#game-root[data-input="touch"] .achat-bouton:not([hidden]) {
+  display: flex;
+}
+
+.achat-bouton[data-possible="false"] {
+  border-color: var(--hud-border);
+  background: color-mix(in srgb, var(--hud-bg) calc(var(--hud-bg-alpha) * 100%), transparent);
+  color: var(--color-text-muted);
+}
+
+.achat-bouton:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+@media (hover: none) and (pointer: coarse) {
+  .achat-touche {
+    display: none;
+  }
+}
+
+#game-root[data-input="touch"] .achat-touche {
+  display: none;
+}

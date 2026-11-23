@@ -211,6 +211,23 @@ export function generateMapFiles(id = 'rez-de-chaussee') {
     result.interieurReport = { objets: ctl.objets.length, solides: ctl.objets.filter((o) => o.collision).length, triangles: out.decor.interieur.triangles, coupes: Object.values(ctl.chemins).flat().filter((c) => c.coupees > 0).length, detour: Math.max(0, ...Object.values(ctl.chemins).flat().map((c) => c.allongementMax)), problems: ctl.problemes };
     result.problems.push(...ctl.problemes.map((v) => `intérieur d'époque : ${v}`));
   }
+  // Lot 9k : caisses d'armes (caisses-armes.json de la carte) : obstacles solides de leur étage (kind « caisse-arme », rectangle de la caisse, 22 de
+  // haut ; tirs par-dessus d'après tirs-traversables.json), posés avant le décor des murs (aucun objet devant elles) ; retirés par la partie sous
+  // ?test=1&equilibrage=avant.
+  result.caissesReport = null;
+  const caissesUrl = new URL(`${id}/caisses-armes.json`, ROOT);
+  if (existsSync(caissesUrl)) {
+    const caisses = JSON.parse(readFileSync(caissesUrl, 'utf8')).caisses ?? [];
+    for (const c of caisses) {
+      const w = c.floor === 'etage' ? etageWorldOut : out.world;
+      if (!w) { result.problems.push(`caisses d'armes : étage ${c.floor} absent (${c.id})`); continue; }
+      if (w.obstacles.some((o) => o.id === c.id)) { result.problems.push(`caisses d'armes : identifiant en double ${c.id}`); continue; }
+      w.obstacles.push({ id: c.id, x: c.x, y: c.y, w: c.w, h: c.h, hauteur: c.hauteur, kind: 'caisse-arme' });
+    }
+    result.world = `${formatJson(out.world)}\n`;
+    if (etageWorldOut) result.etage = `${formatJson(etageWorldOut)}\n`;
+    result.caissesReport = { caisses: caisses.length };
+  }
   // Lot 8j : objets traversables par les tirs (balles, laser) d'après data/game/tirs-traversables.json (liste du propriétaire, par carte et par
   // étage) : identifiants vérifiés (meubles, décor solide, grilles posées dans un mur ; jamais pilier, escalier ni objet de 100 de haut ou plus).
   // Écrit tirs.world.json (jamais édité à la main), lu par la partie (js/core/tir-traverse.js).

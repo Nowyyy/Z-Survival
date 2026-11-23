@@ -419,7 +419,7 @@ test.describe('vagues, interface, caméra, budget', () => {
     });
     testInfo.annotations.push({ type: 'rendu', description: `${r.calls} appels, ${r.triangles} triangles` });
     console.log(`BUDGET lot 3b : ${r.calls} appels de dessin, ${r.triangles} triangles (référence lot 5e, variante A : 53 et 19 951)`);
-    expect(r.calls).toBeLessThanOrEqual(53 + 3);
+    expect(r.calls).toBeLessThanOrEqual(53 + 3 + 3); // lot 9k : + 3 appels au plus (caisse d'armes de l'aile en vue : caisse, arme couchée, craie ; budget du lot 9k)
     expect(r.triangles).toBeLessThanOrEqual(19951 + 100);
   });
 });

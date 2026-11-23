@@ -7,8 +7,9 @@ import { lireTable, paletteArmes, sonsChoisis } from '../core/armes/partie.js';
 
 const json = (path) => fetch(path).then((r) => (r.ok ? r.json() : Promise.reject(new Error(`${path} : ${r.status}`))));
 
-// reg : registre de libération de la partie (js/game/liberation.js). → { table, donnees, choix, poses, palette } ou null (données illisibles).
-export async function chargerArmes(reg) {
+// reg : registre de libération de la partie (js/game/liberation.js) ; avant (lot 9k, ?test=1&equilibrage=avant) : valeurs d'avant le lot
+// (data/game/equilibrage-avant-9k.json → armes : dégâts, prix, rachat) posées sur la table. → { table, donnees, choix, poses, palette } ou null.
+export async function chargerArmes(reg, { avant = null } = {}) {
   try {
     const [tableJson, armesJson, choixJson, poses, css, sonsJson] = await Promise.all([
       json('data/game/armes-partie.json'),
@@ -26,6 +27,7 @@ export async function chargerArmes(reg) {
     link.dataset.armes = '9e';
     document.head.append(link);
     reg?.ajouter(() => link.remove());
+    for (const [id, v] of Object.entries(avant?.armes ?? {})) if (tableJson.armes?.[id]) Object.assign(tableJson.armes[id], v);
     const table = lireTable(tableJson);
     return { table, donnees: avecEchelle(base, choix.echelle), choix, poses, palette: paletteArmes(css), sons: sonsChoisis(sonsJson, table.actives) };
   } catch {

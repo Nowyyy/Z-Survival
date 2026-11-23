@@ -51,6 +51,7 @@ export function createBank({ repository, mode, economy, clock, wall, reducedMoti
   const loaded = repository.load();
   let saved = loaded.save;
   let ledger = createLedger(); // monnaie jaune de la partie (jamais écrite)
+  let depenseRun = 0; // lot 9k : Zollars dépensés dans la partie (armes et munitions des caisses ; jamais écrits)
   let pending = vide(); // ce qui attend d'être écrit (médailles, diamants, statistiques, record)
   let opId = null; // identifiant de l'opération en attente (gardé tant qu'elle n'est pas écrite : jamais deux fois)
   let seq = 0;
@@ -150,7 +151,7 @@ export function createBank({ repository, mode, economy, clock, wall, reducedMoti
   const diamantsTotal = () => Object.values(run.diamants).reduce((n, v) => n + v, 0);
 
   // Monnaie jaune de la partie (départ ?money=N en mode essai).
-  const balance = () => Math.min(economy.maxMoney, departJaune + ledger.earnedRun);
+  const balance = () => Math.max(0, Math.min(economy.maxMoney, departJaune + ledger.earnedRun) - depenseRun); // lot 9k : moins les dépenses de la partie
   // Soldes des médailles et des diamants : progression lue (ou écrite) plus ce qui attend d'être écrit.
   const soldeMedailles = () => Math.min(economy.maxMedailles ?? 9_999_999, solde(saved) + pending.medailles);
   const soldeDiam = () => Math.min(economy.maxDiamants ?? 9_999_999, soldeDiamants(saved) + pending.diamants + pending.prev);
@@ -271,6 +272,7 @@ export function createBank({ repository, mode, economy, clock, wall, reducedMoti
       flush('restart');
       pending = { ...sansGains(pending), ...(dus ?? {}) }; // une partie abandonnée ne lègue jamais ses gains à la suivante (une partie finie, oui)
       ledger = createLedger();
+      depenseRun = 0;
       run.started = false;
       run.ended = false;
       run.baseline = 0;
@@ -300,6 +302,13 @@ export function createBank({ repository, mode, economy, clock, wall, reducedMoti
       gainMedaillesView = moneyGainView(gainsMedailles, now, economy, gainMedaillesView, { reducedMotion });
     },
     giveMoney: (n) => addGain('test', n),
+    // Lot 9k : dépense de Zollars (achat ou rachat à une caisse d'armes) : entier > 0 au plus égal au solde, sinon refusée (faux). Rien n'est écrit.
+    depenser(n) {
+      if (run.ended || !Number.isInteger(n) || n <= 0 || n > balance()) return false;
+      depenseRun += n;
+      return true;
+    },
+    depense: () => depenseRun,
     balance,
     soldeMedailles,
     // Lot 8k : solde des diamants (écrit, plus ce qui attend) ; dernier gain { n, gain } pour l'affichage de la partie ; diamants de la partie.

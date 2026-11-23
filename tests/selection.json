@@ -975,14 +975,19 @@
         "data/game/sons-armes.json",
         "js/game/armes-chargement.js",
         "js/game/armes-ui.js",
-        "js/game/armes-tombes.js"
+        "js/game/armes-tombes.js",
+        "js/game/achat-ui.js",
+        "js/game/caisses-armes-mesh.js",
+        "js/armes/rendu.js",
+        "data/game/equilibrage-avant-9k.json"
       ],
-      "dependances": ["interface", "noyau", "personnages", "textes"],
+      "dependances": ["economie", "interface", "noyau", "personnages", "textes"],
       "vitest": [
         "tests/unit/armes.test.js",
-        "tests/unit/armes-partie.test.js"
+        "tests/unit/armes-partie.test.js",
+        "tests/unit/achat-armes.test.js"
       ],
-      "e2e": ["tests/e2e/armes-atelier.spec.js", "tests/e2e/armes-jeu.spec.js"],
+      "e2e": ["tests/e2e/achat-armes.spec.js", "tests/e2e/armes-atelier.spec.js", "tests/e2e/armes-jeu.spec.js"],
       "complet": []
     },
     {
@@ -1013,7 +1018,6 @@
         "js/armes/atelier-caisses.js",
         "data/game/armes-partie.proposition.json",
         "data/game/waves.proposition.json",
-        "js/armes/rendu.js",
         "js/armes/tenue.js",
         "js/armes/poses-calcul.js",
         "data/i18n/atelier-armes.json",

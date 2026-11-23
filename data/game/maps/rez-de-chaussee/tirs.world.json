@@ -33,7 +33,8 @@
       "P3",
       "M29",
       "brancard-salle-brancard",
-      "caisse-medicale-salle-caisse"
+      "caisse-medicale-salle-caisse",
+      "caisse-winchester1897"
     ],
     "grilles": [
       {
@@ -50,5 +51,19 @@
       }
     ]
   },
-  "etage": { "ids": ["Q2", "Q3", "Q4", "Q5", "Q6", "bidon-etage", "brancard-etage-brancard", "caisse-medicale-etage-caisse"], "grilles": [] }
+  "etage": {
+    "ids": [
+      "Q2",
+      "Q3",
+      "Q4",
+      "Q5",
+      "Q6",
+      "bidon-etage",
+      "brancard-etage-brancard",
+      "caisse-medicale-etage-caisse",
+      "caisse-kar98k",
+      "caisse-thompson"
+    ],
+    "grilles": []
+  }
 }

@@ -143,7 +143,7 @@ function icon(d) {
 
 // dict : textes (fr.json) ; search : adresse actuelle (location.search) ; planksMax : planches d'une fenêtre (windows.json) ; navigate(url) : rechargement
 // réel (location.assign) ; onClose() : retour à la pause.
-// armes (lot 9e, facultatif) : { liste: [{ id, nom }], donner(id), remplir(), illimitees(on), etat() → { actif, illimite } } : section « Armes »,
+// armes (lot 9e, facultatif) : { liste: [{ id, nom }], donner(id), remplir(), illimitees(on), ouvertes(on) (lot 9k), etat() → { actif, illimite, ouvertes } } : section « Armes »,
 // effet immédiat sur la partie en cours (aucun rechargement de la page, rien n'est écrit).
 export function createDebugMenu({ dict, search = '', planksMax = PLANKS_MAX, armes = null, navigate = (url) => globalThis.location.assign(url), onClose = () => {}, root = document.body }) {
   const t = (k) => dict[k] ?? k;
@@ -328,6 +328,8 @@ export function createDebugMenu({ dict, search = '', planksMax = PLANKS_MAX, arm
     boxRemplir.append(remplir);
     row(sections.armes, 'remplir', 'game.debug.armes.remplir', boxRemplir);
     row(sections.armes, 'illimitees', 'game.debug.armes.illimitees', choice('illimitees', yesNo, () => etat().illimite === true, (v) => armes.illimitees(v)));
+    // Lot 9k : « armes ouvertes » : toutes les caisses d'armes actives (pièces fermées comprises), rien n'est écrit.
+    if (armes.ouvertes) row(sections.armes, 'armes-ouvertes', 'game.debug.armes.ouvertes', choice('armes-ouvertes', yesNo, () => etat().ouvertes === true, (v) => armes.ouvertes(v)));
   }
 
   // Pied : adresse obtenue, actions et confirmation.

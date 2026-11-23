@@ -42,7 +42,7 @@ export function emplacementsCaisses() {
     const murs = segmentRects(w.walls, w.wallThickness);
     const portes = zw.doors.flatMap((d) => [...(d.blocks ?? []).filter((b) => b.floor === zone.floor).flatMap((b) => [b.rect, b.opening && { x: Math.min(b.opening.x1, b.opening.x2), y: Math.min(b.opening.y1, b.opening.y2), w: Math.abs(b.opening.x2 - b.opening.x1) || 1, h: Math.abs(b.opening.y2 - b.opening.y1) || 1 }]), d.floor === zone.floor && d.opening ? { x: Math.min(d.opening.x1, d.opening.x2), y: Math.min(d.opening.y1, d.opening.y2), w: Math.abs(d.opening.x2 - d.opening.x1) || 1, h: Math.abs(d.opening.y2 - d.opening.y1) || 1 } : null]).filter(Boolean);
     const escaliers = (w.stairs ?? []).filter((s) => Number.isFinite(s.w));
-    const meubles = w.obstacles ?? [];
+    const meubles = (w.obstacles ?? []).filter((o) => o.kind !== 'caisse-arme'); // les caisses déjà posées ne comptent pas
     const lp = lampes.filter((l) => l.floor === zone.floor);
     const dm = decorMurs.filter((d) => d.floor === zone.floor);
     const liste = [];
@@ -67,6 +67,8 @@ export function emplacementsCaisses() {
           const remplace = dm.filter((d) => { const r = rectMur(d); return chevauche(rect, { x: r.x - 10, y: r.y - 10, w: r.w + 20, h: r.h + 20 }); }).map((d) => `${d.id} (${d.type})`);
           const dDecor = Math.min(Infinity, ...dm.filter((d) => !remplace.some((x) => x.startsWith(d.id))).map((d) => gapPt(rect, d)));
           if (meubles.some((o) => chevauche(rect, o))) continue;
+          // Interstice : contre chaque meuble, contact ou 50 au moins (règle des couloirs de la carte, etage-donnees.test.js).
+          if (meubles.some((o) => { const g = gap(rect, o); return g > ECARTS.contact && g < ECARTS.meuble; })) continue;
           if (dFen < ECARTS.fenetre || dPorte < ECARTS.porte || dEsc < ECARTS.escalier || dLampe < ECARTS.lampe || (dMeuble > ECARTS.contact && dMeuble < ECARTS.meuble) || dDecor < ECARTS.decorMur) continue;
           liste.push({ piece: zid, arme, floor: zone.floor, mur: m.id ?? null, face, x: r1(c.x), y: r1(c.y), rect: { x: r1(rect.x), y: r1(rect.y), w: rect.w, h: rect.h }, distances: { fenetre: r1(dFen), porte: Number.isFinite(dPorte) ? r1(dPorte) : null, escalier: Number.isFinite(dEsc) ? r1(dEsc) : null, lampe: Number.isFinite(dLampe) ? r1(dLampe) : null, meuble: Number.isFinite(dMeuble) ? r1(dMeuble) : null, decorMur: Number.isFinite(dDecor) ? r1(dDecor) : null }, remplace });
         }

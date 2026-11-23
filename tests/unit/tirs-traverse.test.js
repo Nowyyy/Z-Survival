@@ -45,9 +45,9 @@ describe('données : liste du propriétaire et fichier dérivé', () => {
     expect(gen.tirsReport.problems).toEqual([]);
     const liste = json('data/game/tirs-traversables.json').cartes['rez-de-chaussee'];
     expect([...TIRS.rdc.ids, ...TIRS.rdc.grilles.map((g) => g.id)].sort()).toEqual([...liste.rdc].sort());
-    expect(TIRS.rdc.ids).toHaveLength(32); // lot 9i : + brancard-salle-brancard et caisse-medicale-salle-caisse (intérieur d'époque, dessinés sous 43) ; lot 9h (retours) : + bidon-salle, bidon-poche (28 de haut), P3 (gravats, 35) et M29 (caisses, 37), pièces basses de meubles fusionnés ; lot 9a-I : + sacs-1, sacs-2 (18 de haut) ; lot 9h : + 13 objets d'époque dessinés sous l'arme (véhicules aux places des voitures, voiture en flammes, ailes et débris de l'avion, hérissons, barbelés, jerrycans, caisses)
+    expect(TIRS.rdc.ids).toHaveLength(33); // lot 9k : + caisse-winchester1897 (caisse d'armes, 22 de haut) ; lot 9i : + brancard-salle-brancard et caisse-medicale-salle-caisse (intérieur d'époque, dessinés sous 43) ; lot 9h (retours) : + bidon-salle, bidon-poche (28 de haut), P3 (gravats, 35) et M29 (caisses, 37), pièces basses de meubles fusionnés ; lot 9a-I : + sacs-1, sacs-2 (18 de haut) ; lot 9h : + 13 objets d'époque dessinés sous l'arme (véhicules aux places des voitures, voiture en flammes, ailes et débris de l'avion, hérissons, barbelés, jerrycans, caisses)
     expect(TIRS.rdc.grilles.map((g) => g.id)).toEqual(['grille-F7', 'grille-F8']);
-    expect(TIRS.etage.ids).toHaveLength(8); // lot 9h (retours) : + bidon-etage ; lot 9i : + brancard-etage-brancard, caisse-medicale-etage-caisse
+    expect(TIRS.etage.ids).toHaveLength(10); // lot 9k : + caisse-kar98k, caisse-thompson (caisses d'armes, 22 de haut) ; lot 9h (retours) : + bidon-etage ; lot 9i : + brancard-etage-brancard, caisse-medicale-etage-caisse
     // Chaque meuble listé est DESSINÉ plus bas que l'arme (mobilier.world.json, render.json → gunHeight 43) ; aucun pilier ni escalier.
     const arme = json('data/game/render.json').gunHeight;
     expect(arme).toBe(43);
