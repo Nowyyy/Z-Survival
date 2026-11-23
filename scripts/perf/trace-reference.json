@@ -1,7 +1,7 @@
 {
  "_provisoire": "Référence de scripts/perf/trace-logique.mjs (lot 9j) : deux exécutions de suite, identiques à chaque pas, sur la base nommée. Ne jamais éditer à la main : relancer le script (--enregistre).",
- "date": "2026-11-22",
- "base": "de25a4f0d954dbf80e813fa05ca61792d1ebc6dc",
+ "date": "2026-11-23",
+ "base": "d020c658049cf78d6726c05160702378b36cde41",
  "pas": 600,
  "champs": [
   "time",
@@ -33,61 +33,61 @@
    "id": "1",
    "nom": "R1 manche 5 : zombies, tirs, siège, réparation",
    "pas": 600,
-   "finale": "630b3fed36f4edfab67a6cd915793a1ddc9dd81d28fe5f51e7f898d3614427fb",
-   "finaleLogique": "4eeb8ae008646df5876d0a45a4f293f1dc6681fd6712c889d9d5050c6b12e0c3",
-   "chaine": "ccf4cd0615949688f289ddd70715678beb385a7b247ff1bcea28c92afba9801c",
-   "chaineLogique": "26dc34ce35f30b80dface3f63b96e2b9ed39de8b274fa16c60529db802921639",
-   "chainePose": "c88cdc622ec537ee0f23adbec019d623510ec4d487567ba6187c0a7484d4b57a"
+   "finale": "d8384f0f6554fda4615da95b36ba6be92ac92e712874becad9eb16a0d6592cdc",
+   "finaleLogique": "406e9dfe7f6ea7e72ef194a024730c8d6aa11214926b706cb17cf5abed588123",
+   "chaine": "93360e8992bb30558d9030fd7d12cd1fd56add46cdd8f0549a6111b2da5049a3",
+   "chaineLogique": "d58f14bfa6d355bcfa878e247bff4ca280b15c4e4133bb41f7240e971e9d6f02",
+   "chainePose": "38722153e71277b51e8b1387eb23fa3e5ef33fdd0999df76d4b0139c524ca0b1"
   },
   {
    "id": "2",
    "nom": "?wave=21&floor=1 : le joueur prend l'escalier",
    "pas": 600,
-   "finale": "c787713ee1c102ad7f897fc7dbbe1c1fe97cdf43c811b9f819175a650dbf1acd",
-   "finaleLogique": "4af728608b58bdaa404fb336284f1590dbee7b57f9d60e364d84983b72bae3b3",
-   "chaine": "74991b70cd44fcb5bd2ea4a997ad66c3ee2537a81101db78abe70441c7c35e63",
-   "chaineLogique": "734bcc283d3edf72b17e8f79a90978209a9dbd0825c0463e75835c19fefae2ca",
+   "finale": "cd0d4ea5a6c87f1af52aabb0e3eceb4bc571b84654e72544415505fbc36e71b8",
+   "finaleLogique": "9ea9f16a3961ca3b33e9e184c5c0586f4b11e793e5f2826e1ff5190d165bd413",
+   "chaine": "4f7101c6daef6c699cab2aaf6d11e1460cfc25f5d33524eb7a65b1ea2bfd3117",
+   "chaineLogique": "16b216819952d478e4797d7686566c4a39be1a059622330d75a80d7c5332199b",
    "chainePose": "b55c83776f21f531aa980e12e02ae9074b26c6d0bda40881e88f92cce12f473e"
   },
   {
    "id": "3",
    "nom": "?wave=31&floor=1 : deux étages, zombies dans les escaliers",
    "pas": 600,
-   "finale": "72d446e957a51136f66275915327f15dc9b1d923b5adc02e41d4d9a3e4326d80",
-   "finaleLogique": "4a4a2c16b2f23b226bd61d4ec6353ba09349cb7e1b184cdc39bc4ba302b31cb4",
-   "chaine": "263cfb461087510993d5f6ff5f26042cec12db1b91b4262404d440ec81bd02ec",
-   "chaineLogique": "18e50e872439a5ca6a4d1dbda98f042a7c1e8d28f83dab8a5df46aff84c96927",
-   "chainePose": "d8a492e8d6b2fb59e50f6aa71ad274b6167d080077fd11636af58e8a1fcd70dc"
+   "finale": "6c2d79983d9f64ab2f33790579998c465adbf3b87245cc6c7f6d83b14eee9d7b",
+   "finaleLogique": "f0d4abcca80375eab04bd5365c537fb334097c2e7ae59bfb1d0c389569f67509",
+   "chaine": "e3f37383aaf2a6301df239283f3aa69c0a4767bf491051bf1fdb493f17f594ce",
+   "chaineLogique": "d660e93d51a3fa6317be91088874ab5575b97e874dfeda46a5389801a2bd7223",
+   "chainePose": "815716e540e3f62202258d398a8890b9ffd5d6720e22bad435250032142c372a"
   },
   {
    "id": "4",
    "nom": "mort puis « Rejouer »",
    "pas": 600,
-   "finale": "fa4bfe49e2e1ee4b9bdfbad9a54a4775dd97eb4a5363807296d408414f4e841c",
-   "finaleLogique": "7734dd6c5bec2e6ec2fb54160683ff3d4bc816a9b77a45bc383759c95f60b568",
-   "chaine": "bbe72640a28e35ddb3784d149295a0f5a80e2ffeb7342f9f4173837c02acc19c",
-   "chaineLogique": "9efa176ab9647f737e4366a0deb5a5d58bab9ccd54cf74e90a7f79d84816230d",
+   "finale": "7caac08ea03fa7c3c8b68911fffdd88c3f1b6c8343df34ebee4103259ad84752",
+   "finaleLogique": "c54d11f6b930ef9ba9c30b0c8994bf185e07838c4c3dd4cbcc35724f20fa5528",
+   "chaine": "235ceb2f80fd967e397465feb523abbe934462f8687f9bf682d3bcc9cd01e909",
+   "chaineLogique": "9137d9d62ae659934b0d6e3dbd05e2de9db36836148df9cf4921e377aadec0fc",
    "chainePose": "21759db35715d2e2d7fa353a9204ab841f5e1dee5944fa0dc16306752669a8e8"
   },
   {
    "id": "5",
    "nom": "?map=salle",
    "pas": 600,
-   "finale": "4cf10a77dc5116f5edeb4c50cf4c2d1e53bcf4e9fcbde4f94cf7acb157d5ab90",
-   "finaleLogique": "895c9fbd372c451f02cb00c2612e788d702f8103f7d7a82ab4d211f56c164ca1",
-   "chaine": "197dfdebcbfee461c37f9bd519bca35b1e3246b09884c492b188c47a5808f133",
-   "chaineLogique": "c2c58c5e919a3c7506fd9db2a9e8a86d31058a0d36fe98f0c520fa1d3c76610b",
+   "finale": "541deecfb2d219ed85923dc653c4f7a17a36aa4293322fb9567439074cf9f522",
+   "finaleLogique": "f4e40f45d333fb3ed45d3f9b2fc0610304eac19dc3accf6344a38d589debcbb0",
+   "chaine": "be38550bfeef41d2c49b446c65bf4ef9a8e138b4219025009395fb9b0c7d1c7c",
+   "chaineLogique": "6f64e5f7903d2d9cbca6ae0ebc91f532b6cd853d459554ab51dcbce15a13b36d",
    "chainePose": "1b56d735d1478ee95ef792d5251d2b1a8932a1a6e59caf6343d1281fa3b2d15d"
   },
   {
    "id": "6",
    "nom": "R2 près d'une fenêtre, ?gfx=faible",
    "pas": 600,
-   "finale": "4ea6da5e814f871378bf36b475cc72feefe873d497db8db07339087ac2241f25",
-   "finaleLogique": "f99c0915943f34c3ed95858980054e9cc737bd3e8432c48c70684a1ce7ca425c",
-   "chaine": "ffb643e724be374c9a09da861d66e0bd448a5e50bc572f5f136b490985e8418f",
-   "chaineLogique": "d43e268a7bc81ce31aecd980cb9d2a5398f4c2de75bcc110b6585585218a13e1",
-   "chainePose": "7b7668a3984c31feb00dce94b57b9f0781f77a3b2e6ca66f37ea7e5905d1228e"
+   "finale": "f94ab569653d8edc59b9b6f27ce2a4048a2d575111b1270ba1b6bb1d0c8a1d12",
+   "finaleLogique": "d641f7cc64d4a1be6f0bb7e5d39ddf70a6fefa2f1410f933ebfe92417a5cbc5c",
+   "chaine": "036068e9756b47994850745d6b7596c9f0184f132974b1a1e2796e8cfb6584c9",
+   "chaineLogique": "2866f760e2b6c0335687a18b6b687b310c6a6bb9fa003fe631cc62c08ec865a8",
+   "chainePose": "e15d04815b77ba157a5c69178bb5d1aecef83e4ae3c7177a4154d3859f00adb1"
   }
  ]
 }

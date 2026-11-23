@@ -414,7 +414,8 @@ test.describe('personnages intégrés (choix par défaut)', () => {
 
   test('?map=salle fonctionne par défaut', async ({ page }) => {
     await open(page, '&map=salle&nospawn=1');
-    await spawnTen(page);
+    // Lot 9k : visée à l'opposé des zombies (le Colt à 50 tuait un petit de la manche 10 en 1 s de tir automatique ; avant : 25, visée vers eux).
+    await spawnTen(page, 10, 'rdc', Math.PI);
     await page.evaluate(() => window.__zs.step(1));
     const s = await S(page);
     expect(s.map.id).toBe('salle');
