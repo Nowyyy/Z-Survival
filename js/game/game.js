@@ -33,6 +33,9 @@ import { creerArmesEnMain } from '../armes/en-main.js';
 import { AU_SOL_DOUILLE, MAX_DOUILLES, creerArmesTombes, creerCartoucheMain } from './armes-tombes.js';
 import { choregraphieBalle, choregraphieChargeur, dans, entreCles, entreClesManoeuvre, entreValeurs, poidsMain, secousse, surCorps, verrouManoeuvre } from '../core/armes/geste.js';
 import { createArmesUi } from './armes-ui.js';
+import { acheter, caisseActive, caisseProche, etatAchat, lireCaisses } from '../core/armes/achat.js';
+import { createAchatUi } from './achat-ui.js';
+import { creerCaissesArmes } from './caisses-armes-mesh.js';
 import { armeParId, echelleJeu } from '../core/armes/armes.js';
 import { createFootsteps, rythmePasChasse, stepFootsteps } from '../core/footsteps.js';
 import { isHidden } from '../core/spawner.js';
@@ -305,6 +308,12 @@ export function createGame(ctx) {
   let armesApi = null; // méthodes de la partie (recharger, changerArme), pour les boutons de l'interface des armes
   let etaitASec = false;
   // Lot 9e : munitions du HUD, boutons tactiles près du stick droit, annonces (js/game/armes-ui.js).
+  // Lot 9k : caisses d'armes de la carte (achat et rachat en Zollars, js/core/armes/achat.js) : dessinées dans le groupe de leur étage, message à
+  // deux cases et bouton tactile (js/game/achat-ui.js) ; aucune sous ?test=1&equilibrage=avant. Rien n'est écrit dans le stockage.
+  const caissesListe = tableArmes ? lireCaisses(ctx.caisses) : [];
+  const caissesMesh = caissesListe.length && ctx.params.decorAvant !== true ? creerCaissesArmes({ caisses: caissesListe, groups: world.groups, armes: armesCfg }) : null;
+  const achatUi = caissesListe.length ? createAchatUi({ dict: ctx.dict, nomArme: (id) => ctx.dict[`game.armes.${id}`] ?? id, onAcheter: () => armesApi?.acheter() }) : null;
+  const distanceCaisses = Number.isFinite(ctx.reglages?.porte?.distance) ? ctx.reglages.porte.distance : 120; // deux cases, comme les portes
   const armesUi = tableArmes && armesCfg ? createArmesUi({ dict: ctx.dict, root: document.getElementById('game-root'), col: document.querySelector('.hud-tl'), centre: document.querySelector('.hud-tc'), donnees: armesCfg.donnees, choix: armesCfg.choix, annonce: (t) => ctx.ui?.setLive?.(t), onRecharger: () => armesApi?.recharger(), onChoisir: (i) => armesApi?.changerArme(i) }) : null;
   // Hauteur d'un étage (render.json) : le joueur reste à y = 0, c'est le monde qui descend quand il monte (world.setElevation).
   const LIFT = Number.isFinite(render.floorLift) ? render.floorLift : 0;
@@ -486,6 +495,8 @@ export function createGame(ctx) {
       // Lot 9e : armes portées (js/core/armes/inventaire.js) : Colt permanent, chargeurs, réserves, rechargement, changement.
       inv: tableArmes ? creerInventaire(tableArmes, { illimite: ctx.params.munitionsIllimitees === true }) : null, // ?test=1&munitions=illimitees
       manoeuvre: null, // culasse ou pompe manœuvrée après un tir : { id, t } (dessin et son ; retour du propriétaire après le lot 9e)
+      caissesToutes: false, // lot 9k : débogage « armes ouvertes » (toutes les caisses actives)
+      achats: [], // lot 9k : achats et rachats de la partie { t, caisse, arme, action, cout } (tests)
       waves: createDirector(cfg.waves, { seed, wave: params.wave ?? 1, inactive: params.nospawn, doors: doorCfgs.map((d) => ({ id: d.id, openAfterWave: d.openAfterWave, planned: d.planned === true })), wavesPerWorld: zoneCfg ? zoneCfg.wavesPerWorld : null, endless: params.endless === true }),
       doors: opened,
       worldOver: false,
@@ -1562,6 +1573,8 @@ export function createGame(ctx) {
     hud.update(sim.player, sim.kills, waveInfo(sim.waves), { chutes: sim.down.chutes, floor: multi ? pf() : null, maxWave: zoneCfg && !sim.waves.endless ? zoneCfg.wavesPerWorld : null, money: { balance: bank.balance(), gain: bank.gain(), gainMedailles: bank.gainMedailles() }, time: sim.time, trial: trialMode });
     floorFade.set(sim.trView.veil);
     porteMsg?.update(sim.player, pf(), sim.doors, !sim.dead);
+    achatUi?.update(sim.dead || sim.worldOver ? null : etatAchatCourant(), sim.time); // lot 9k
+    caissesMesh?.etage(pf()); // lot 9k : caisses de l'étage du joueur seulement
     medaillesManche.update(sim.time, !sim.dead && !sim.worldOver);
     diamantsManche.update(sim.time, bank.gainDiamants(), bank.soldeDiamants(), !sim.dead && !sim.worldOver);
     hud.updateDown(sim.down, sim.dead, cfg.down); // lot 3l : E2-10 dans la colonne centrale du HUD (js/game/hud.js)
@@ -1651,6 +1664,14 @@ export function createGame(ctx) {
   }
 
   // Zones et portes pour les tests (getState().zones). L'ancienne salle n'a qu'une zone, aucune porte, aucune fin de monde.
+  // Lot 9k : achat à la caisse active la plus proche (deux cases), ou null.
+  const zonesOuvertes = () => (zoneCfg ? activeZones(zoneCfg, openIds()) : []);
+  function etatAchatCourant() {
+    if (!sim.inv || caissesListe.length === 0) return null;
+    const c = caisseProche(caissesListe, sim.player, pf(), zonesOuvertes(), distanceCaisses, sim.caissesToutes);
+    return c ? etatAchat({ caisse: c, inv: sim.inv, table: tableArmes, zollars: bank.balance(), debout: canMove(sim.down) && !sim.trView.locked && !sim.dead }) : null;
+  }
+
   function zonesState() {
     const open = openIds();
     const points = layout.spawnPoints ?? [];
@@ -1775,11 +1796,34 @@ export function createGame(ctx) {
     remplirMunitions() {
       if (sim.inv) sim.inv = remplirMunitions(sim.inv, tableArmes);
     },
+    // Lot 9k : achat ou rachat à la caisse proche (touche B, bouton tactile, tests). Refusé en pause, à terre, pendant le relevage, un rechargement ou
+    // un changement d'arme, sans Zollars suffisants (raison affichée 1,5 s). Les Zollars ne sont jamais écrits. → { ok, etat }.
+    // horsPause : crochet de test seulement (__zs.acheter, comme step() qui avance aussi en pause, page cachée comprise).
+    acheter({ horsPause = false } = {}) {
+      if (!sim.inv || (ctx.ui.isPaused() && !horsPause) || sim.dead || sim.worldOver) return { ok: false, etat: null };
+      const c = caisseProche(caissesListe, sim.player, pf(), zonesOuvertes(), distanceCaisses, sim.caissesToutes);
+      if (!c) return { ok: false, etat: null };
+      const r = acheter({ caisse: c, inv: sim.inv, table: tableArmes, zollars: bank.balance(), debout: canMove(sim.down) && !sim.trView.locked });
+      if (!r.ok || !bank.depenser(r.cout)) {
+        achatUi?.refuser(r.etat, sim.time);
+        return { ok: false, etat: r.etat };
+      }
+      sim.inv = r.inv;
+      rafraichirArme();
+      sim.achats.push({ t: sim.time, caisse: c.id, arme: c.arme, action: r.etat.action, cout: r.cout });
+      ctx.audio?.handle({ time: sim.time, listener: sim.player, floor: pf(), walls: wallsOf(pf()), paused: false, events: [{ type: 'armeSon', son: 'arme-achat', x: sim.player.x, y: sim.player.y }] });
+      ctx.ui?.setLive?.(fmt(ctx.dict[r.etat.action === 'munitions' ? 'game.achat.annonceMunitions' : 'game.achat.annonceArme'] ?? '', { arme: ctx.dict[`game.armes.${c.arme}`] ?? c.arme }));
+      return { ok: true, etat: r.etat };
+    },
+    // Lot 9k : débogage « armes ouvertes » : toutes les caisses actives (pièces fermées comprises), sans rien écrire.
+    armesOuvertes(on = true) {
+      sim.caissesToutes = on === true;
+    },
     munitionsIllimitees(on) {
       if (sim.inv) sim.inv = munitionsIllimitees(sim.inv, on === true);
     },
     armesUtilisables: () => (tableArmes ? [...tableArmes.actives] : []),
-    snapshotArmes: () => (sim.inv ? { actif: armeActive(sim.inv)?.id ?? null, illimite: sim.inv.illimite } : null),
+    snapshotArmes: () => (sim.inv ? { actif: armeActive(sim.inv)?.id ?? null, illimite: sim.inv.illimite, ouvertes: sim.caissesToutes === true } : null),
     fireBullet(angle) {
       // La bouche n'est pas retenue dans la salle : le test place parfois le joueur dehors (balle sur une voiture, par exemple).
       const muzzle = boucheJoueur(Number(angle), eff.weapon, shotBounds);
@@ -1938,6 +1982,8 @@ export function createGame(ctx) {
       cartoucheMain?.dispose();
       douilles?.dispose();
       armesUi?.dispose();
+      achatUi?.dispose(); // lot 9k
+      caissesMesh?.dispose();
       renderer.renderLists.dispose();
       const memoire = { geometries: renderer.info.memory.geometries, textures: renderer.info.memory.textures };
       const gl = renderer.getContext();
@@ -1997,6 +2043,14 @@ export function createGame(ctx) {
           rendu: playerChar.arme, triangles: armeVue && armesKit ? armesKit.triangles(armeVue) : 0, emplacementsMax: 1 + (tableArmes?.emplacementsAchetes ?? 0),
         } : null,
         floor: floorState(),
+        // Lot 9k : caisses d'armes (hors des champs de la trace logique) : liste (active : pièce ouverte ou débogage), achat proche, Zollars dépensés,
+        // achats de la partie, message et bouton affichés, maillages et triangles dessinés.
+        caisses: {
+          liste: caissesListe.map((c) => ({ id: c.id, arme: c.arme, piece: c.piece, floor: c.floor, x: c.x, y: c.y, w: c.w, h: c.h, active: caisseActive(c, zonesOuvertes(), sim.caissesToutes) })),
+          proche: etatAchatCourant(), toutes: sim.caissesToutes, zollars: bank.balance(), depense: bank.depense(), achats: sim.achats.map((a) => ({ ...a })),
+          message: achatUi ? { texte: achatUi.texte(), visible: achatUi.element.dataset.visible === 'true' } : null, bouton: achatUi ? { visible: !achatUi.bouton.hidden } : null,
+          dessin: caissesMesh ? { maillages: caissesMesh.maillages, dessines: caissesMesh.dessines(), triangles: caissesMesh.triangles } : null,
+        },
         stairLog: stairLog.map((l) => ({ ...l })),
         floorsMs: ctx.perf?.floorsMs ?? null,
         scene: world.floorStats(),

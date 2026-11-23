@@ -4,6 +4,10 @@ import { GAITS, TYPES, apportion, gaitWeights, hpMul, levelOfWave, typeWeights, 
 
 const params = JSON.parse(readFileSync('data/game/waves.json', 'utf8'));
 const spec = (n) => waveSpec(n, params);
+// Lot 9k : la forme de la vie (Black Ops 3) reste vérifiée avec les valeurs d'avant le lot (data/game/equilibrage-avant-9k.json) ; la courbe
+// choisie par le propriétaire a ses propres assertions (« vie du lot 9k »).
+const paramsAvant = { ...params, hp: JSON.parse(readFileSync('data/game/equilibrage-avant-9k.json', 'utf8')).waves.hp };
+const specAvant = (n) => waveSpec(n, paramsAvant);
 const sum = (o) => Object.values(o).reduce((a, b) => a + b, 0);
 const range = (a, b) => Array.from({ length: b - a + 1 }, (_, i) => a + i);
 
@@ -41,33 +45,45 @@ describe('waves.js : total de zombies', () => {
   });
 });
 
-describe('waves.js : vie (forme de Black Ops 3)', () => {
+describe('waves.js : vie (forme de Black Ops 3, valeurs d\'avant le lot 9k)', () => {
   it('n=1 : ×1 ; n=9 : ×5 ; n=10 : ×5,5', () => {
-    expect(spec(1).hpMul).toBe(1);
-    expect(spec(9).hpMul).toBeCloseTo(5, 10);
-    expect(spec(10).hpMul).toBeCloseTo(5.5, 10);
+    expect(specAvant(1).hpMul).toBe(1);
+    expect(specAvant(9).hpMul).toBeCloseTo(5, 10);
+    expect(specAvant(10).hpMul).toBeCloseTo(5.5, 10);
   });
 
   it('n=20 : 5 × 1,1^11', () => {
-    expect(spec(20).hpMul).toBeCloseTo(5 * 1.1 ** 11, 9);
+    expect(specAvant(20).hpMul).toBeCloseTo(5 * 1.1 ** 11, 9);
   });
 
   it('pente de 0,5 par vague jusqu\'à la vague 9', () => {
-    for (const n of range(2, 9)) expect(spec(n).hpMul - spec(n - 1).hpMul).toBeCloseTo(0.5, 10);
+    for (const n of range(2, 9)) expect(specAvant(n).hpMul - specAvant(n - 1).hpMul).toBeCloseTo(0.5, 10);
   });
 
   it('rapport de 1,1 entre vagues consécutives au-delà de la vague 9 (jusqu\'au plafond)', () => {
-    for (const n of range(10, 27)) expect(spec(n).hpMul / spec(n - 1).hpMul).toBeCloseTo(1.1, 10);
+    for (const n of range(10, 27)) expect(specAvant(n).hpMul / specAvant(n - 1).hpMul).toBeCloseTo(1.1, 10);
   });
 
   it('plafond ×30 atteint exactement à la vague 28, constant ensuite', () => {
-    expect(spec(27).hpMul).toBeLessThan(30);
-    expect(spec(28).hpMul).toBe(30);
-    for (const n of range(28, 300)) expect(spec(n).hpMul).toBe(30);
+    expect(specAvant(27).hpMul).toBeLessThan(30);
+    expect(specAvant(28).hpMul).toBe(30);
+    for (const n of range(28, 300)) expect(specAvant(n).hpMul).toBe(30);
   });
 
   it('hpMul(n, hp) accepte les paramètres seuls', () => {
-    expect(hpMul(9, params.hp)).toBeCloseTo(5, 10);
+    expect(hpMul(9, paramsAvant.hp)).toBeCloseTo(5, 10);
+    expect(hpMul(1000000, paramsAvant.hp)).toBe(30);
+  });
+});
+
+describe('waves.js : vie du lot 9k (data/game/waves.json, choix du propriétaire)', () => {
+  it('+0,1 par vague jusqu\'à la 20 (×2,9), puis ×1,04 par vague ; plafond ×30 jamais atteint avant la 40', () => {
+    expect(spec(1).hpMul).toBe(1);
+    for (const n of range(2, 20)) expect(spec(n).hpMul - spec(n - 1).hpMul).toBeCloseTo(0.1, 10);
+    expect(spec(20).hpMul).toBeCloseTo(2.9, 10);
+    for (const n of range(21, 40)) expect(spec(n).hpMul / spec(n - 1).hpMul).toBeCloseTo(1.04, 9);
+    expect(spec(40).hpMul).toBeCloseTo(2.9 * 1.04 ** 20, 9);
+    expect(spec(40).hpMul).toBeLessThan(30);
     expect(hpMul(1000000, params.hp)).toBe(30);
   });
 });

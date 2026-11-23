@@ -419,7 +419,11 @@ test.describe('vagues, interface, caméra, budget', () => {
     });
     testInfo.annotations.push({ type: 'rendu', description: `${r.calls} appels, ${r.triangles} triangles` });
     console.log(`BUDGET lot 3b : ${r.calls} appels de dessin, ${r.triangles} triangles (référence lot 5e, variante A : 53 et 19 951)`);
-    expect(r.calls).toBeLessThanOrEqual(53 + 3);
-    expect(r.triangles).toBeLessThanOrEqual(19951 + 100);
+    // Lot 9k : référence remesurée sur origin/dev 5d3d766 (décor des murs du lot 9j, plafond de 60 000 triangles), par format : bureau 55 appels et
+    // 21 465 triangles, mobile 57 et 22 859 ; plus la caisse d'armes de l'aile en vue (3 appels : caisse, arme couchée, craie ; 552 triangles) ;
+    // mêmes marges (+ 3, + 100). Avant : 53 + 3 appels et 19 951 + 100 triangles (lot 5e, bureau seulement).
+    const ref = testInfo.project.name === 'mobile' ? { calls: 57, triangles: 22859 } : { calls: 55, triangles: 21465 };
+    expect(r.calls).toBeLessThanOrEqual(ref.calls + 3 + 3);
+    expect(r.triangles).toBeLessThanOrEqual(ref.triangles + 552 + 100);
   });
 });

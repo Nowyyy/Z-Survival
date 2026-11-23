@@ -1,9 +1,11 @@
 import { test, expect } from '@playwright/test';
+import { readFileSync } from 'node:fs';
 import { projectGround } from '../../js/core/viewport.js';
 import { waitReady } from './helpers.js';
 
 // Petite fenêtre : le rendu logiciel du navigateur de test est alors plus rapide. Le temps de jeu, lui, est mesuré par le jeu.
 const SIZE = { width: 667, height: 375 };
+const COLT = JSON.parse(readFileSync('data/game/armes-partie.json', 'utf8')).armes.m1911.degats; // lot 9k : 25 → 50 (choix du propriétaire)
 const URL = (extra = '') => `/jeu.html?test=1&empty=1&nospawn=1&seed=1${extra}`;
 
 async function open(page, extra = '') {
@@ -46,7 +48,7 @@ test.describe('tir automatique', () => {
       const tick = () => {
         const s = window.__zs.getState();
         if (!first && s.bullets.length) first = { t: s.time, bx: s.bullets[0].x, zx: s.enemies[0].x };
-        else if (first && s.enemies[0].health < 50) return resolve({ first, t: s.time });
+        else if (first && (s.enemies[0]?.health ?? 0) < 50) return resolve({ first, t: s.time }); // lot 9k : le Colt (50) tue d'une balle
         requestAnimationFrame(tick);
       };
       tick();
@@ -57,7 +59,7 @@ test.describe('tir automatique', () => {
     expect(Math.abs(measured - expected) / expected).toBeLessThan(0.15);
   });
 
-  test('le zombie meurt après le nombre de balles attendu (50 de vie, 25 de dégâts : deux)', async ({ page }) => {
+  test('le zombie meurt après le nombre de balles attendu (50 de vie, dégâts du Colt : ⌈50 ÷ dégâts⌉ ; lot 9k : une)', async ({ page }) => {
     await open(page);
     await aimRight(page);
     await spawn(page, 1100, 450);
@@ -71,7 +73,7 @@ test.describe('tir automatique', () => {
       };
       tick();
     }));
-    expect(result).toEqual({ bullets: 2, enemies: 0 });
+    expect(result).toEqual({ bullets: Math.ceil(50 / COLT), enemies: 0 });
   });
 
   test('aucun tir quand le laser ne touche personne', async ({ page }) => {

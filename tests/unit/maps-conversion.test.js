@@ -241,7 +241,10 @@ describe('fichiers versionnés = sortie du script (aucune retouche à la main)',
       return { id: s.id, walk: z.walk, interdits: [z.floors.rdc.trigger].map((t) => ({ x: t.x, y: t.y, w: t.w, h: t.h })) };
     });
     const attendu = recalerObstacles([...planOut.obstacles, ...solides], { pieces, escaliers, murs: segmentRects(planOut.walls, params.wallThickness), min: planOut.minCorridor }).obstacles;
-    expect(lu.obstacles).toEqual([...attendu, ...epoqueInt]);
+    // Lot 9k : caisses d'armes (caisses-armes.json, kind caisse-arme), ajoutées après l'intérieur d'époque (scripts/plan-vers-monde.mjs).
+    const caissesArmes = lu.obstacles.filter((o) => o.kind === 'caisse-arme');
+    expect(caissesArmes.map((o) => o.id)).toEqual(['caisse-winchester1897']);
+    expect(lu.obstacles).toEqual([...attendu, ...epoqueInt, ...caissesArmes]);
     expect({ ...lu, obstacles: [] }).toEqual({ ...planOut, obstacles: [] });
     // Lot 9h : plus la clé epoque (décor d'époque contrôlé et écrit par npm run carte : js/core/decor-epoque.js, tests/unit/decor-epoque.test.js).
     const { epoque, interieur, ...decorLu } = JSON.parse(files.decor); // lot 9i : plus la clé interieur (intérieur d'époque, tests/unit/interieur-epoque.test.js)

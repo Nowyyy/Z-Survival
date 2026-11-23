@@ -713,6 +713,7 @@ export function buildWorld({ palette, layout, layouts = null, render, textures, 
       if (fu.kind === 'escalier') return; // dessiné par la rampe (escalier physique)
       if (fu.kind === 'bidon') return; // lot 9h : bidon solide, dessiné par le décor léger (decor-interieur.world.json)
       if (fu.kind === 'epoque') return; // lot 9i : brancard ou caisse médicale d'époque, dessiné avec le décor intérieur d'époque (addInterieur)
+      if (fu.kind === 'caisse-arme') return; // lot 9k : caisse d'armes, dessinée par js/game/caisses-armes-mesh.js (22 de haut : aucune occultation)
       // Lot 9i (retours) : meuble redessiné en table de 1942 par le décor intérieur d'époque (même rectangle, même hauteur) : seulement son occultation.
       if (remplacesInterieur.has(`${f}:${fu.id}`)) {
         occluders.push({ ...rectBox(fu, 0, Math.min(num(fu.hauteur, 60), 70)), floor: f });

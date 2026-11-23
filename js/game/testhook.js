@@ -69,5 +69,8 @@ export function installTestHook(ctx, game) {
     recharger: () => game.recharger(),
     remplirMunitions: () => game.remplirMunitions(),
     munitionsIllimitees: (on = true) => game.munitionsIllimitees(on),
+    // Lot 9k : achat ou rachat à la caisse proche (getState().caisses), débogage « armes ouvertes ».
+    acheter: () => game.acheter({ horsPause: true }), // comme step(), aussi en pause (page cachée des mesures)
+    armesOuvertes: (on = true) => game.armesOuvertes(on),
   };
 }

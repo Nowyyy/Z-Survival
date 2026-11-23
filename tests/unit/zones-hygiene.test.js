@@ -4,7 +4,8 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { seedProblems } from './helpers/seed.js';
 import { bilansChangesDepuis } from '../../scripts/docs/bilans.mjs';
 import { imageStudio } from './helpers/images-studio.js'; // lot 8g : logo du studio, exception nominative
-import { hors9e } from './helpers/lot9e.js'; // lot 9e : fichiers de règles que ce lot change (équivalent : lot9e-gel.test.js)
+import { hors9e } from './helpers/lot9e.js';
+import { hors9k } from './helpers/lot9k.js'; // lot 9k : vie des zombies (équivalent : lot9k-gel.test.js) // lot 9e : fichiers de règles que ce lot change (équivalent : lot9e-gel.test.js)
 // Lot 4c (publication par versions, seul lot autorisé à modifier le workflow) : workflow, accueil, ses textes et tests du journal modifiés ; ce garde-fou de branche
 // (comparaison à main ou à lot-4b) n'a plus de sens pour eux après l'entrée dans main : ils sortent de la liste.
 // Lot 4e : workflow de tests ajouté (.github/workflows/tests.yml, autorisé par le prompt du lot ; pages.yml intact).
@@ -56,7 +57,7 @@ describe('hygiène du lot 3c : pureté et fichiers', () => {
     // Lot 3i : data/game/sounds.json change (sons de l'atelier intégrés, décision du propriétaire) ; ses recettes gardées (tir, mélodie, impacts…) sont
     // comparées à main, objet par objet, dans sons-integres.test.js.
     const changed = git('diff --name-only main -- js/core/waves.js js/core/spread.js js/core/player-stats.js js/core/camera.js js/core/synth.js data/game/gaits.json data/game/weapons.json data/game/player-stats.json data/game/player-down.json data/game/windows.json  data/game/world.json data/game/decor.json');
-    if (changed !== null) expect(hors9e(changed)).toEqual([]);
+    if (changed !== null) expect(hors9k(hors9e(changed))).toEqual([]);
   });
 
   it('le workflow, Docs/seed.md et les bilans existants sont inchangés (index.html : icône du site ajoutée au lot 4)', () => {
@@ -101,7 +102,9 @@ describe('hygiène du lot 3c : données et textes', () => {
       const before = showMain(`data/game/${f}.json`);
       if (!before) continue;
       const now = JSON.parse(readFileSync(`data/game/${f}.json`, 'utf8'));
-      for (const [k, v] of Object.entries(strip(before))) expect(now[k], `${f}.${k}`).toEqual(v);
+      // Lot 9k : vie des zombies (waves.hp) choisie par le propriétaire ; l'ancienne valeur est dans data/game/equilibrage-avant-9k.json.
+      const avant9k = f === 'waves' ? { hp: JSON.parse(readFileSync('data/game/equilibrage-avant-9k.json', 'utf8')).waves.hp } : {};
+      for (const [k, v] of Object.entries(strip(before))) expect(avant9k[k] ?? now[k], `${f}.${k}`).toEqual(v);
       expect(Object.keys(now).length).toBeGreaterThan(Object.keys(before).length);
     }
   });

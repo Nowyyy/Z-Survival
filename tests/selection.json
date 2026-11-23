@@ -215,6 +215,7 @@
     { "fichier": "tests/unit/zones-directeur.test.js", "categorie": "P", "raison": "Directeur des zones." },
     { "fichier": "tests/unit/zones-hygiene.test.js", "categorie": "G", "raison": "Hygiène des zones." },
     { "fichier": "tests/unit/lot9e-gel.test.js", "categorie": "G", "raison": "Lot 9e : règles changées seulement par ajout (équivalent des hygiènes)." },
+    { "fichier": "tests/unit/lot9k-gel.test.js", "categorie": "G", "raison": "Lot 9k : seule la vie des zombies change dans waves.json, l'ancienne est gardée (équivalent des hygiènes)." },
     { "fichier": "tests/e2e/armes-jeu.spec.js", "categorie": "P", "motif": "téléphone", "raison": "Lot 9e : boutons des armes sur téléphone (44 px, visuel 2D, au doigt, axe) : joué aussi par le projet mobile." },
     { "fichier": "tests/unit/zones-mobilier.test.js", "categorie": "P", "raison": "Mobilier de complément." },
     { "fichier": "tests/unit/zones-porte-chemin.test.js", "categorie": "G", "raison": "Chemins par la porte (connexité)." },
@@ -249,7 +250,8 @@
     "tests/unit/tests-selection.test.js",
     "tests/unit/workflow.test.js",
     "tests/unit/zones-hygiene.test.js",
-    "tests/unit/lot9e-gel.test.js"
+    "tests/unit/lot9e-gel.test.js",
+    "tests/unit/lot9k-gel.test.js"
   ],
   "rejeu-total": [
     "package.json",
@@ -955,6 +957,15 @@
       "complet": []
     },
     {
+      "id": "equilibrage",
+      "description": "Lot 9k : mesures de l'équilibrage des armes (modèle pur, joueur automatique avec achats, emplacements possibles des caisses), scripts hors du jeu.",
+      "sources": ["scripts/equilibrage/**"],
+      "dependances": ["armes", "carte", "menu", "noyau", "vagues"],
+      "vitest": ["tests/unit/equilibrage-armes.test.js"],
+      "e2e": [],
+      "complet": []
+    },
+    {
       "id": "armes",
       "description": "Armes (lot 9c : modèles, atlas, caisse, visuels 2D, poses de tenue ; lot 9e : table des armes de la partie, armes portées, chargeurs, changement d'arme, tenue sur le personnage, interface des armes).",
       "sources": [
@@ -966,14 +977,19 @@
         "data/game/sons-armes.json",
         "js/game/armes-chargement.js",
         "js/game/armes-ui.js",
-        "js/game/armes-tombes.js"
+        "js/game/armes-tombes.js",
+        "js/game/achat-ui.js",
+        "js/game/caisses-armes-mesh.js",
+        "js/armes/rendu.js",
+        "data/game/equilibrage-avant-9k.json"
       ],
-      "dependances": ["interface", "noyau", "personnages", "textes"],
+      "dependances": ["economie", "interface", "noyau", "personnages", "textes"],
       "vitest": [
         "tests/unit/armes.test.js",
-        "tests/unit/armes-partie.test.js"
+        "tests/unit/armes-partie.test.js",
+        "tests/unit/achat-armes.test.js"
       ],
-      "e2e": ["tests/e2e/armes-atelier.spec.js", "tests/e2e/armes-jeu.spec.js"],
+      "e2e": ["tests/e2e/achat-armes.spec.js", "tests/e2e/armes-atelier.spec.js", "tests/e2e/armes-jeu.spec.js"],
       "complet": []
     },
     {
@@ -1001,7 +1017,9 @@
         "data/i18n/atelier-mobilier.json",
         "css/atelier-mobilier.css",
         "js/armes/atelier.js",
-        "js/armes/rendu.js",
+        "js/armes/atelier-caisses.js",
+        "data/game/armes-partie.proposition.json",
+        "data/game/waves.proposition.json",
         "js/armes/tenue.js",
         "js/armes/poses-calcul.js",
         "data/i18n/atelier-armes.json",

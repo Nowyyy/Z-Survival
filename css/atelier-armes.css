@@ -199,3 +199,110 @@
   padding: 0 var(--space-3);
   font-size: var(--text-sm);
 }
+
+/* Lot 9k — section « Caisses sur la carte » (proposition) : plans des pièces, message de proximité, bouton tactile. Jetons existants seulement. */
+.armes-plans {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  gap: var(--space-4);
+}
+
+.armes-plan {
+  margin: 0;
+}
+
+.armes-plan-svg {
+  display: block;
+  width: 100%;
+  max-height: 70vh;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+
+.armes-plan-places {
+  margin: var(--space-2) 0 0;
+  padding-left: var(--space-4);
+  font-size: var(--text-sm);
+}
+
+.plan-sol { fill: var(--color-surface); }
+.plan-mur { fill: var(--color-text-muted); }
+.plan-pilier { fill: var(--color-text-muted); }
+.plan-meuble { fill: var(--color-surface-raised); stroke: var(--color-border); stroke-width: 2; }
+.plan-escalier { fill: none; stroke: var(--color-text-muted); stroke-width: 3; stroke-dasharray: 10 6; }
+.plan-fenetre { stroke: var(--color-money-blue); stroke-width: 14; }
+.plan-porte { stroke: var(--color-warning); stroke-width: 14; }
+.plan-bloc { fill: none; stroke: var(--color-warning); stroke-width: 4; }
+.plan-lampe { fill: var(--color-money); }
+.plan-decor { fill: var(--color-text-muted); opacity: 0.6; }
+.plan-caisse { fill: var(--color-action); stroke: var(--color-text); stroke-width: 2; }
+.plan-portee { fill: none; stroke: var(--color-action-text); stroke-width: 3; stroke-dasharray: 12 8; }
+.plan-lettre { fill: var(--color-text); font: 700 36px var(--font-sans); text-anchor: middle; paint-order: stroke; stroke: var(--color-bg); stroke-width: 6; }
+.plan-texte { fill: var(--color-text); font: 600 26px var(--font-sans); text-anchor: middle; paint-order: stroke; stroke: var(--color-bg); stroke-width: 5; }
+
+.armes-messages {
+  display: grid;
+  gap: var(--space-2);
+  margin: var(--space-3) 0;
+}
+
+.armes-message-ligne {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+}
+
+.armes-message-etat {
+  min-width: 6rem;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+/* Aspect du message des portes de la partie (.porte-message de css/game.css) : bloc sombre bordé, texte gras centré. */
+.armes-message {
+  margin: 0;
+  padding: 0.3em 0.7em;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-overlay);
+  color: var(--color-text);
+  font-weight: var(--font-weight-bold);
+  line-height: 1.2;
+  text-align: center;
+}
+
+.armes-message-gris {
+  color: var(--color-text-muted);
+}
+
+.armes-achat-bouton {
+  display: inline-flex;
+  width: auto;
+  max-width: 9rem;
+  align-self: flex-start;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 64px;
+  min-height: 64px;
+  margin: var(--space-2) var(--space-3) var(--space-2) 0;
+  padding: var(--space-1) var(--space-3);
+  border: 2px solid var(--color-text);
+  border-radius: 999px;
+  background: var(--color-action);
+  color: var(--color-on-action);
+  font: inherit;
+  font-weight: var(--font-weight-bold);
+  line-height: 1.1;
+}
+
+.armes-achat-bouton:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.armes-achat-prix {
+  font-size: var(--text-sm);
+}

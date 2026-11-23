@@ -104,7 +104,7 @@ test.describe('vagues du lot 2', () => {
     await step(page, 0.7); // lot 2c : l'animation de début (3,8 s) doit être finie, sinon elle l'emporte sur celle de fin
     // Un zombie de test au contact fait perdre de la vie ; la vague a toujours son zombie du directeur.
     const p = (await state(page)).player;
-    await page.evaluate(([x, y]) => window.__zs.spawnEnemy(x, y), [p.x + 30, p.y]);
+    await page.evaluate(([x, y]) => window.__zs.spawnEnemy(x, y, { wave: 20 }), [p.x + 30, p.y]); // lot 9k : vie de la manche 20 (le Colt à 50 tue d'une balle un zombie de la manche 1 avant son premier coup)
     await step(page, 0.3);
     const hurt = (await state(page)).player.health;
     expect(hurt).toBeLessThan(100);
@@ -177,10 +177,11 @@ test.describe('vagues du lot 2', () => {
     });
   }
 
-  test('?wave=30 : vie au plafond ×30, vitesse et dégâts de la vague, aucun zombie à plus de 190', async ({ page }) => {
+  test('?wave=30 : vie de la vague (lot 9k : sous le plafond ×30, courbe choisie par le propriétaire), vitesse et dégâts de la vague, aucun zombie à plus de 190', async ({ page }) => {
     await open(page, '&wave=30&nospawn=0');
     const spec = waveSpec(30, params);
-    expect((await state(page)).waves).toMatchObject({ wave: 30, hpMul: 30, speedMul: spec.speedMul, damageMul: 3 });
+    expect(spec.hpMul).toBeLessThan(30); // lot 9k : avant, ×30 (plafond atteint à la 28)
+    expect((await state(page)).waves).toMatchObject({ wave: 30, hpMul: spec.hpMul, speedMul: spec.speedMul, damageMul: 3 });
     await step(page, 3.2);
     const made = await page.evaluate(() => {
       const zs = window.__zs;
@@ -192,7 +193,7 @@ test.describe('vagues du lot 2', () => {
     for (const e of made) {
       expect(e.speed).toBeLessThanOrEqual(190);
       expect(e.speed).toBeLessThan(220);
-      expect(e.hp).toBeCloseTo(enemies.zombie.health * 30 * enemies.variants[e.type].hpMul, 6);
+      expect(e.hp).toBeCloseTo(enemies.zombie.health * spec.hpMul * enemies.variants[e.type].hpMul, 6);
       expect(e.damage).toBeCloseTo(enemies.zombie.contactDamage * 3 * enemies.variants[e.type].damageMul, 6);
     }
   });

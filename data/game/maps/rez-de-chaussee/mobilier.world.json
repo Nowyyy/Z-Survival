@@ -1011,10 +1011,9 @@
     },
     "escaliers": "A",
     "mursActifs": true,
-    "trianglesMurs": 388,
+    "trianglesMurs": 384,
     "murs": [
-      { "id": "rdc-m1w2", "floor": "rdc", "pose": "sol", "type": "bidons", "x": 1470, "y": 1240, "face": "w" },
-      { "id": "rdc-m1w5", "floor": "rdc", "pose": "sol", "type": "papiers", "x": 1470, "y": 1630, "face": "w" },
+      { "id": "rdc-m1w5", "floor": "rdc", "pose": "sol", "type": "bidons", "x": 1470, "y": 1630, "face": "w" },
       { "id": "rdc-m1w6", "floor": "rdc", "pose": "sol", "type": "sacs", "x": 1470, "y": 1760, "face": "w" },
       { "id": "rdc-m2s0", "floor": "rdc", "pose": "sol", "type": "planches", "x": 1560, "y": 1860, "face": "s" },
       { "id": "rdc-m2s1", "floor": "rdc", "pose": "sol", "type": "sacs", "x": 1690, "y": 1860, "face": "s" },

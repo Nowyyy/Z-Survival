@@ -16,7 +16,9 @@ describe('data/game/waves.json', () => {
 
   it('contient les valeurs de départ de la spécification', () => {
     expect(waves.total).toMatchObject({ base: 5, linear: 1.6, quadratic: 0.05, cap: 150, reinforcedEvery: 5, reinforcedMul: 1.3 });
-    expect(waves.hp).toEqual({ hpLinearPerRound: 0.5, hpExpStartRound: 10, hpExpFactor: 1.1, hpCap: 30 });
+    // Lot 9k (choix du propriétaire) : vie plus régulière ; les valeurs de la spécification sont gardées dans data/game/equilibrage-avant-9k.json.
+    expect(waves.hp).toEqual({ hpLinearPerRound: 0.1, hpExpStartRound: 21, hpExpFactor: 1.04, hpCap: 30 });
+    expect(JSON.parse(readFileSync('data/game/equilibrage-avant-9k.json', 'utf8')).waves.hp).toEqual({ hpLinearPerRound: 0.5, hpExpStartRound: 10, hpExpFactor: 1.1, hpCap: 30 });
     expect(waves.spawnInterval).toEqual({ base: 2.5, factor: 0.95, min: 0.9 });
     expect(waves.damage).toEqual({ factor: 1.05, cap: 3 });
     expect(waves.speed.factor).toBe(1.02);

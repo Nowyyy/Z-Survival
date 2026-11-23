@@ -43,12 +43,12 @@ function lireLevier(l) {
 const lirePiece = (p) => (Array.isArray(p) && p.length === 3 && p.every((v) => isNum(v) && v > 0) ? [...p] : null);
 export const GESTES = Object.freeze(['retire', 'insere', 'pousse', 'degage', 'culasse', 'couvercle']);
 
-// Une entrée lue : { id, categorie, palier, active, masse, prix, degats, cadence, portee, dispersion, dispersionMouvement, vitesse, chargeur,
+// Une entrée lue : { id, categorie, palier, active, masse, prix, rachat, degats, cadence, portee, dispersion, dispersionMouvement, vitesse, chargeur,
 // reserve (Infinity si null), rechargement, sortie, plombs, recharge, manoeuvre, dernierTir, piece, douille } ; une arme spéciale (active faux) garde
 // seulement id, categorie, palier, prix.
 function lireEntree(id, e) {
   const o = obj(e);
-  const base = { id, categorie: typeof o.categorie === 'string' ? o.categorie : 'arme', palier: Number.isInteger(o.palier) && o.palier >= 0 ? o.palier : 0, active: o.active !== false, masse: pos(o.masse, 1), prix: isNum(o.prix) && o.prix >= 0 ? o.prix : null };
+  const base = { id, categorie: typeof o.categorie === 'string' ? o.categorie : 'arme', palier: Number.isInteger(o.palier) && o.palier >= 0 ? o.palier : 0, active: o.active !== false, masse: pos(o.masse, 1), prix: isNum(o.prix) && o.prix >= 0 ? o.prix : null, rachat: isNum(o.rachat) && o.rachat >= 0 ? o.rachat : null }; // lot 9k : rachat (munitions pleines à la caisse)
   if (!base.active) return base;
   const chargeur = Number.isInteger(o.chargeur) && o.chargeur >= 1 ? o.chargeur : 1;
   const recharge = lireRecharge(o.recharge, pos(o.rechargement, 1));

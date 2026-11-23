@@ -13,6 +13,7 @@ import { CORPS_LONG, REGLES, appliquerCorps, echantillons, poserArme } from './t
 import { visuelArme } from '../core/armes/visuel.js';
 import { creerKitArmes, lirePalette } from './rendu.js';
 import { renderSound } from '../core/synth.js';
+import { sectionCaisses } from './atelier-caisses.js';
 
 const query = new URLSearchParams(location.search);
 const testMode = query.get('test') === '1';
@@ -34,6 +35,7 @@ const [dict, armesJson, characters, poses, render, texturesJson, world, lumieres
 const choixJson = await charger('data/armes/armes-choix.json').catch(() => null);
 const posesJson = await charger('data/armes/poses.json').catch(() => null); // poses de tenue enregistrées (règles et armes posées)
 const sonsJson = await charger('data/game/sons-armes.json').catch(() => null); // lot 9e : sons des armes (section « Sons »)
+const propositionArmes = await charger('data/game/armes-partie.proposition.json').catch(() => null); // lot 9k : prix proposés (section « Caisses sur la carte »)
 const t = (key, params) => fmt(translate(dict, key), params);
 for (const node of document.querySelectorAll('[data-i18n]')) node.textContent = t(node.dataset.i18n);
 $('app').hidden = false;
@@ -367,7 +369,7 @@ function dessinerCaisse() {
   const ancre = new THREE.Vector3(...ancreTexte(d)).applyMatrix4(groupeCaisse.matrixWorld).project(cam);
   etiquette.style.left = `${((ancre.x + 1) / 2) * canvas.width}px`;
   etiquette.style.top = `${((1 - ancre.y) / 2) * canvas.height}px`;
-  const prix = donnees.approche?.exemple?.prix ?? 500;
+  const prix = propositionArmes?.armes?.[etat.arme]?.prix || (donnees.approche?.exemple?.prix ?? 500); // lot 9k : prix proposé s'il existe
   etiquette.textContent = t('dev.armes.caisse.prix', { nom: armeParId(donnees, etat.arme)?.nom ?? '', prix });
   const info = kit.infos(etat.arme, etat.variante);
   const max = d.appui + info.hauteurCouchee;
@@ -731,6 +733,10 @@ if (sonsJson && Array.isArray(sonsJson.recettes)) {
   sec.append(liste);
   $('choix').after(sec);
 }
+
+// Lot 9k : section « Caisses sur la carte » (proposition de la partie B), après la vue « Sur la caisse ».
+const caissesCarte = await sectionCaisses({ t, charger, jouerSon, nomArme: (id) => armeParId(donnees, id)?.nom ?? id });
+if (caissesCarte) $('vue-caisse').after(caissesCarte);
 
 toutDessiner();
 dessinerVisuelsTous();

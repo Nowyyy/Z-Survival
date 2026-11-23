@@ -294,3 +294,9 @@ version: v0.9
 nom: Mobilier de 1942
 description: Caisses de munitions au pochoir, gravats, étagères garnies, armoires à tiroirs, établi, escaliers barrés par un éboulis fin et murs un peu meublés, sans rien changer au jeu.
 afficher: oui
+
+[lot-9k]
+version: v0.9
+nom: Armes à acheter sur la carte
+description: Trois caisses d'armes derrière les portes, le pompe, le Kar98k et la Thompson, à acheter avec ses Zollars, munitions comprises ; nouvel équilibrage provisoire des armes et des zombies.
+afficher: oui

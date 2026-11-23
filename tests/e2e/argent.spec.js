@@ -10,6 +10,7 @@ import { waitReady, hudBoxes, screenShare, apart } from './helpers.js';
 // Lot 8h : deux monnaies. JAUNE (getState().save.balance, economy.*) : 10 par zombie tué par balle, 1 par planche, remise à 0 à chaque partie, jamais écrite.
 // MÉDAILLES (getState().save.medailles, zs.save.v2) : bonus de fin de manche et prime du monde, écrites à la fin de la partie, gardées pour toujours.
 const load = (name) => JSON.parse(readFileSync(`data/game/${name}.json`, 'utf8'));
+const COLT = load('armes-partie').armes.m1911.degats; // lot 9k : dégâts du Colt (25 → 50, choix du propriétaire)
 const params = { save: load('save'), economy: load('economy'), stats: load('player-stats') };
 const KEY = params.save.v2.storageKey;
 // Lot 9b : progression stockée relue sous les noms du code (champs stockés traduits par la table de js/core/progression.js).
@@ -566,7 +567,7 @@ test.describe('mode essai', () => {
     const before = await stored(page);
     const s = await state(page);
     expect(s.stats.source).toBe('url');
-    expect(s.stats.values.damage).toBeCloseTo(25 * 1.45, 9);
+    expect(s.stats.values.damage).toBeCloseTo(COLT * 1.45, 9);
     expect(await stored(page)).toBe(before);
   });
 });
@@ -580,7 +581,7 @@ test.describe('niveaux depuis la sauvegarde', () => {
     const s = await state(page);
     expect(s.stats.source).toBe('save');
     expect(s.stats.levels.degats).toBe(2);
-    expect(s.stats.values.damage).toBeCloseTo(25 * 1.3, 9);
+    expect(s.stats.values.damage).toBeCloseTo(COLT * 1.3, 9);
     expect(s.stats.values.maxFalls).toBe(3);
   });
 
@@ -595,7 +596,7 @@ test.describe('niveaux depuis la sauvegarde', () => {
     await open(page);
     const s = await state(page);
     expect(s.stats.source).toBe('save');
-    expect(s.stats.values.damage).toBeCloseTo(32.5, 9);
+    expect(s.stats.values.damage).toBeCloseTo(COLT * 1.3, 9); // lot 9k : avant 32,5 (25 × 1,3)
     expect(s.save.medailles.solde).toBe(90);
   });
 

@@ -1,0 +1,192 @@
+{
+ "_provisoire": "Lot 9k, partie B : proposition des places des caisses d'armes (deux par pièce, A et B), générée par node scripts/equilibrage/caisses.mjs --proposition ; jamais lue par le jeu (le choix du propriétaire, au GO, ira dans caisses-armes.json). Caisse du lot 9c (70 × 30, 22 de haut) contre le mur ; face : côté du mur vers lequel la caisse s'ouvre (s : vers le sud). remplace : objet du décor des murs (lot 9j) qui disparaîtrait (aucun objet devant un obstacle).",
+ "caisse": {
+  "long": 70,
+  "large": 30,
+  "haut": 22
+ },
+ "ecarts": {
+  "fenetre": 160,
+  "porte": 60,
+  "escalier": 40,
+  "lampe": 50,
+  "meuble": 50,
+  "decorMur": 60,
+  "bout": 20,
+  "pas": 1,
+  "contact": 0.5
+ },
+ "pieces": {
+  "aile": {
+   "arme": "winchester1897",
+   "places": [
+    {
+     "id": "aile-A",
+     "piece": "aile",
+     "arme": "winchester1897",
+     "floor": "rdc",
+     "mur": "mur-2",
+     "face": "w",
+     "x": 1455,
+     "y": 1240,
+     "rect": {
+      "x": 1440,
+      "y": 1205,
+      "w": 30,
+      "h": 70
+     },
+     "distances": {
+      "fenetre": 161.2,
+      "porte": 690,
+      "escalier": 740,
+      "lampe": 180,
+      "meuble": 0,
+      "decorMur": 355
+     },
+     "remplace": [
+      "rdc-m1w2 (bidons)"
+     ]
+    },
+    {
+     "id": "aile-B",
+     "piece": "aile",
+     "arme": "winchester1897",
+     "floor": "rdc",
+     "mur": "mur-9",
+     "face": "n",
+     "x": 1240,
+     "y": 2445,
+     "rect": {
+      "x": 1205,
+      "y": 2430,
+      "w": 70,
+      "h": 30
+     },
+     "distances": {
+      "fenetre": 344.8,
+      "porte": 345,
+      "escalier": 145,
+      "lampe": 337.5,
+      "meuble": 0,
+      "decorMur": 236.3
+     },
+     "remplace": [
+      "rdc-m8n2 (planches)"
+     ]
+    }
+   ]
+  },
+  "etage-gauche": {
+   "arme": "kar98k",
+   "places": [
+    {
+     "id": "etage-gauche-A",
+     "piece": "etage-gauche",
+     "arme": "kar98k",
+     "floor": "etage",
+     "mur": "mur-2",
+     "face": "w",
+     "x": 1455,
+     "y": 1526,
+     "rect": {
+      "x": 1440,
+      "y": 1491,
+      "w": 30,
+      "h": 70
+     },
+     "distances": {
+      "fenetre": 555.3,
+      "porte": 549,
+      "escalier": 469,
+      "lampe": 89,
+      "meuble": 60,
+      "decorMur": 133.5
+     },
+     "remplace": []
+    },
+    {
+     "id": "etage-gauche-B",
+     "piece": "etage-gauche",
+     "arme": "kar98k",
+     "floor": "etage",
+     "mur": "mur-10",
+     "face": "e",
+     "x": 1085,
+     "y": 1541,
+     "rect": {
+      "x": 1070,
+      "y": 1506,
+      "w": 30,
+      "h": 70
+     },
+     "distances": {
+      "fenetre": 410.8,
+      "porte": 534,
+      "escalier": 454,
+      "lampe": 296.7,
+      "meuble": 74,
+      "decorMur": 398.7
+     },
+     "remplace": []
+    }
+   ]
+  },
+  "etage-droite": {
+   "arme": "thompson",
+   "places": [
+    {
+     "id": "etage-droite-A",
+     "piece": "etage-droite",
+     "arme": "thompson",
+     "floor": "etage",
+     "mur": "mur-3",
+     "face": "s",
+     "x": 1665,
+     "y": 1965,
+     "rect": {
+      "x": 1630,
+      "y": 1950,
+      "w": 70,
+      "h": 30
+     },
+     "distances": {
+      "fenetre": 186.1,
+      "porte": 139,
+      "escalier": 350,
+      "lampe": 156.2,
+      "meuble": 0,
+      "decorMur": 162.8
+     },
+     "remplace": [
+      "etage-m2s1 (carte)"
+     ]
+    },
+    {
+     "id": "etage-droite-B",
+     "piece": "etage-droite",
+     "arme": "thompson",
+     "floor": "etage",
+     "mur": "mur-4",
+     "face": "w",
+     "x": 2230,
+     "y": 2335,
+     "rect": {
+      "x": 2215,
+      "y": 2300,
+      "w": 30,
+      "h": 70
+     },
+     "distances": {
+      "fenetre": 180.3,
+      "porte": 724,
+      "escalier": 50,
+      "lampe": 330.8,
+      "meuble": 50,
+      "decorMur": 433.1
+     },
+     "remplace": []
+    }
+   ]
+  }
+ }
+}

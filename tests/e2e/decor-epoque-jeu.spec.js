@@ -94,7 +94,8 @@ test.describe('décor d\'époque en partie', () => {
         await ouvrir(page, `${sc.url}&gfx=${gfx}&perso=A&sang=0&lum=off`);
         const apres = await mesurer(page, sc);
         notes.push(`${gfx} ${sc.id} : ${avant.calls} → ${apres.calls} appels, ${avant.triangles} → ${apres.triangles} triangles`);
-        expect(apres.calls - avant.calls, `${gfx} ${sc.id}`).toBeLessThanOrEqual(7);
+        // Lot 9k : + 3 appels au plus des caisses d'armes de l'étage du joueur (caisse, arme couchée, craie), absentes sous ?decor=avant.
+        expect(apres.calls - avant.calls, `${gfx} ${sc.id}`).toBeLessThanOrEqual(7 + 3);
         expect(apres.triangles - avant.triangles, `${gfx} ${sc.id}`).toBeLessThanOrEqual(5000);
         expect(apres.calls).toBeLessThanOrEqual(400);
         expect(apres.triangles).toBeLessThanOrEqual(60_000); // retours du lot 9j : plafond relevé à 60 000 par le propriétaire (avant : 45 000)

@@ -48,7 +48,8 @@ test.describe('sons : démarrage et journal', () => {
     await page.evaluate(() => window.__zs.setInput({ aim: { angle: 0 } }));
     const p = (await state(page)).player;
     const t0 = (await state(page)).time;
-    await page.evaluate(([x, y]) => window.__zs.spawnEnemy(x, y), [p.x + 500, p.y]);
+    // Lot 9k : zombie de la manche 10 (le Colt à 50 tue d'un coup un zombie de la manche 1, qui ne serait pas blessé ; avant : manche par défaut).
+    await page.evaluate(([x, y]) => window.__zs.spawnEnemy(x, y, { wave: 10 }), [p.x + 500, p.y]);
     await step(page, 0.1);
     let log = await logOf(page);
     const shot = log.find((e) => e.sound === 'tir');
